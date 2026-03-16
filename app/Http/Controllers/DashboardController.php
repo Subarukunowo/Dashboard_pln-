@@ -2,27 +2,23 @@
 
 namespace App\Http\Controllers;
 
-use Illuminate\Http\Request;
-use Illuminate\Support\Facades\Http;
+use App\Services\GoogleSheetsService;
 
 class DashboardController extends Controller
 {
-    public function index()
+    public function bpp(GoogleSheetsService $sheets)
     {
-        $apiUrl = "https://script.google.com/home/projects/1is62_Jn28pKkUZysp3-RkKFkdlHLsaUsi8TcyvN540Q4la2gXGKGqWG5/edit?hl=id";
-        
-        // Mengambil data dari Google Sheets via Apps Script
-        $response = Http::withoutVerifying()->get($apiUrl);
-        
-        if ($response->successful()) {
-            $data = $response->json();
-            
-            // Contoh: Mengambil data khusus sheet 'BPP'
-            $bppData = $data['BPP'] ?? [];
-            
-            return view('dashboard', compact('bppData'));
-        }
+        $sheet = $sheets->getSheet("BPP");
 
-        return view('dashboard')->with('error', 'Gagal mengambil data');
+        $first = collect($sheet)->firstWhere(0,"BPP PEMBANGKIT");
+        $second = collect($sheet)
+                    ->skipWhile(fn($r)=>$r !== $first)
+                    ->skip(1)
+                    ->firstWhere(0,"BPP PEMBANGKIT");
+
+        return response()->json([
+            "konsolidasi" => $sheets->extractMonths($first),
+            "internal" => $sheets->extractMonths($second)
+        ]);
     }
 }
