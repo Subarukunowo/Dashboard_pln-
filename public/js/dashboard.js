@@ -47,7 +47,6 @@ class Dashboard{
 renderChart(){
 
     const data = this.bppData[this.currentType]
-
     if(!data) return
 
     let kons = [...data.konsolidasi]
@@ -57,21 +56,21 @@ renderChart(){
         "Jul","Agu","Sep","Okt","Nov","Des"
     ]
 
-    // FILTER BULAN
+    let mode = "trend"
+
     if(this.currentMonth !== "all"){
 
         const index = parseInt(this.currentMonth)
 
         kons = [kons[index]]
         intl = [intl[index]]
-
         labels = [labels[index]]
+
+        mode = "single"
     }
 
-    this.bppChart.render(kons, intl, labels)
-
+    this.bppChart.render(kons, intl, labels, mode)
 }
-
 initFilters(){
 
 const filterMonth = document.getElementById("filterMonth")

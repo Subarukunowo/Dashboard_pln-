@@ -5,47 +5,39 @@ this.canvasId = canvasId
 this.chart = null
 }
 
-render(konsolidasi, internal, labels = null){
+render(konsolidasi, internal, labels, mode = "trend"){
+    
+    const ctx = document.getElementById(this.canvasId)
 
-const ctx = document.getElementById(this.canvasId)
+    if(this.chart){
+        this.chart.destroy()
+    }
 
-if(this.chart){
-this.chart.destroy()
-}
+    const isSingle = mode === "single"
 
-const defaultLabels = [
-"Jan","Feb","Mar","Apr","Mei","Jun",
-"Jul","Agu","Sep","Okt","Nov","Des"
-]
+    this.chart = new Chart(ctx,{
+        type: isSingle ? 'bar' : 'line',
 
-this.chart = new Chart(ctx,{
-
-type:'bar',
-
-data:{
-labels: labels ?? defaultLabels,
-
-datasets:[
-{
-label:'Versi Konsolidasi',
-data:konsolidasi,
-backgroundColor:'#ff9800'
-},
-{
-label:'Versi Internal',
-data:internal,
-backgroundColor:'#00ff88'
-}
-]
-},
-
-options:{
-responsive:true,
-maintainAspectRatio:false
-}
-
-})
-
+        data:{
+            labels,
+            datasets:[
+                {
+                    label:'Konsolidasi',
+                    data:konsolidasi,
+                    borderColor:'#ff9800',
+                    backgroundColor: isSingle ? '#ff9800' : 'transparent',
+                    tension:0.3
+                },
+                {
+                    label:'Internal',
+                    data:internal,
+                    borderColor:'#00ff88',
+                    backgroundColor: isSingle ? '#00ff88' : 'transparent',
+                    tension:0.3
+                }
+            ]
+        }
+    })
 }
 
 }
