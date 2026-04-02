@@ -43,6 +43,7 @@
             padding: 8px 15px;
             border-radius: 5px;
             outline: none;
+            cursor: pointer;
         }
 
         .dashboard-grid {
@@ -61,7 +62,6 @@
             flex-direction: column;
         }
 
-        /* Mengatur agar card BPP mengambil 2 kolom */
         .double-column { grid-column: span 2; }
 
         .card-title {
@@ -77,11 +77,6 @@
         .stat-change { font-size: 1.5rem; font-weight: 700; color: var(--accent-green); }
 
         .chart-wrapper { position: relative; height: 300px; width: 100%; }
-
-        /* Styling tambahan untuk Kinerja Penjualan */
-        .perf-item { margin-bottom: 20px; }
-        .perf-label { color: var(--text-muted); font-size: 0.8rem; margin-bottom: 5px; }
-        .perf-value { font-size: 1.6rem; font-weight: 700; }
     </style>
 </head>
 <body>
@@ -98,7 +93,19 @@
                 <option value="2025">2025</option>
             </select>
             <select id="filterMonth">
-                <option value="all">Januari - Juni</option>
+                <option value="all">Januari - Desember</option>
+                <option value="0">Januari</option>
+                <option value="1">Februari</option>
+                <option value="2">Maret</option>
+                <option value="3">April</option>
+                <option value="4">Mei</option>
+                <option value="5">Juni</option>
+                <option value="6">Juli</option>
+                <option value="7">Agustus</option>
+                <option value="8">September</option>
+                <option value="9">Oktober</option>
+                <option value="10">November</option>
+                <option value="11">Desember</option>
             </select>
         </div>
     </header>
@@ -107,51 +114,44 @@
 
         <div class="card">
             <div class="card-title">Total Customer</div>
-            <div id="totalCustomer" class="stat-value">402,737</div>
+            <div id="statTotalCustomer" class="stat-value">---</div>
         </div>
 
         <div class="card">
             <div class="card-title">New Customer (MoM)</div>
-            <div id="newCustomer" class="stat-change">+1,494</div>
+            <div id="statNewCustomer" class="stat-change">---</div>
         </div>
 
         <div class="card">
             <div class="card-title">Growth Rate (YoY)</div>
-            <div id="growthRate" class="stat-change" style="color:#2196f3;">+4.2%</div>
+            <div id="statGrowthRate" class="stat-change" style="color:#2196f3;">---</div>
         </div>
 
-       <div class="card double-column">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <div class="card-title">Realisasi BPP Rp/kWh: Konsolidasi vs Internal</div>
-        
-        <select id="filterBpp" style="width: auto; min-width: 200px;">
-            <option value="BPP PEMBANGKIT">BPP PEMBANGKIT</option>
-            <option value="BPP S.D TRANSMISI">BPP S.D TRANSMISI</option>
-            <option value="BPP S.D DIDTRIBUSI TM">BPP S.D DIDTRIBUSI TM</option>
-            <option value="BPP S.D DIDTRIBUSI TR">BPP S.D DIDTRIBUSI TR</option>
-        </select>
-    </div>
-
-    <div class="chart-wrapper" style="flex: 1; min-height: 300px;">
-        <canvas id="bppComparisonChart"></canvas>
-    </div>
-</div>
+        <div class="card double-column">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div class="card-title">Realisasi BPP Rp/kWh: Konsolidasi vs Internal</div>
+                <select id="filterBpp" style="width: auto; min-width: 200px;">
+                    <option value="BPP PEMBANGKIT">BPP PEMBANGKIT</option>
+                    <option value="BPP S.D TRANSMISI">BPP S.D TRANSMISI</option>
+                    <option value="BPP S.D DIDTRIBUSI TM">BPP S.D DIDTRIBUSI TM</option>
+                    <option value="BPP S.D DIDTRIBUSI TR">BPP S.D DIDTRIBUSI TR</option>
+                </select>
+            </div>
+            <div class="chart-wrapper" style="flex: 1; min-height: 300px;">
+                <canvas id="bppComparisonChart"></canvas>
+            </div>
+        </div>
 
         <div class="card">
-            <div class="card-title">Kinerja Penjualan</div>
-            <div style="flex: 1; display: flex; flex-direction: column; justify-content: center;">
-                <div class="perf-item">
-                    <div class="perf-label">Target Penjualan (GWh)</div>
-                    <div class="perf-value">1,250.00</div>
-                </div>
-                <div class="perf-item" style="border-top: 1px solid #333; padding-top: 15px;">
-                    <div class="perf-label">Realisasi (GWh)</div>
-                    <div class="perf-value" style="color: var(--accent-green);">1,184.22</div>
-                </div>
-                <div class="perf-item">
-                    <div class="perf-label">Pencapaian</div>
-                    <div class="perf-value" style="color: #2196f3; font-size: 1.2rem;">94.7%</div>
-                </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <div class="card-title">Kinerja Penjualan (GWh)</div>
+                <select id="filterViewPenjualan" style="font-size: 0.7rem; padding: 4px;">
+                    <option value="bulanan">Bulanan</option>
+                    <option value="akumulasi">Akumulasi</option>
+                </select>
+            </div>
+            <div class="chart-wrapper" style="flex: 1;">
+                <canvas id="penjualanChart"></canvas>
             </div>
         </div>
 

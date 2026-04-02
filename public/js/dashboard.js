@@ -1,118 +1,157 @@
 import SheetsService from "./services/SheetsService.js"
 import BppService from "./services/BppService.js"
 import BppChart from "./charts/BppChart.js"
+import PenjualanService from "./services/PenjualanService.js"
+import PenjualanChart from "./charts/PenjualanChart.js"
 
-const SCRIPT_URL="https://script.google.com/macros/s/AKfycbweFQ59S0HfRkd6gT_D2becqDM9PiFBcnVLSTDiwuJPucFL4Oc3gdGCVY3xfNC1c7uEVg/exec"
+const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyeCM8lIbWi8VPResllz6EeOdTimhbbqEGuvZ6AyKlfNf2LT-IdyI2LpP8BFEZFSuhTqg/exec"
 
-class Dashboard{
-
-    constructor(){
-
+class Dashboard {
+    constructor() {
+        // Inisialisasi Service
         this.sheets = new SheetsService(SCRIPT_URL)
-
         this.bppService = new BppService(this.sheets)
+        this.penjualanService = new PenjualanService(this.sheets)
 
+        // Inisialisasi Chart
         this.bppChart = new BppChart("bppComparisonChart")
+        this.penjualanChart = new PenjualanChart("penjualanChart")
 
+        // Data Store
         this.bppData = null
+        this.penjualanData = null
 
-       // DEFAULT STATE
-    this.currentType = "BPP PEMBANGKIT"
-    this.currentYear = "2025"
-    this.currentMonth = "all"
+        // Default State
+        this.currentType = "BPP PEMBANGKIT"
+        this.currentYear = "2025"
+        this.currentMonth = "all"
+        this.currentViewPenjualan = "bulanan"
 
+        this.labels = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
     }
 
-    async init(){
+   async init() {
+    try {
+        console.log("Loading Dashboard...");
 
-        try{
+        this.bppData = await this.bppService.getAllBpp()
+        this.renderBppChart()
 
-            console.log("Loading dashboard...")
+        this.penjualanData = await this.penjualanService.getKinerjaData()
+        this.renderPenjualanChart()
 
-            this.bppData = await this.bppService.getAllBpp()
+        this.initFilters()
+        this.updateClock()
+        setInterval(() => this.updateClock(), 1000)
 
-            this.renderChart()
+    } catch (err) {
+        console.error("Dashboard Init Error:", err)
+    }
+}
+    renderBppChart() {
+        if (!this.bppData) return
+        const data = this.bppData[this.currentType]
+        if (!data) return
 
-            this.initFilters()
+        let kons = [...data.konsolidasi]
+        let intl = [...data.internal]
+        let displayLabels = [...this.labels]
+        let mode = "trend"
 
+        if (this.currentMonth !== "all") {
+            const index = parseInt(this.currentMonth)
+            kons = [kons[index]]
+            intl = [intl[index]]
+            displayLabels = [this.labels[index]]
+            mode = "single"
         }
-        catch(err){
 
-            console.error("Dashboard Error:",err)
+        this.bppChart.render(kons, intl, displayLabels, mode)
+    }
 
+    renderPenjualanChart() {
+        if (!this.penjualanData) return
+
+        const view = this.currentViewPenjualan // 'bulanan', 'persenBulanan', 'akumulasi', 'persenAkumulasi'
+        const data = this.penjualanData[view]
+
+        if (!data) {
+            console.warn(`Data untuk view ${view} tidak ditemukan.`);
+            return
         }
 
+        // Logic pemisahan Target vs Realisasi
+        // Jika mode persen, biasanya hanya mengirimkan satu array (realisasi/hasil kalkulasi)
+        const isPercent = view.toLowerCase().includes('persen')
+        const target = isPercent ? [] : (data.target || [])
+        const realisasi = isPercent ? (data.realisasi || data) : (data.realisasi || [])
+        
+        let displayLabels = [...this.labels]
+
+        // Handle filter bulan untuk Kinerja Penjualan
+        if (this.currentMonth !== "all") {
+            const idx = parseInt(this.currentMonth)
+            const filteredTarget = target.length > 0 ? [target[idx]] : []
+            const filteredReal = Array.isArray(realisasi) ? [realisasi[idx]] : [realisasi]
+            this.penjualanChart.render(filteredTarget, filteredReal, [this.labels[idx]], view)
+        } else {
+            this.penjualanChart.render(target, realisasi, displayLabels, view)
+        }
     }
 
-renderChart(){
+    initFilters() {
+        const filterMonth = document.getElementById("filterMonth")
+        const filterYear = document.getElementById("filterYear")
+        const filterBpp = document.getElementById("filterBpp")
+        const filterViewPenjualan = document.getElementById("filterViewPenjualan")
 
-    const data = this.bppData[this.currentType]
-    if(!data) return
+        // FILTER BULAN (Berlaku untuk kedua grafik)
+        filterMonth.addEventListener("change", (e) => {
+            this.currentMonth = e.target.value
+            this.renderBppChart()
+            this.renderPenjualanChart()
+        })
 
-    let kons = [...data.konsolidasi]
-    let intl = [...data.internal]
-    let labels = [
-        "Jan","Feb","Mar","Apr","Mei","Jun",
-        "Jul","Agu","Sep","Okt","Nov","Des"
-    ]
+        // FILTER TAHUN
+        filterYear.addEventListener("change", (e) => {
+            this.currentYear = e.target.value
+            // Re-fetch data jika diperlukan, atau sekadar re-render
+            this.renderBppChart()
+            this.renderPenjualanChart()
+        })
 
-    let mode = "trend"
+        // FILTER JENIS BPP
+        filterBpp.addEventListener("change", (e) => {
+            this.currentType = e.target.value
+            this.renderBppChart()
+        })
 
-    if(this.currentMonth !== "all"){
+        // FILTER MODE PENJUALAN (Bulanan / Akumulasi / Persen)
+        if (filterViewPenjualan) {
+            filterViewPenjualan.addEventListener("change", (e) => {
+                this.currentViewPenjualan = e.target.value
+                this.renderPenjualanChart()
+            })
+        }
 
-        const index = parseInt(this.currentMonth)
-
-        kons = [kons[index]]
-        intl = [intl[index]]
-        labels = [labels[index]]
-
-        mode = "single"
+        // SYNC DEFAULT UI
+        filterMonth.value = this.currentMonth
+        filterYear.value = this.currentYear
+        filterBpp.value = this.currentType
+        if (filterViewPenjualan) filterViewPenjualan.value = this.currentViewPenjualan
     }
 
-    this.bppChart.render(kons, intl, labels, mode)
-}
-initFilters(){
-
-const filterMonth = document.getElementById("filterMonth")
-const filterYear = document.getElementById("filterYear")
-const filterBpp = document.getElementById("filterBpp")
-
-// FILTER BULAN
-filterMonth.addEventListener("change",(e)=>{
-
-    this.currentMonth = e.target.value
-    this.renderChart()
-
-})
-
-// FILTER TAHUN
-filterYear.addEventListener("change",(e)=>{
-
-    this.currentYear = e.target.value
-    this.renderChart()
-
-})
-
-// FILTER JENIS BPP
-filterBpp.addEventListener("change",(e)=>{
-
-    this.currentType = e.target.value
-    this.renderChart()
-
-})
-
-// SET DEFAULT UI
-filterMonth.value = "all"
-filterYear.value = "2025"
-filterBpp.value = "BPP PEMBANGKIT"
-
-}
+    updateClock() {
+        const clockEl = document.getElementById("clock")
+        if (!clockEl) return
+        const now = new Date()
+        const options = { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' }
+        clockEl.textContent = `${now.toLocaleDateString('id-ID', options)} | ${now.toLocaleTimeString()}`
+    }
+    
 }
 
-document.addEventListener("DOMContentLoaded",()=>{
-
+document.addEventListener("DOMContentLoaded", () => {
     const dashboard = new Dashboard()
-
     dashboard.init()
-
 })
