@@ -1,41 +1,47 @@
 import SheetsService from "../services/SheetsService.js"
-import BppService from "../services/BppService.js"
-import BppChart from "../charts/BppChart.js"
-import PenjualanService from "../services/PenjualanService.js"
-import PenjualanChart from "../charts/PenjualanChart.js"
+import BppPage from "./bpp.js"
+import PenjualanPage from "./penjualan.js"
+import RealisasiKWHService from "../services/RealisasiKWHService.js"
+import PenjualanKwhChart from "../charts/PenjualanKwhChart.js"
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyeCM8lIbWi8VPResllz6EeOdTimhbbqEGuvZ6AyKlfNf2LT-IdyI2LpP8BFEZFSuhTqg/exec"
 
 class Dashboard {
     constructor() {
-        this.sheets = new SheetsService(SCRIPT_URL)
-        this.bppService = new BppService(this.sheets)
-        this.penjualanService = new PenjualanService(this.sheets)
+        const sheets = new SheetsService(SCRIPT_URL)
+        const labels = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"]
 
-        this.bppChart = new BppChart("bppComparisonChart")
-        this.penjualanChart = new PenjualanChart("penjualanChart")
+        this.bpp = new BppPage(sheets, labels)
+        this.penjualan = new PenjualanPage(sheets, labels)
+        this.kwhService = new RealisasiKWHService(sheets)
+        this.kwhChart = new PenjualanKwhChart()
+        this.kwhData = null
+        this.currentViewKwh = "bulanan"
 
-        this.bppData = null
-        this.penjualanData = null
-
-        this.currentType = "BPP PEMBANGKIT"
-        this.currentYear = "2025"
         this.currentMonth = "all"
-        this.currentViewPenjualan = "bulanan"
-        this.currentTarif = "JUMLAH"
-
-        this.labels = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
+        this.currentYear = "2025"
+        this.labels = labels
     }
 
     async init() {
         try {
-            console.log("Loading Dashboard...");
+            console.log("Loading Dashboard...")
 
-            this.bppData = await this.bppService.getAllBpp()
-            this.renderBppChart()
+            await this.bpp.load()
+            this.bpp.render(this.currentMonth)
+            this.bpp.initFilter(() => this.bpp.render(this.currentMonth))
 
-            this.penjualanData = await this.penjualanService.getKinerjaData()
-            this.renderPenjualanChart()
+            await this.penjualan.load()
+            this.penjualan.render(this.currentMonth)
+            this.penjualan.initFilters(() => this.penjualan.render(this.currentMonth))
+
+            this.kwhData = await this.kwhService.getData()
+            this.renderKwh()
+
+            document.getElementById("filterViewKwh")?.addEventListener("change", e => {
+                this.currentViewKwh = e.target.value
+                this.renderKwh()
+            })
 
             this.initFilters()
             this.updateClock()
@@ -46,101 +52,51 @@ class Dashboard {
         }
     }
 
-    renderBppChart() {
-        if (!this.bppData) return
-        const data = this.bppData[this.currentType]
-        if (!data) return
+    renderKwh() {
+        if (!this.kwhData) return
+        const akum = this.currentViewKwh === "akumulasi"
+        this.kwhChart.renderTargetRealisasi(this.kwhData, akum)
+        this.kwhChart.renderDelta(this.kwhData, akum)
+        this.kwhChart.renderPencapaian(this.kwhData)
+        this.kwhChart.renderPertumbuhan(this.kwhData)
 
-        let kons = [...data.konsolidasi]
-        let intl = [...data.internal]
-        let displayLabels = [...this.labels]
-        let mode = "trend"
-
-        if (this.currentMonth !== "all") {
-            const index = parseInt(this.currentMonth)
-            kons = [kons[index]]
-            intl = [intl[index]]
-            displayLabels = [this.labels[index]]
-            mode = "single"
-        }
-
-        this.bppChart.render(kons, intl, displayLabels, mode)
-    }
-
-    renderPenjualanChart() {
-        if (!this.penjualanData) return
-
-        const tarif = this.currentTarif
-        const view = this.currentViewPenjualan
-        let target, realisasi
-
-        if (tarif === "JUMLAH") {
-            const data = this.penjualanData[view]
-            if (!data) return
-            const isPercent = view.includes('persen')
-            target = isPercent ? [] : (data.target || [])
-            realisasi = isPercent ? (data.realisasi || data) : (data.realisasi || [])
-        } else {
-            const data = this.penjualanData.perTarif?.[tarif]
-            if (!data) return
-            target = data.target
-            realisasi = data.realisasi
-        }
-
-        if (this.currentMonth !== "all") {
-            const idx = parseInt(this.currentMonth)
-            this.penjualanChart.render(
-                target.length ? [target[idx]] : [],
-                [realisasi[idx]],
-                [this.labels[idx]], view
-            )
-        } else {
-            this.penjualanChart.render(target, realisasi, [...this.labels], view)
-        }
+        const tbody = document.getElementById("tabelRingkasan")
+        if (!tbody) return
+        const fmt = v => (v / 1_000_000).toFixed(2)
+        const fmtPct = v => (v * 100).toFixed(2) + "%"
+        tbody.innerHTML = this.kwhData.map(d => `
+            <tr>
+                <td>${d.bulan}</td>
+                <td>${fmt(akum ? d.targetAkum2024 : d.target2024)}</td>
+                <td>${fmt(akum ? d.realisasiAkum2024 : d.realisasi2024)}</td>
+                <td>${fmt(akum ? d.targetAkum2025 : d.target2025)}</td>
+                <td>${fmt(akum ? d.realisasiAkum2025 : d.realisasi2025)}</td>
+                <td style="color:${(akum ? d.deltaAkumKwh : d.deltaKwh) >= 0 ? '#00ff88' : '#f44336'}">${fmt(akum ? d.deltaAkumKwh : d.deltaKwh)}</td>
+                <td style="color:${(akum ? d.deltaAkumKwh : d.deltaKwh) >= 0 ? '#00ff88' : '#f44336'}">${fmtPct(akum ? d.deltaAkumPersen - 1 : d.deltaPersen - 1)}</td>
+                <td>${fmtPct(d.pencapaianTarget)}</td>
+                <td>${fmtPct(d.pertumbuhanReal)}</td>
+            </tr>
+        `).join("")
     }
 
     initFilters() {
         const filterMonth = document.getElementById("filterMonth")
         const filterYear = document.getElementById("filterYear")
-        const filterBpp = document.getElementById("filterBpp")
-        const filterViewPenjualan = document.getElementById("filterViewPenjualan")
-        const filterTarif = document.getElementById("filterTarif")
 
-        filterMonth.addEventListener("change", (e) => {
+        filterMonth?.addEventListener("change", (e) => {
             this.currentMonth = e.target.value
-            this.renderBppChart()
-            this.renderPenjualanChart()
+            this.bpp.render(this.currentMonth)
+            this.penjualan.render(this.currentMonth)
         })
 
-        filterYear.addEventListener("change", (e) => {
+        filterYear?.addEventListener("change", (e) => {
             this.currentYear = e.target.value
-            this.renderBppChart()
-            this.renderPenjualanChart()
+            this.bpp.render(this.currentMonth)
+            this.penjualan.render(this.currentMonth)
         })
 
-        filterBpp.addEventListener("change", (e) => {
-            this.currentType = e.target.value
-            this.renderBppChart()
-        })
-
-        if (filterViewPenjualan) {
-            filterViewPenjualan.addEventListener("change", (e) => {
-                this.currentViewPenjualan = e.target.value
-                this.renderPenjualanChart()
-            })
-        }
-
-        if (filterTarif) {
-            filterTarif.addEventListener("change", (e) => {
-                this.currentTarif = e.target.value
-                this.renderPenjualanChart()
-            })
-        }
-
-        filterMonth.value = this.currentMonth
-        filterYear.value = this.currentYear
-        filterBpp.value = this.currentType
-        if (filterViewPenjualan) filterViewPenjualan.value = this.currentViewPenjualan
+        if (filterMonth) filterMonth.value = this.currentMonth
+        if (filterYear) filterYear.value = this.currentYear
     }
 
     updateClock() {
@@ -153,6 +109,5 @@ class Dashboard {
 }
 
 document.addEventListener("DOMContentLoaded", () => {
-    const dashboard = new Dashboard()
-    dashboard.init()
+    new Dashboard().init()
 })
