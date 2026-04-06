@@ -5,7 +5,7 @@ export default class PendapatanBatamService {
 
     async getData() {
         try {
-            const rencana = await this.sheets.getSheet("RENCANA PENDAPATAN BATAM");
+            const rencana   = await this.sheets.getSheet("RENCANA PENDAPATAN BATAM");
             const realisasi = await this.sheets.getSheet("REALISASI PENDAPATAN BATAM");
 
             if (!rencana || !realisasi) return null;
@@ -25,30 +25,33 @@ export default class PendapatanBatamService {
                 "JUMLAH"
             ];
 
-            // Pisahkan data berdasarkan blok baris (Bulanan vs Akumulasi)
-            const rencanaAkumRows = rencana.slice(50);
-            const realisasiAkumRows = realisasi.slice(50);
+            const findRow = (sheet, tarif) => sheet.find(r =>
+                r[0] && r[0].toString().trim().toUpperCase() === tarif.trim().toUpperCase()
+            );
 
             const result = {};
-
             TARIF.forEach(tarif => {
-                const searchKey = tarif.trim().toUpperCase();
-
-                // Cari baris di sheet (case-insensitive)
-                const rBul = rencana.find(r => r[0] && r[0].toString().trim().toUpperCase() === searchKey);
-                const rAkum = rencanaAkumRows.find(r => r[0] && r[0].toString().trim().toUpperCase() === searchKey);
-                const rlBul = realisasi.find(r => r[0] && r[0].toString().trim().toUpperCase() === searchKey);
-                const rlAkum = realisasiAkumRows.find(r => r[0] && r[0].toString().trim().toUpperCase() === searchKey);
+                const rBul  = findRow(rencana, tarif);
+                const rlBul = findRow(realisasi, tarif);
 
                 result[tarif] = {
-                    rencana: rBul ? rBul.slice(1, 13).map(v => this.parseNumber(v)) : new Array(12).fill(0),
-                    rencanaAkum: rAkum ? rAkum.slice(1, 13).map(v => this.parseNumber(v)) : new Array(12).fill(0),
-                    realisasi: rlBul ? rlBul.slice(1, 13).map(v => this.parseNumber(v)) : new Array(12).fill(0),
-                    realisasiAkum: rlAkum ? rlAkum.slice(1, 13).map(v => this.parseNumber(v)) : new Array(12).fill(0),
+                    rencana:       rBul  ? rBul.slice(1, 13).map(v => this.parseNumber(v))  : new Array(12).fill(0),
+                    rencanaAkum:   new Array(12).fill(0),
+                    realisasi:     rlBul ? rlBul.slice(1, 13).map(v => this.parseNumber(v)) : new Array(12).fill(0),
+                    realisasiAkum: new Array(12).fill(0),
                 };
             });
 
-            return { tarif: TARIF, data: result };
+            const realisasiSheet = await this.sheets.getSheet("REALISASI ");
+            const realisasiBulanan = realisasiSheet.slice(3, 15).map(row => ({
+                bulan:      row[0],
+                target:     this.parseNumber(row[1]),
+                realisasi:  this.parseNumber(row[2]),
+                delta:      this.parseNumber(row[3]),
+                pencapaian: this.parseNumber(row[4]),
+            }));
+
+            return { tarif: TARIF, data: result, realisasiBulanan };
         } catch (err) {
             console.error("Gagal load PendapatanBatam:", err);
             return null;
@@ -58,8 +61,6 @@ export default class PendapatanBatamService {
     parseNumber(value) {
         if (typeof value === 'number') return value;
         if (!value || value === "-" || value === "" || value === " - ") return 0;
-        
-        // Bersihkan titik ribuan dan ganti koma desimal
         let cleaned = value.toString().replace(/\./g, '').replace(',', '.');
         return parseFloat(cleaned) || 0;
     }

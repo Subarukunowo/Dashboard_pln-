@@ -3,67 +3,37 @@ export default class PendapatanBatamChart {
         this.charts = {};
     }
 
-    /**
-     * @param {Object} container - Objek dari Service { tarif: [], data: {} }
-     * @param {string} viewType - "bulanan" atau "akumulasi"
-     * @param {string} tarif - Nama tarif yang dipilih (misal: "JUMLAH")
-     */
     render(container, viewType, tarif) {
-        const isAkum = viewType === "akumulasi";
+        const allData = container?.data;
+        if (!allData) { console.error("Data Pendapatan tidak ditemukan!"); return; }
 
-        // Pastikan kita masuk ke properti .data karena Service membungkusnya di sana
-        const allData = container && container.data ? container.data : null;
-
-        if (!allData) {
-            console.error("Data Pendapatan tidak ditemukan dalam container!");
-            return;
-        }
-
-        // Ambil data spesifik berdasarkan tarif
         let selectedData = allData[tarif];
-
-        // Fallback ke "JUMLAH" jika tarif yang dipilih tidak ada dalam data
         if (!selectedData) {
-            console.warn(`Tarif ${tarif} tidak ditemukan, menggunakan JUMLAH sebagai default`);
+            console.warn(`Tarif ${tarif} tidak ditemukan, fallback ke JUMLAH`);
             selectedData = allData["JUMLAH"];
         }
+        if (!selectedData) { console.error("Data kosong."); return; }
 
-        if (!selectedData) {
-            console.error("Data benar-benar kosong atau struktur salah.");
-            return;
-        }
-
-        // Bungkus data agar sesuai dengan parameter renderBar
-        const rencanaParam = {
+        this.renderBar("chartPendapatanBatam", {
             rencana: selectedData.rencana,
-            rencanaAkum: selectedData.rencanaAkum
-        };
-
-        const realisasiParam = {
             realisasi: selectedData.realisasi,
-            realisasiAkum: selectedData.realisasiAkum
-        };
+        });
 
-        this.renderBar(
-            "chartPendapatanBatam", 
-            `Pendapatan - ${tarif}`, 
-            rencanaParam, 
-            realisasiParam, 
-            isAkum
-        );
+        const delta = selectedData.realisasi.map((v, i) => v - (selectedData.rencana[i] || 0));
+        this.make("chartDeltaPendapatan", "bar", [{
+            label: "Delta (Realisasi - Rencana)",
+            data: delta,
+            backgroundColor: delta.map(v => v >= 0 ? "#00ff88" : "#ff4444"),
+        }], v => "Rp " + (v / 1_000_000_000).toFixed(2) + "M");
     }
 
     destroy(id) {
-        if (this.charts[id]) {
-            this.charts[id].destroy();
-            delete this.charts[id];
-        }
+        if (this.charts[id]) { this.charts[id].destroy(); delete this.charts[id]; }
     }
 
     make(id, type, datasets, yCallback = null) {
         const ctx = document.getElementById(id);
         if (!ctx) return;
-        
         this.destroy(id);
         this.charts[id] = new Chart(ctx, {
             type,
@@ -74,35 +44,19 @@ export default class PendapatanBatamChart {
             options: {
                 responsive: true,
                 maintainAspectRatio: false,
-                plugins: {
-                    legend: { labels: { color: "#ccc", font: { size: 11 } } }
-                },
+                plugins: { legend: { labels: { color: "#ccc", font: { size: 11 } } } },
                 scales: {
-                    y: { 
-                        grid: { color: "#333" }, 
-                        ticks: { color: "#888", callback: yCallback || undefined } 
-                    },
-                    x: { 
-                        grid: { display: false }, 
-                        ticks: { color: "#888" } 
-                    }
+                    y: { grid: { color: "#333" }, ticks: { color: "#888", callback: yCallback || undefined } },
+                    x: { grid: { display: false }, ticks: { color: "#888" } }
                 }
             }
         });
     }
 
-    renderBar(id, title, rencana, realisasi, akum) {
+    renderBar(id, { rencana, realisasi }) {
         this.make(id, "bar", [
-            { 
-                label: "Rencana",   
-                data: akum ? rencana.rencanaAkum : rencana.rencana, 
-                backgroundColor: "#ff9800" 
-            },
-            { 
-                label: "Realisasi", 
-                data: akum ? realisasi.realisasiAkum : realisasi.realisasi, 
-                backgroundColor: "#00ff88" 
-            },
+            { label: "Rencana",   data: rencana,   backgroundColor: "#ff9800" },
+            { label: "Realisasi", data: realisasi, backgroundColor: "#00ff88" },
         ], v => "Rp " + (v / 1_000_000_000).toFixed(2) + "M");
     }
 }

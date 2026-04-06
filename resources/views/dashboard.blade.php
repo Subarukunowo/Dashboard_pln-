@@ -23,38 +23,21 @@
 
 <main class="dashboard-grid">
 
-    {{-- Visual Charts & Stats --}}
+    {{-- ===== STATISTIK ===== --}}
     @include('partials.stats')
+
+    {{-- ===== BIAYA POKOK PRODUKSI (BPP) ===== --}}
     @include('partials.BppChart')
+
+    {{-- ===== KINERJA PENJUALAN ===== --}}
     @include('partials.PenjualanChart')
-    @include('partials.PenjualanKwh') 
+    @include('partials.PenjualanKwh')
 
-    {{-- Kinerja Pendapatan Batam (Full Width) --}}
-    <div class="card card-full">
-        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
-            <div class="card-title">Kinerja Pendapatan Batam</div>
-            <div class="card-controls" style="display: flex; gap: 10px;">
-                <select id="filterViewPendapatan" class="filter-select-sm">
-                    <option value="bulanan">Bulanan</option>
-                    <option value="akumulasi">Akumulasi</option>
-                </select>
-                <select id="filterTarifPendapatan" class="filter-select-sm">
-                    <option value="JUMLAH">Semua Tarif</option>
-                    <option value="RUMAH TANGGA">Rumah Tangga</option>
-                    <option value="BISNIS">Bisnis</option>
-                    <option value="INDUSTRI">Industri</option>
-                    <option value="SOSIAL">Sosial</option>
-                    <option value="PUBLIK">Publik</option>
-                </select>
-            </div>
-        </div>
-        
-        <div class="chart-container" style="position: relative; height:300px;">
-            <canvas id="chartPendapatanBatam"></canvas> 
-        </div>
-    </div>
+    {{-- ===== PENDAPATAN PLN BATAM ===== --}}
+    @include('partials.GolTarifBatam')
+    @include('partials.PendapatanBatam')
 
-    {{-- Grid Info Cards (Tanpa Link Detail) --}}
+    {{-- ===== BELUM DIIMPLEMENTASI ===== --}}
     <div class="card">
         <div class="card-title">Penjualan Per Golongan</div>
         <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Target vs Realisasi per golongan tarif</p>
@@ -68,11 +51,6 @@
     <div class="card">
         <div class="card-title">Kinerja Pendapatan</div>
         <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Rencana vs realisasi pendapatan</p>
-    </div>
-
-    <div class="card">
-        <div class="card-title">Pendapatan Tarif</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Target vs realisasi per tarif</p>
     </div>
 
     <div class="card">
