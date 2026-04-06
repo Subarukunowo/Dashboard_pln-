@@ -37,6 +37,8 @@
     @include('partials.GolTarifBatam')
     @include('partials.PendapatanBatam')
 
+    {{-- ===== RPKWH ===== --}}
+    @include('partials.Rpkwh')
     {{-- ===== BELUM DIIMPLEMENTASI ===== --}}
     <div class="card">
         <div class="card-title">Penjualan Per Golongan</div>
