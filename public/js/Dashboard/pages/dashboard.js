@@ -9,13 +9,15 @@ import GolTarifBatamService from "../services/GolTarifBatamService.js"
 import GolTarifBatamChart from "../charts/GolTarifBatamChart.js"
 import RpkwhService from "../services/RpkwhService.js"
 import RpkwhChart from "../charts/RpkwhChart.js"
+import PelangganService from "../services/PelangganService.js"
+import PelangganChart from "../charts/PelangganChart.js"
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyeCM8lIbWi8VPResllz6EeOdTimhbbqEGuvZ6AyKlfNf2LT-IdyI2LpP8BFEZFSuhTqg/exec"
 
 class Dashboard {
     constructor() {
         const sheets = new SheetsService(SCRIPT_URL)
-        const labels = ["Jan", "Feb", "Mar", "Apr", "Mei", "Jun", "Jul", "Agu", "Sep", "Okt", "Nov", "Des"]
+        const labels = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"]
 
         this.bpp = new BppPage(sheets, labels)
         this.penjualan = new PenjualanPage(sheets, labels)
@@ -46,6 +48,12 @@ class Dashboard {
         this.currentBulanRpkwh = "11"
         this.currentTahunRpkwh = "2025"
 
+        this.pelangganService = new PelangganService(sheets)
+        this.pelangganChart = new PelangganChart()
+        this.pelangganData = null
+        this.currentTarifPelanggan = "JUMLAH"
+        this.currentBulanPelanggan = 11
+
         this.currentMonth = "all"
         this.currentYear = "2025"
         this.labels = labels
@@ -70,6 +78,9 @@ class Dashboard {
             this.rpkwhData = await this.rpkwhService.getData()
             this.renderRpkwh()
 
+            this.pelangganData = await this.pelangganService.getData()
+            this.renderPelanggan()
+
             this.initEventListeners()
             this.updateClock()
             setInterval(() => this.updateClock(), 1000)
@@ -79,12 +90,12 @@ class Dashboard {
     }
 
     initEventListeners() {
-        document.getElementById("filterMonth")?.addEventListener("change", (e) => {
+        document.getElementById("filterMonth")?.addEventListener("change", e => {
             this.currentMonth = e.target.value
             this.bpp.render(this.currentMonth)
             this.penjualan.render(this.currentMonth)
         })
-        document.getElementById("filterYear")?.addEventListener("change", (e) => {
+        document.getElementById("filterYear")?.addEventListener("change", e => {
             this.currentYear = e.target.value
             this.bpp.render(this.currentMonth)
             this.penjualan.render(this.currentMonth)
@@ -119,6 +130,12 @@ class Dashboard {
         document.getElementById("filterTahunRpkwh")?.addEventListener("change", e => {
             this.currentTahunRpkwh = e.target.value; this.renderRpkwh()
         })
+        document.getElementById("filterTarifPelanggan")?.addEventListener("change", e => {
+            this.currentTarifPelanggan = e.target.value; this.renderPelanggan()
+        })
+        document.getElementById("filterBulanPelanggan")?.addEventListener("change", e => {
+            this.currentBulanPelanggan = parseInt(e.target.value); this.renderPelanggan()
+        })
     }
 
     renderKwh() {
@@ -140,19 +157,17 @@ class Dashboard {
             const deltaValue = akum ? d.deltaAkumKwh : d.deltaKwh
             const deltaPersen = akum ? (d.deltaAkumPersen - 1) : (d.deltaPersen - 1)
             const color = deltaValue >= 0 ? '#00ff88' : '#f44336'
-            return `
-                <tr>
-                    <td>${d.bulan}</td>
-                    <td>${fmt(akum ? d.targetAkum2024 : d.target2024)}</td>
-                    <td>${fmt(akum ? d.realisasiAkum2024 : d.realisasi2024)}</td>
-                    <td>${fmt(akum ? d.targetAkum2025 : d.target2025)}</td>
-                    <td>${fmt(akum ? d.realisasiAkum2025 : d.realisasi2025)}</td>
-                    <td style="color:${color}">${fmt(deltaValue)}</td>
-                    <td style="color:${color}">${fmtPct(deltaPersen)}</td>
-                    <td>${fmtPct(d.pencapaianTarget)}</td>
-                    <td>${fmtPct(d.pertumbuhanReal)}</td>
-                </tr>
-            `
+            return `<tr>
+                <td>${d.bulan}</td>
+                <td>${fmt(akum ? d.targetAkum2024 : d.target2024)}</td>
+                <td>${fmt(akum ? d.realisasiAkum2024 : d.realisasi2024)}</td>
+                <td>${fmt(akum ? d.targetAkum2025 : d.target2025)}</td>
+                <td>${fmt(akum ? d.realisasiAkum2025 : d.realisasi2025)}</td>
+                <td style="color:${color}">${fmt(deltaValue)}</td>
+                <td style="color:${color}">${fmtPct(deltaPersen)}</td>
+                <td>${fmtPct(d.pencapaianTarget)}</td>
+                <td>${fmtPct(d.pertumbuhanReal)}</td>
+            </tr>`
         }).join("")
     }
 
@@ -294,7 +309,6 @@ class Dashboard {
             this.rpkwhData.golongan.map(g => g.replace(/ \(.\) ?/, '')),
             nilaiGol
         )
-
         this.rpkwhChart.make("chartGrowthRpkwh", "line", LABELS,
             this.rpkwhData.golongan.map((g, i) => ({
                 label: g.replace(/ \(.\) ?/, ''),
@@ -368,6 +382,55 @@ class Dashboard {
                     <td>${d.target.toFixed(2)}</td>
                     <td>${d.realisasi.toFixed(2)}</td>
                     <td style="color:${d.delta >= 0 ? '#00ff88' : '#f44336'}">${d.delta.toFixed(2)}</td>
+                </tr>
+            `).join("")
+        }
+    }
+
+    renderPelanggan() {
+        if (!this.pelangganData) return
+        const r  = this.pelangganData.rencanaData[this.currentTarifPelanggan]   || new Array(12).fill(0)
+        const rl = this.pelangganData.realisasiData[this.currentTarifPelanggan] || new Array(12).fill(0)
+        const LABELS = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"]
+
+        this.pelangganChart.make("chartPelangganBar", "bar", LABELS, [
+            { label: "Rencana",   data: r,  backgroundColor: "#ff9800" },
+            { label: "Realisasi", data: rl, backgroundColor: "#00ff88" },
+        ])
+
+        const delta = rl.map((v, i) => v - r[i])
+        this.pelangganChart.make("chartPelangganDelta", "bar", LABELS, [
+            { label: "Delta", data: delta, backgroundColor: delta.map(v => v >= 0 ? "#00ff88" : "#f44336") }
+        ])
+
+        const pieLabels = this.pelangganData.golongan.map(g => g.replace(/ \(.\) ?/, ''))
+        this.pelangganChart.pie("chartPelangganPie", pieLabels,
+            this.pelangganData.golongan.map(g => this.pelangganData.targetGolAkum[g][this.currentBulanPelanggan] || 0)
+        )
+
+        this.pelangganChart.make("chartPelangganGol", "bar", pieLabels, [
+            { label: "Target 2025",    data: this.pelangganData.golongan.map(g => this.pelangganData.targetGolAkum[g][this.currentBulanPelanggan]),    backgroundColor: "#ff9800" },
+            { label: "Realisasi 2024", data: this.pelangganData.golongan.map(g => this.pelangganData.realisasiGolAkum[g][this.currentBulanPelanggan]), backgroundColor: "#2196f3" },
+        ])
+
+        const sel = document.getElementById("filterTarifPelanggan")
+        if (sel && sel.options.length === 0 && this.pelangganData.tarif) {
+            this.pelangganData.tarif.forEach(t => {
+                const opt = document.createElement("option")
+                opt.value = t; opt.textContent = t
+                sel.appendChild(opt)
+            })
+            sel.value = this.currentTarifPelanggan
+        }
+
+        const tbody = document.getElementById("tabelRkapPelanggan")
+        if (tbody && this.pelangganData.rkapData) {
+            tbody.innerHTML = this.pelangganData.rkapData.map(d => `
+                <tr>
+                    <td>${d.golongan}</td>
+                    <td>${d.targetTw1}</td><td>${d.targetTw2}</td><td>${d.targetTw3}</td><td>${d.targetTw4}</td><td>${d.targetTotal}</td>
+                    <td>${d.realTw1}</td><td>${d.realTw2}</td><td>${d.realTw3}</td><td>${d.realTw4}</td><td>${d.realTotal}</td>
+                    <td style="color:${d.pencapaian >= 1 ? '#00ff88' : '#f44336'}">${(d.pencapaian * 100).toFixed(2)}%</td>
                 </tr>
             `).join("")
         }

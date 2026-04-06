@@ -39,6 +39,9 @@
 
     {{-- ===== RPKWH ===== --}}
     @include('partials.Rpkwh')
+
+    {{-- ===== PELANGGAN ===== --}}
+    @include('partials.Pelanggan')
     {{-- ===== BELUM DIIMPLEMENTASI ===== --}}
     <div class="card">
         <div class="card-title">Penjualan Per Golongan</div>
