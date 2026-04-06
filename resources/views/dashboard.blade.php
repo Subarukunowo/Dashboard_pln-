@@ -14,115 +14,110 @@
         </select>
         <select id="filterMonth">
             <option value="all">Januari - Desember</option>
-            <option value="0">Januari</option>
-            <option value="1">Februari</option>
-            <option value="2">Maret</option>
-            <option value="3">April</option>
-            <option value="4">Mei</option>
-            <option value="5">Juni</option>
-            <option value="6">Juli</option>
-            <option value="7">Agustus</option>
-            <option value="8">September</option>
-            <option value="9">Oktober</option>
-            <option value="10">November</option>
-            <option value="11">Desember</option>
+            @foreach(['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $index => $month)
+                <option value="{{ $index }}">{{ $month }}</option>
+            @endforeach
         </select>
     </div>
 </header>
 
 <main class="dashboard-grid">
 
+    {{-- Visual Charts & Stats --}}
     @include('partials.stats')
     @include('partials.BppChart')
     @include('partials.PenjualanChart')
- @include('partials.PenjualanKwh')
+    @include('partials.PenjualanKwh') 
 
- 
+    {{-- Kinerja Pendapatan Batam (Full Width) --}}
+    <div class="card card-full">
+        <div class="card-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
+            <div class="card-title">Kinerja Pendapatan Batam</div>
+            <div class="card-controls" style="display: flex; gap: 10px;">
+                <select id="filterViewPendapatan" class="filter-select-sm">
+                    <option value="bulanan">Bulanan</option>
+                    <option value="akumulasi">Akumulasi</option>
+                </select>
+                <select id="filterTarifPendapatan" class="filter-select-sm">
+                    <option value="JUMLAH">Semua Tarif</option>
+                    <option value="RUMAH TANGGA">Rumah Tangga</option>
+                    <option value="BISNIS">Bisnis</option>
+                    <option value="INDUSTRI">Industri</option>
+                    <option value="SOSIAL">Sosial</option>
+                    <option value="PUBLIK">Publik</option>
+                </select>
+            </div>
+        </div>
+        
+        <div class="chart-container" style="position: relative; height:300px;">
+            <canvas id="chartPendapatanBatam"></canvas> 
+        </div>
+    </div>
+
+    {{-- Grid Info Cards (Tanpa Link Detail) --}}
     <div class="card">
         <div class="card-title">Penjualan Per Golongan</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 10px;">Target vs Realisasi per golongan tarif</p>
-        <a href="/penjualan-golongan" style="color:var(--accent-orange); font-size:0.8rem;">Lihat Detail →</a>
+        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Target vs Realisasi per golongan tarif</p>
     </div>
 
     <div class="card">
         <div class="card-title">Golongan Tarif</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 10px;">Realisasi vs target per golongan</p>
-        <a href="/golongan-tarif" style="color:var(--accent-orange); font-size:0.8rem;">Lihat Detail →</a>
+        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Realisasi vs target per golongan</p>
     </div>
 
-    {{-- PENDAPATAN --}}
     <div class="card">
         <div class="card-title">Kinerja Pendapatan</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 10px;">Rencana vs realisasi pendapatan</p>
-        <a href="/kinerja-pendapatan" style="color:var(--accent-orange); font-size:0.8rem;">Lihat Detail →</a>
-    </div>
-
-    <div class="card">
-        <div class="card-title">Pendapatan Batam</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 10px;">Rencana vs realisasi pendapatan Batam</p>
-        <a href="/pendapatan-batam" style="color:var(--accent-orange); font-size:0.8rem;">Lihat Detail →</a>
+        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Rencana vs realisasi pendapatan</p>
     </div>
 
     <div class="card">
         <div class="card-title">Pendapatan Tarif</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 10px;">Target vs realisasi per tarif</p>
-        <a href="/pendapatan-tarif" style="color:var(--accent-orange); font-size:0.8rem;">Lihat Detail →</a>
+        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Target vs realisasi per tarif</p>
     </div>
 
-    {{-- RPKWH --}}
     <div class="card">
         <div class="card-title">Kinerja RPKWH</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 10px;">Rencana vs realisasi RPKWH</p>
-        <a href="/kinerja-rpkwh" style="color:var(--accent-orange); font-size:0.8rem;">Lihat Detail →</a>
+        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Rencana vs realisasi RPKWH</p>
     </div>
 
     <div class="card">
         <div class="card-title">Analisa RPKWH</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 10px;">Growth & BPP HJR RPKWH</p>
-        <a href="/analisa-rpkwh" style="color:var(--accent-orange); font-size:0.8rem;">Lihat Detail →</a>
+        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Growth & BPP HJR RPKWH</p>
     </div>
 
-    {{-- PELANGGAN --}}
     <div class="card">
         <div class="card-title">Kinerja Pelanggan</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 10px;">Rencana vs realisasi pelanggan</p>
-        <a href="/kinerja-pelanggan" style="color:var(--accent-orange); font-size:0.8rem;">Lihat Detail →</a>
+        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Rencana vs realisasi pelanggan</p>
     </div>
 
     <div class="card">
         <div class="card-title">Penambahan KVA</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 10px;">Rencana vs realisasi KVA</p>
-        <a href="/kinerja-kva" style="color:var(--accent-orange); font-size:0.8rem;">Lihat Detail →</a>
+        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Rencana vs realisasi KVA</p>
     </div>
 
-    {{-- LAINNYA --}}
     <div class="card">
         <div class="card-title">Losses & EMIN</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 10px;">02.Losses + EMIN vs - EMIN</p>
-        <a href="/losses" style="color:var(--accent-orange); font-size:0.8rem;">Lihat Detail →</a>
+        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">02.Losses + EMIN vs - EMIN</p>
     </div>
 
     <div class="card">
         <div class="card-title">Kinerja Tunggakan</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 10px;">Data tunggakan pelanggan</p>
-        <a href="/tunggakan" style="color:var(--accent-orange); font-size:0.8rem;">Lihat Detail →</a>
+        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Data tunggakan pelanggan</p>
     </div>
 
     <div class="card">
         <div class="card-title">P2TL</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 10px;">Data P2TL</p>
-        <a href="/p2tl" style="color:var(--accent-orange); font-size:0.8rem;">Lihat Detail →</a>
+        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Data P2TL</p>
     </div>
 
     <div class="card">
         <div class="card-title">Jam Nyala</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0 0 10px;">Data jam nyala</p>
-        <a href="/jam-nyala" style="color:var(--accent-orange); font-size:0.8rem;">Lihat Detail →</a>
+        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Data jam nyala</p>
     </div>
 
 </main>
 @endsection
 
 @section('scripts')
-<script type="module" src="/js/Dashboard/pages/dashboard.js"></script>
+<script type="module" src="{{ asset('js/Dashboard/pages/dashboard.js') }}"></script>
 @endsection
