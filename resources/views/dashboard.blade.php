@@ -42,36 +42,10 @@
 
     {{-- ===== PELANGGAN ===== --}}
     @include('partials.Pelanggan')
+
+    {{-- ===== KVA =====  --}}
+    @include('partials.Kva')
     {{-- ===== BELUM DIIMPLEMENTASI ===== --}}
-    <div class="card">
-        <div class="card-title">Penjualan Per Golongan</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Target vs Realisasi per golongan tarif</p>
-    </div>
-
-    <div class="card">
-        <div class="card-title">Golongan Tarif</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Realisasi vs target per golongan</p>
-    </div>
-
-    <div class="card">
-        <div class="card-title">Kinerja Pendapatan</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Rencana vs realisasi pendapatan</p>
-    </div>
-
-    <div class="card">
-        <div class="card-title">Kinerja RPKWH</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Rencana vs realisasi RPKWH</p>
-    </div>
-
-    <div class="card">
-        <div class="card-title">Analisa RPKWH</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Growth & BPP HJR RPKWH</p>
-    </div>
-
-    <div class="card">
-        <div class="card-title">Kinerja Pelanggan</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Rencana vs realisasi pelanggan</p>
-    </div>
 
     <div class="card">
         <div class="card-title">Penambahan KVA</div>
