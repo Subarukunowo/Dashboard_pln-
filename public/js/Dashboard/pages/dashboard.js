@@ -19,6 +19,21 @@ import GolTarifBatamModule from "../modules/GolTarifBatamModule.js"
 import RpkwhModule from "../modules/RpkwhModule.js"
 import PelangganModule from "../modules/PelangganModule.js"
 import KvaModule from "../modules/KvaModule.js"
+import BabinService from "../services/BabinService.js"
+import BabinChart from "../charts/BabinChart.js"
+import BabinModule from "../modules/BabinModule.js"
+import JamNyalaService from "../services/JamNyalaService.js"
+import JamNyalaChart from "../charts/JamNyalaChart.js"
+import JamNyalaModule from "../modules/JamNyalaModule.js"
+import LossesService from "../services/LossesService.js"
+import LossesChart from "../charts/LossesChart.js"
+import LossesModule from "../modules/LossesModule.js"
+import TunggakanService from "../services/TunggakanService.js"
+import TunggakanChart from "../charts/TunggakanChart.js"
+import TunggakanModule from "../modules/TunggakanModule.js"
+import P2tlService from "../services/P2tlService.js"
+import P2tlChart from "../charts/P2tlChart.js"
+import P2tlModule from "../modules/P2tlModule.js"
 
 const SCRIPT_URL = "https://script.google.com/macros/s/AKfycbyeCM8lIbWi8VPResllz6EeOdTimhbbqEGuvZ6AyKlfNf2LT-IdyI2LpP8BFEZFSuhTqg/exec"
 
@@ -53,7 +68,23 @@ class Dashboard {
         this.rpkwhData      = null
         this.pelangganData  = null
         this.kvaData        = null
+        this.babinService    = new BabinService(sheets)
+this.jamNyalaService = new JamNyalaService(sheets)
+this.lossesService   = new LossesService(sheets)
+this.tunggakanService= new TunggakanService(sheets)
+this.p2tlService     = new P2tlService(sheets)
 
+this.babinModule    = new BabinModule(new BabinChart())
+this.jamNyalaModule = new JamNyalaModule(new JamNyalaChart())
+this.lossesModule   = new LossesModule(new LossesChart())
+this.tunggakanModule= new TunggakanModule(new TunggakanChart())
+this.p2tlModule     = new P2tlModule(new P2tlChart())
+
+this.babinData    = null
+this.jamNyalaData = null
+this.lossesData   = null
+this.tunggakanData= null
+this.p2tlData     = null
         // State
         this.state = {
             global:     { month: "all", year: "2025" },
@@ -62,7 +93,12 @@ class Dashboard {
             golTarif:   { tahun: "2025", view: "bulanan", bulan: "11" },
             rpkwh:      { tarif: "JUMLAH", view: "bulanan", bulan: "11", tahun: "2025" },
             pelanggan:  { tarif: "JUMLAH", bulan: 11 },
-            kva:        { tarif: "JUMLAH", bulan: 11, view: "bulanan" }
+            kva:        { tarif: "JUMLAH", bulan: 11, view: "bulanan" },
+            babin:     { view: "bulanan", section: "babin" },
+            jamNyala:  { tarif: "ALL" },
+            losses:    { emin: "with" },
+            tunggakan: {},
+            p2tl:      {}
         }
 
         this.labels = labels
@@ -102,6 +138,25 @@ class Dashboard {
             this.kvaModule.render(this.kvaData, this.state.kva)
             this.kvaModule.initFilters(this.state.kva, () => this.kvaModule.render(this.kvaData, this.state.kva))
 
+            this.babinData = await this.babinService.getData()
+            this.babinModule.render(this.babinData, this.state.babin)
+            this.babinModule.initFilters(this.state.babin, () => this.babinModule.render(this.babinData, this.state.babin))
+
+            this.jamNyalaData = await this.jamNyalaService.getData()
+            this.jamNyalaModule.render(this.jamNyalaData, this.state.jamNyala)
+            this.jamNyalaModule.initFilters(this.state.jamNyala, () => this.jamNyalaModule.render(this.jamNyalaData, this.state.jamNyala))
+
+            this.lossesData = await this.lossesService.getData()
+            this.lossesModule.render(this.lossesData, this.state.losses)
+            this.lossesModule.initFilters(this.state.losses, () => this.lossesModule.render(this.lossesData, this.state.losses))
+
+            this.tunggakanData = await this.tunggakanService.getData()
+            this.tunggakanModule.render(this.tunggakanData, this.state.tunggakan)
+            this.tunggakanModule.initFilters(this.state.tunggakan, () => this.tunggakanModule.render(this.tunggakanData, this.state.tunggakan))
+
+            this.p2tlData = await this.p2tlService.getData()
+            this.p2tlModule.render(this.p2tlData, this.state.p2tl)
+            this.p2tlModule.initFilters(this.state.p2tl, () => this.p2tlModule.render(this.p2tlData, this.state.p2tl))
             this._initGlobalFilters()
             this.updateClock()
             setInterval(() => this.updateClock(), 1000)

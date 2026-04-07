@@ -45,32 +45,20 @@
 
     {{-- ===== KVA =====  --}}
     @include('partials.Kva')
-    {{-- ===== BELUM DIIMPLEMENTASI ===== --}}
+    {{-- ===== BABIN & WRKR ===== --}}
+@include('partials.Babin')
 
-    <div class="card">
-        <div class="card-title">Penambahan KVA</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Rencana vs realisasi KVA</p>
-    </div>
+{{-- ===== JAM NYALA ===== --}}
+@include('partials.JamNyala')
 
-    <div class="card">
-        <div class="card-title">Losses & EMIN</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">02.Losses + EMIN vs - EMIN</p>
-    </div>
+{{-- ===== LOSSES ===== --}}
+@include('partials.Losses')
 
-    <div class="card">
-        <div class="card-title">Kinerja Tunggakan</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Data tunggakan pelanggan</p>
-    </div>
+{{-- ===== KINERJA TUNGGAKAN ===== --}}
+@include('partials.Tunggakan')
 
-    <div class="card">
-        <div class="card-title">P2TL</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Data P2TL</p>
-    </div>
-
-    <div class="card">
-        <div class="card-title">Jam Nyala</div>
-        <p style="color:var(--text-muted); font-size:0.8rem; margin:0;">Data jam nyala</p>
-    </div>
+{{-- ===== P2TL ===== --}}
+@include('partials.P2tl')
 
 </main>
 @endsection
