@@ -2,6 +2,12 @@
 
 @section('title', 'PLN Commercial Dashboard')
 
+@push('styles')
+    {{-- Memastikan CSS chatbot dan dashboard spesifik dimuat ke layout utama --}}
+    <link rel="stylesheet" href="{{ asset('css/chatbot.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+@endpush
+
 @section('content')
 <header class="header">
     <div>
@@ -21,8 +27,8 @@
     </div>
 </header>
 
+{{-- Kontainer utama dashboard --}}
 <main class="dashboard-grid">
-
     {{-- ===== STATISTIK ===== --}}
     @include('partials.stats')
 
@@ -43,26 +49,33 @@
     {{-- ===== PELANGGAN ===== --}}
     @include('partials.Pelanggan')
 
-    {{-- ===== KVA =====  --}}
+    {{-- ===== KVA ===== --}}
     @include('partials.Kva')
+
     {{-- ===== BABIN & WRKR ===== --}}
-@include('partials.Babin')
+    @include('partials.Babin')
 
-{{-- ===== JAM NYALA ===== --}}
-@include('partials.JamNyala')
+    {{-- ===== JAM NYALA ===== --}}
+    @include('partials.JamNyala')
 
-{{-- ===== LOSSES ===== --}}
-@include('partials.Losses')
+    {{-- ===== LOSSES ===== --}}
+    @include('partials.Losses')
 
-{{-- ===== KINERJA TUNGGAKAN ===== --}}
-@include('partials.Tunggakan')
+    {{-- ===== KINERJA TUNGGAKAN ===== --}}
+    @include('partials.Tunggakan')
 
-{{-- ===== P2TL ===== --}}
-@include('partials.P2tl')
-
+    {{-- ===== P2TL ===== --}}
+    @include('partials.P2tl')
 </main>
+
+{{-- 
+    PENTING: Chatbot ditaruh di LUAR <main> agar tidak masuk ke hitungan grid.
+    Ini yang membuat dashboard kamu muncul kembali dengan benar.
+--}}
+
 @endsection
 
 @section('scripts')
+{{-- Memanggil logika dashboard utama (termasuk inisialisasi chatbot) --}}
 <script type="module" src="{{ asset('js/Dashboard/pages/dashboard.js') }}"></script>
 @endsection

@@ -3,6 +3,8 @@
 use Illuminate\Support\Facades\Route;
 use Illuminate\Support\Facades\DB;
 use App\Http\Controllers\DashboardController;
+use App\Http\Controllers\ChatbotController;
+
 
 Route::get('/', function () {
     return view('dashboard');
@@ -20,3 +22,4 @@ Route::get('/realisasi-penjualan', function () {
 Route::get('/penjualan-kwh', function () {
     return view('penjualan-kwh');
 });
+Route::post('/api/chatbot', [ChatbotController::class, 'ask']);
