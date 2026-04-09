@@ -8,15 +8,21 @@
             <option value="BPP S.D DIDTRIBUSI TR">BPP S.D DIDTRIBUSI TR</option>
         </select>
     </div>
-    <div style="display: flex; gap: 15px; flex: 1; min-height: 300px;">
-        <div class="chart-wrapper" style="flex: 2;">
+
+    <div style="display:flex; gap:15px; flex:1; min-height:300px;">
+        <div class="chart-wrapper" style="flex:2;">
             <canvas id="bppComparisonChart"></canvas>
         </div>
-        <div id="bppLegendPanel" style="flex: 1; overflow-y: auto; background: rgba(0,0,0,0.1); padding: 10px; border-radius: 8px; border-left: 1px solid #333;">
-            <div style="font-size: 0.75rem; color: #888; margin-bottom: 8px; font-weight: bold;">DETAIL ANGKA</div>
-            <table style="width: 100%; font-size: 0.8rem; color: white; border-collapse: collapse;">
-                <tbody id="bppTableBody">
-                    </tbody>
+
+        <div class="custom-scroll" style="flex:1; display:flex; flex-direction:column; gap:6px; overflow-y:auto; max-height:340px;">
+            <div style="display:flex; gap:12px; padding:8px 10px; background:#252525; border-radius:6px; font-size:0.72rem; position:sticky; top:0; z-index:1;">
+                <span style="color:#888;">Bulan</span>
+                <span style="color:var(--accent-orange); margin-left:auto;">● Konsolidasi</span>
+                <span style="color:var(--accent-green);">● Internal</span>
+                <span style="color:#aaa;">Δ Delta</span>
+            </div>
+            <table>
+                <tbody id="bppTableBody"></tbody>
             </table>
         </div>
     </div>

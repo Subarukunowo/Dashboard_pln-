@@ -5,26 +5,23 @@ export default class BppChart {
     }
 
     // Fungsi baru untuk render tabel di sebelah kanan
-    renderTable(konsolidasi, internal, labels) {
-        const tableBody = document.getElementById("bppTableBody");
-        if (!tableBody) return;
+  renderTable(konsolidasi, internal, labels) {
+    const tableBody = document.getElementById("bppTableBody");
+    if (!tableBody) return;
 
-        let html = '';
-        // Kita loop berdasarkan label yang ada (Bulan)
-        labels.forEach((label, index) => {
-            html += `
-                <tr style="border-bottom: 1px solid #222;">
-                    <td style="padding: 8px 0; color: #aaa;">${label}</td>
-                    <td style="padding: 8px 0; text-align: right;">
-                        <div style="color: #ff9800; font-weight: bold;">${konsolidasi[index].toLocaleString('id-ID')}</div>
-                        <div style="color: #00ff88; font-size: 0.75rem;">${internal[index].toLocaleString('id-ID')}</div>
-                    </td>
-                </tr>
-            `;
-        });
-        tableBody.innerHTML = html;
-    }
-
+    tableBody.innerHTML = labels.map((label, i) => {
+        const delta = konsolidasi[i] - internal[i];
+        const deltaColor = delta >= 0 ? '#f44336' : '#00ff88'; // merah = konsolidasi lebih tinggi
+        return `
+            <tr class="bpp-row">
+                <td class="bpp-bulan">${label}</td>
+                <td class="bpp-val kons">${konsolidasi[i].toLocaleString('id-ID', {minimumFractionDigits:2, maximumFractionDigits:2})}</td>
+                <td class="bpp-val intl">${internal[i] ? internal[i].toLocaleString('id-ID', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—'}</td>
+                <td class="bpp-val" style="color:${deltaColor}">${delta ? (delta > 0 ? '+' : '') + delta.toLocaleString('id-ID', {minimumFractionDigits:2, maximumFractionDigits:2}) : '—'}</td>
+            </tr>
+        `;
+    }).join("");
+}
     render(konsolidasi, internal, labels, mode = "trend") {
         const ctx = document.getElementById(this.canvasId);
         if (this.chart) { this.chart.destroy(); }

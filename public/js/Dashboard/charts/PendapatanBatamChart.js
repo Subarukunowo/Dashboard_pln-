@@ -59,4 +59,29 @@ export default class PendapatanBatamChart {
             { label: "Realisasi", data: realisasi, backgroundColor: "#00ff88" },
         ], v => "Rp " + (v / 1_000_000_000).toFixed(2) + "M");
     }
+    renderWithLabels(id, labels, { rencana, realisasi }) {
+    this.make2(id, "bar", labels, [
+        { label: "Rencana",   data: rencana,   backgroundColor: "#ff9800" },
+        { label: "Realisasi", data: realisasi, backgroundColor: "#00ff88" },
+    ], v => "Rp " + (v / 1_000_000_000).toFixed(2) + "M")
+}
+
+make2(id, type, labels, datasets, yCallback = null) {
+    const ctx = document.getElementById(id)
+    if (!ctx) return
+    this.destroy(id)
+    this.charts[id] = new Chart(ctx, {
+        type,
+        data: { labels, datasets },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: { legend: { labels: { color: "#ccc", font: { size: 11 } } } },
+            scales: {
+                y: { grid: { color: "#333" }, ticks: { color: "#888", callback: yCallback || undefined } },
+                x: { grid: { display: false }, ticks: { color: "#888" } }
+            }
+        }
+    })
+}
 }

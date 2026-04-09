@@ -10,14 +10,27 @@
                 <option value="akumulasi">Akumulasi</option>
             </select>
             <select id="filterBulanKva" style="font-size:0.7rem; padding:4px;">
-                @foreach(['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $i => $bln)
+                @foreach(['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'] as $i => $bln)
                     <option value="{{ $i }}" {{ $i == 11 ? 'selected' : '' }}>{{ $bln }}</option>
                 @endforeach
             </select>
         </div>
     </div>
-    <div class="chart-wrapper" style="height:300px;">
-        <canvas id="chartKvaBar"></canvas>
+    <div style="display:flex; gap:15px; flex:1; min-height:300px;">
+        <div class="chart-wrapper" style="flex:2; height:300px;">
+            <canvas id="chartKvaBar"></canvas>
+        </div>
+        <div class="custom-scroll" style="flex:1; display:flex; flex-direction:column; gap:6px; overflow-y:auto; max-height:300px;">
+            <div style="display:flex; gap:8px; padding:8px 10px; background:#252525; border-radius:6px; font-size:0.72rem; position:sticky; top:0; z-index:1;">
+                <span style="color:#888;">Bulan</span>
+                <span style="color:#ff9800; margin-left:auto;">Rencana</span>
+                <span style="color:var(--accent-green);">Realisasi</span>
+                <span style="color:#aaa;">Δ</span>
+            </div>
+            <table>
+                <tbody id="kvaSideTable"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -29,9 +42,23 @@
 </div>
 
 <div class="card double-column">
-    <div class="card-title">Distribusi Golongan KVA</div>
-    <div class="chart-wrapper">
-        <canvas id="chartKvaPie"></canvas>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div class="card-title">Distribusi Golongan KVA</div>
+    </div>
+    <div style="display:flex; gap:15px; flex:1; min-height:280px;">
+        <div class="chart-wrapper" style="flex:2; height:280px;">
+            <canvas id="chartKvaPie"></canvas>
+        </div>
+        <div class="custom-scroll" style="flex:1; display:flex; flex-direction:column; gap:6px; overflow-y:auto; max-height:280px;">
+            <div style="display:flex; gap:8px; padding:8px 10px; background:#252525; border-radius:6px; font-size:0.72rem; position:sticky; top:0; z-index:1;">
+                <span style="color:#888;">Golongan</span>
+                <span style="color:var(--accent-green); margin-left:auto;">Nilai</span>
+                <span style="color:#aaa;">%</span>
+            </div>
+            <table>
+                <tbody id="kvaPieTable"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 
@@ -43,9 +70,26 @@
 </div>
 
 <div class="card full-width">
-    <div class="card-title">Perbandingan KVA 2024 vs 2025</div>
-    <div class="chart-wrapper" style="height:300px;">
-        <canvas id="chartKvaPerbandingan"></canvas>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div class="card-title">Perbandingan KVA 2024 vs 2025</div>
+    </div>
+    <div style="display:flex; gap:15px; flex:1; min-height:300px;">
+        <div class="chart-wrapper" style="flex:2; height:300px;">
+            <canvas id="chartKvaPerbandingan"></canvas>
+        </div>
+        <div class="custom-scroll" style="flex:1; display:flex; flex-direction:column; gap:6px; overflow-y:auto; max-height:300px;">
+            <div style="display:flex; gap:6px; padding:8px 10px; background:#252525; border-radius:6px; font-size:0.72rem; position:sticky; top:0; z-index:1;">
+                <span style="color:#888;">Bulan</span>
+                <span style="color:#555; margin-left:auto;">T'24</span>
+                <span style="color:#2196f3;">R'24</span>
+                <span style="color:#ff9800;">T'25</span>
+                <span style="color:var(--accent-green);">R'25</span>
+                <span style="color:#aaa;">Δ</span>
+            </div>
+            <table>
+                <tbody id="kvaPerbandinganSideTable"></tbody>
+            </table>
+        </div>
     </div>
 </div>
 

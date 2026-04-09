@@ -50,5 +50,8 @@ export default class PenjualanModule {
         document.getElementById("filterTarif")?.addEventListener("change", e => {
             state.tarif = e.target.value; onChange()
         })
+        document.getElementById("filterBulanPenjualan")?.addEventListener("change", e => {
+            state.month = e.target.value; onChange()
+        })
     }
 }

@@ -20,9 +20,9 @@ export default class PelangganModule {
         ])
 
         const pieLabels = data.golongan.map(g => g.replace(/ \(.\) ?/, ''))
-        this.chart.pie("chartPelangganPie", pieLabels,
-            data.golongan.map(g => data.targetGolAkum[g][state.bulan] || 0)
-        )
+        const pieData   = data.golongan.map(g => data.targetGolAkum[g][state.bulan] || 0)
+
+        this.chart.pie("chartPelangganPie", pieLabels, pieData)
 
         this.chart.make("chartPelangganGol", "bar", pieLabels, [
             { label: "Target 2025",    data: data.golongan.map(g => data.targetGolAkum[g][state.bulan]),    backgroundColor: "#ff9800" },
@@ -30,12 +30,18 @@ export default class PelangganModule {
         ])
 
         this._populateTarif(data, state.tarif)
+        this._renderSideTable(r, rl)
+        this._renderPieTable(pieLabels, pieData)
         this._tableRkap(data)
     }
 
     initFilters(state, onChange) {
-        document.getElementById("filterTarifPelanggan")?.addEventListener("change", e => { state.tarif = e.target.value; onChange() })
-        document.getElementById("filterBulanPelanggan")?.addEventListener("change", e => { state.bulan = parseInt(e.target.value); onChange() })
+        document.getElementById("filterTarifPelanggan")?.addEventListener("change", e => {
+            state.tarif = e.target.value; onChange()
+        })
+        document.getElementById("filterBulanPelanggan")?.addEventListener("change", e => {
+            state.bulan = parseInt(e.target.value); onChange()
+        })
     }
 
     _populateTarif(data, currentTarif) {
@@ -48,6 +54,35 @@ export default class PelangganModule {
             })
             sel.value = currentTarif
         }
+    }
+
+    _renderSideTable(r, rl) {
+        const tbody = document.getElementById("pelangganSideTable")
+        if (!tbody) return
+        tbody.innerHTML = LABELS.map((bln, i) => {
+            const d     = rl[i] - r[i]
+            const color = d >= 0 ? 'var(--accent-green)' : '#f44336'
+            return `<tr>
+                <td style="color:#888; font-size:0.75rem;">${bln}</td>
+                <td style="text-align:right; color:#ff9800;">${(r[i] || 0).toLocaleString('id-ID')}</td>
+                <td style="text-align:right; color:var(--accent-green);">${(rl[i] || 0).toLocaleString('id-ID')}</td>
+                <td style="text-align:right; color:${color}; font-weight:600;">${d >= 0 ? '+' : ''}${d.toLocaleString('id-ID')}</td>
+            </tr>`
+        }).join("")
+    }
+
+    _renderPieTable(labels, data) {
+        const tbody = document.getElementById("pelangganPieTable")
+        if (!tbody) return
+        const total = data.reduce((a, b) => a + b, 0)
+        tbody.innerHTML = labels.map((lbl, i) => {
+            const pct = total ? ((data[i] / total) * 100).toFixed(1) : "0.0"
+            return `<tr>
+                <td style="color:#888; font-size:0.72rem;">${lbl}</td>
+                <td style="text-align:right; color:var(--accent-green);">${(data[i] || 0).toLocaleString('id-ID')}</td>
+                <td style="text-align:right; color:#aaa;">${pct}%</td>
+            </tr>`
+        }).join("")
     }
 
     _tableRkap(data) {

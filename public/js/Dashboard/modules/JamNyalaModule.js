@@ -7,25 +7,30 @@ export default class JamNyalaModule {
     render(data, state) {
         if (!data) return
 
+        const sliceIdx = (state.bulan && state.bulan !== "all")
+            ? parseInt(state.bulan) + 1 : 12
+        const labels = LABELS.slice(0, sliceIdx)
+
         const selected = state.tarif === "ALL"
             ? data.tarif.filter(t => t.toLowerCase().includes("jumlah"))
             : [state.tarif]
 
-        this.chart.make("chartJamNyalaLine", "line", LABELS,
+        this.chart.make("chartJamNyalaLine", "line", labels,
             selected.map((t, i) => ({
                 label: t,
-                data: data.data[t] || new Array(12).fill(0),
+                data: (data.data[t] || new Array(12).fill(0)).slice(0, sliceIdx),
                 borderColor: COLORS[i % COLORS.length],
                 tension: 0.4, fill: false, pointRadius: 3
             }))
         )
 
         const tarifBar = state.tarif === "ALL" ? (selected[0] || data.tarif[0]) : state.tarif
-        const d = data.data[tarifBar] || new Array(12).fill(0)
-        this.chart.make("chartJamNyalaBar", "bar", LABELS, [
+        const d = (data.data[tarifBar] || new Array(12).fill(0)).slice(0, sliceIdx)
+        this.chart.make("chartJamNyalaBar", "bar", labels, [
             { label: tarifBar, data: d, backgroundColor: "#00ff88" }
         ], v => v.toFixed(0) + " jam")
 
+        this._renderSideTable(labels, d)
         this._populateTarif(data, state.tarif)
     }
 
@@ -33,6 +38,18 @@ export default class JamNyalaModule {
         document.getElementById("filterTarifJamNyala")?.addEventListener("change", e => {
             state.tarif = e.target.value; onChange()
         })
+        document.getElementById("filterBulanJamNyala")?.addEventListener("change", e => {
+            state.bulan = e.target.value; onChange()
+        })
+    }
+
+    _renderSideTable(labels, d) {
+        const tbody = document.getElementById("jamNyalaSideTable")
+        if (!tbody) return
+        tbody.innerHTML = labels.map((bln, i) => `<tr>
+            <td style="color:#888; font-size:0.75rem;">${bln}</td>
+            <td style="text-align:right; color:var(--accent-green);">${(d[i] || 0).toFixed(0)} jam</td>
+        </tr>`).join("")
     }
 
     _populateTarif(data, currentTarif) {

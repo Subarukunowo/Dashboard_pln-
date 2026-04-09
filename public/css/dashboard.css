@@ -112,3 +112,33 @@ th {
 td { padding: 8px 10px; text-align: right; border-bottom: 1px solid #2a2a2a; }
 td:first-child { text-align: left; color: var(--text-muted); }
 tr:hover { background: #252525; }
+
+/* ===== CUSTOM SCROLLBAR ===== */
+.custom-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-orange) #1a1a1a;
+}
+
+.custom-scroll::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-radius: 10px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+    background: linear-gradient(180deg, var(--accent-orange), var(--accent-green));
+    border-radius: 10px;
+    border: 1px solid #1a1a1a;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #ffb74d, #69ffb0);
+}
+
+.custom-scroll::-webkit-scrollbar-corner {
+    background: #1a1a1a;
+}

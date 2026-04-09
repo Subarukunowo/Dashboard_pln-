@@ -2,7 +2,6 @@ import SheetsService from "../services/SheetsService.js"
 import BppModule from "../modules/BppModule.js"
 import PenjualanModule from "../modules/PenjualanModule.js"
 import RealisasiKWHService from "../services/RealisasiKWHService.js"
-import PenjualanKwhChart from "../charts/PenjualanKwhChart.js"
 import PendapatanBatamService from "../services/PendapatanBatamService.js"
 import PendapatanBatamChart from "../charts/PendapatanBatamChart.js"
 import GolTarifBatamService from "../services/GolTarifBatamService.js"
@@ -10,6 +9,7 @@ import GolTarifBatamChart from "../charts/GolTarifBatamChart.js"
 import RpkwhService from "../services/RpkwhService.js"
 import RpkwhChart from "../charts/RpkwhChart.js"
 import PelangganService from "../services/PelangganService.js"
+import PenjualanKwhChart from "../charts/PenjualankwhChart.js"  
 import PelangganChart from "../charts/PelangganChart.js"
 import KvaService from "../services/KvaService.js"
 import KvaChart from "../charts/KvaChart.js"
@@ -84,9 +84,9 @@ class Dashboard {
             global:     { month: "all", year: "2025" },
             bpp:        { type: "BPP PEMBANGKIT", month: "all" },
             penjualan:  { view: "bulanan", tarif: "JUMLAH", month: "all" },
-            kwh:        { view: "bulanan" },
-            pendapatan: { view: "bulanan", tarif: "JUMLAH" },
-            golTarif:   { tahun: "2025", view: "bulanan", bulan: "11" },
+            kwh:        { view: "bulanan" , bulan : "all"},
+            pendapatan: { view: "bulanan", tarif: "JUMLAH", bulan: "all" },
+            golTarif: { tahun: "2025", view: "bulanan", bulan: "11", bulanRealisasi: "all" },
             rpkwh:      { tarif: "JUMLAH", view: "bulanan", bulan: "11", tahun: "2025" },
             pelanggan:  { tarif: "JUMLAH", bulan: 11 },
             kva:        { tarif: "JUMLAH", bulan: 11, view: "bulanan" },
@@ -129,26 +129,6 @@ class Dashboard {
         console.error("Dashboard Init Error:", err);
     }
 }
-
-/**
- * Memisahkan logika Event Chatbot agar tidak mengotori fungsi init utama
- */
-_initChatbotEvents() {
-    const bubble = document.getElementById('chat-bubble');
-    const closeBtn = document.querySelector('.close-btn');
-    const sendBtn = document.getElementById('send-btn');
-    const input = document.getElementById('chat-input');
-
-    if (bubble) bubble.addEventListener('click', (e) => this.chatbot.toggle(e));
-    if (closeBtn) closeBtn.addEventListener('click', (e) => this.chatbot.toggle(e));
-    if (sendBtn) sendBtn.addEventListener('click', (e) => this.chatbot.send(e));
-    if (input) {
-        input.addEventListener('keypress', (e) => {
-            if (e.key === 'Enter') this.chatbot.send(e);
-        });
-    }
-}
-
 /**
  * Menangani update jam secara terpisah
  */
