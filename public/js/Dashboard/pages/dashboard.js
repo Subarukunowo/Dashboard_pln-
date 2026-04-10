@@ -90,11 +90,11 @@ class Dashboard {
             rpkwh:      { tarif: "JUMLAH", view: "bulanan", bulan: "11", tahun: "2025" },
             pelanggan:  { tarif: "JUMLAH", bulan: 11 },
             kva:        { tarif: "JUMLAH", bulan: 11, view: "bulanan" },
-            babin:      { view: "bulanan", section: "babin" },
-            jamNyala:   { tarif: "ALL" },
+            babin:    { view: "bulanan", section: "babin", tahun: "2025", bulan: "all" },
+            jamNyala: { tarif: "ALL", bulan: "all" },
             losses:     { emin: "with" },
             tunggakan:  {},
-            p2tl:       {}
+            p2tl:     { bulan: "all" }
         }
 
         this.labels = labels

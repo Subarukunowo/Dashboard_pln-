@@ -1,5 +1,4 @@
-{{-- JAM NYALA --}}
-<div class="card full-width">
+<div class="card col-12">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div class="card-title">Realisasi Rata-Rata Jam Nyala Pelanggan</div>
         <div style="display:flex; gap:5px;">
@@ -13,20 +12,25 @@
             </select>
         </div>
     </div>
-    <div style="display:flex; gap:15px; flex:1; min-height:300px;">
+    <div style="display:flex; gap:var(--gap); flex:1; min-height:300px;">
         <div class="chart-wrapper" style="flex:2; height:300px;">
             <canvas id="chartJamNyalaLine"></canvas>
         </div>
-        <div class="custom-scroll" style="flex:1; display:flex; flex-direction:column; gap:6px; overflow-y:auto; max-height:300px;">
-            <div style="display:flex; gap:8px; padding:8px 10px; background:#252525; border-radius:6px; font-size:0.72rem; position:sticky; top:0; z-index:1;">
+        <div class="custom-scroll" style="flex:1; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-y:auto; max-height:300px;">
+            <div style="display:flex; gap:8px; padding:8px 10px; background:#252525; border-radius:6px 6px 0 0; font-size:0.72rem; position:sticky; top:0; z-index:1;">
                 <span style="color:#888;">Bulan</span>
                 <span style="color:var(--accent-green); margin-left:auto;">Jam Nyala</span>
             </div>
-            <table><tbody id="jamNyalaSideTable"></tbody></table>
+            <table style="width:100%; border-collapse:collapse;">
+                <tbody id="jamNyalaSideTable"></tbody>
+            </table>
         </div>
     </div>
 </div>
-<div class="card full-width">
+
+<div class="card col-12">
     <div class="card-title">Jam Nyala per Bulan</div>
-    <div class="chart-wrapper" style="height:280px;"><canvas id="chartJamNyalaBar"></canvas></div>
+    <div class="chart-wrapper" style="height:280px;">
+        <canvas id="chartJamNyalaBar"></canvas>
+    </div>
 </div>

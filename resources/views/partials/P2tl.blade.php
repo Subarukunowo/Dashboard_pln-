@@ -1,5 +1,4 @@
-{{-- P2TL --}}
-<div class="card full-width">
+<div class="card col-12">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div class="card-title">P2TL — Pemeriksaan & Temuan Pelanggan</div>
         <select id="filterBulanP2tl" style="font-size:0.7rem; padding:4px;">
@@ -10,30 +9,35 @@
             <option value="9">Okt</option><option value="10">Nov</option><option value="11">Des</option>
         </select>
     </div>
-    <div style="display:flex; gap:15px; flex:1; min-height:280px;">
+    <div style="display:flex; gap:var(--gap); flex:1; min-height:280px;">
         <div class="chart-wrapper" style="flex:2; height:280px;">
             <canvas id="chartP2tlTemuan"></canvas>
         </div>
-        <div class="custom-scroll" style="flex:1; display:flex; flex-direction:column; gap:6px; overflow-y:auto; max-height:280px;">
-            <div style="display:flex; gap:6px; padding:8px 10px; background:#252525; border-radius:6px; font-size:0.72rem; position:sticky; top:0; z-index:1;">
+        <div class="custom-scroll" style="flex:1; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-y:auto; max-height:280px;">
+            <div style="display:flex; gap:6px; padding:8px 10px; background:#252525; border-radius:6px 6px 0 0; font-size:0.72rem; position:sticky; top:0; z-index:1;">
                 <span style="color:#888;">Bulan</span>
                 <span style="color:#2196f3; margin-left:auto;">Periksa</span>
                 <span style="color:#f44336;">Temuan</span>
                 <span style="color:#ff9800;">kWh</span>
             </div>
-            <table><tbody id="p2tlSideTable"></tbody></table>
+            <table style="width:100%; border-collapse:collapse;">
+                <tbody id="p2tlSideTable"></tbody>
+            </table>
         </div>
     </div>
 </div>
-<div class="card double-column">
+
+<div class="card col-6">
     <div class="card-title">Temuan kWh</div>
     <div class="chart-wrapper"><canvas id="chartP2tlKwh"></canvas></div>
 </div>
-<div class="card double-column">
+
+<div class="card col-6">
     <div class="card-title">Tagihan Susulan (Rp)</div>
     <div class="chart-wrapper"><canvas id="chartP2tlTagsus"></canvas></div>
 </div>
-<div class="card full-width">
+
+<div class="card col-12">
     <div class="card-title">Tabel P2TL</div>
     <table>
         <thead>
