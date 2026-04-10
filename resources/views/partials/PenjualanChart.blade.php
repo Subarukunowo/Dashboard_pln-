@@ -75,22 +75,24 @@
             </select>
         </div>
     </div>
-    <div style="display:flex; gap:var(--gap); flex:1; min-height:300px;">
-        <div class="chart-wrapper" style="flex:1;">
+
+    <div style="display:flex; gap:var(--gap); flex:1; min-height:300px; align-items: flex-start;">
+        <div class="chart-wrapper" style="flex:1; min-width: 0;">
             <canvas id="penjualanChart"></canvas>
         </div>
-      <div class="custom-scroll" style="flex:0 0 200px; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-y:auto; max-height:340px; overflow-x:hidden;">
-    <table style="width:100%; border-collapse:collapse; table-layout:fixed; font-size:0.8rem;">
-        <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-            <tr style="text-transform:uppercase; color:var(--text-muted);">
-                <th style="padding:8px 6px; text-align:left; width:32px;">Bln</th>
-                <th style="padding:8px 6px; text-align:right; color:var(--accent-orange); width:56px;">T</th>
-                <th style="padding:8px 6px; text-align:right; color:var(--accent-green); width:56px;">R</th>
-                <th style="padding:8px 6px; text-align:right; width:56px;">Δ</th>
-            </tr>
-        </thead>
-        <tbody id="penjualanTableBody"></tbody>
-    </table>
-</div>
+
+        <div class="custom-scroll" style="flex:0 0 320px; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-y:auto; max-height:340px;">
+            <table style="width:100%; border-collapse:collapse; table-layout: fixed;">
+                <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                    <tr style="font-size:0.65rem; text-transform:uppercase; color:var(--text-muted);">
+                        <th style="padding:10px 5px; text-align:left; width:15%;">Bln</th>
+                        <th style="padding:10px 5px; text-align:right; color:var(--accent-orange); width:30%;">T</th>
+                        <th style="padding:10px 5px; text-align:right; color:var(--accent-green); width:30%;">R</th>
+                        <th style="padding:10px 5px; text-align:right; width:25%;">Δ Delta</th>
+                    </tr>
+                </thead>
+                <tbody id="penjualanTableBody" style="font-size: 0.75rem;"></tbody>
+            </table>
+        </div>
     </div>
 </div>

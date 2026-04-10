@@ -22,15 +22,15 @@
     </div>
 </div>
 
-<div class="card col-8">
+<div class="card col-12">
     <div class="card-title">Delta RPKWH (Rp/kWh)</div>
-    <div class="chart-wrapper">
+    <div class="chart-wrapper" style="height:280px;">
         <canvas id="chartDeltaRpkwh"></canvas>
     </div>
 </div>
 
 {{-- SECTION 2: PIE GOLONGAN --}}
-<div class="card col-4">
+<div class="card col-6">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div class="card-title" id="judulPieRpkwh">RPKWH Per Golongan</div>
         <div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end;">
@@ -50,11 +50,11 @@
             </select>
         </div>
     </div>
-    <div style="display:flex; gap:var(--gap); flex:1; min-height:300px;">
-        <div class="chart-wrapper" style="flex:1.5; height:300px;">
+    <div style="display:flex; gap:var(--gap); flex:1; min-height:320px;">
+        <div class="chart-wrapper" style="flex:1; height:320px;">
             <canvas id="chartPieRpkwh"></canvas>
         </div>
-        <div class="custom-scroll" style="flex:1; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-y:auto; max-height:300px;">
+        <div class="custom-scroll" style="flex:1; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-y:auto; max-height:320px;">
             <div style="display:flex; gap:8px; padding:8px 10px; background:#252525; border-radius:6px 6px 0 0; font-size:0.72rem; position:sticky; top:0; z-index:1;">
                 <span style="color:#888;">Gol</span>
                 <span style="color:var(--accent-green); margin-left:auto;">Nilai</span>
@@ -68,16 +68,16 @@
 </div>
 
 {{-- SECTION 3: GROWTH --}}
-<div class="card col-8">
+<div class="card col-6">
     <div class="card-title">Realisasi Growth RPKWH Per Golongan (%)</div>
-    <div class="chart-wrapper" style="height:300px;">
+    <div class="chart-wrapper" style="height:320px;">
         <canvas id="chartGrowthRpkwh"></canvas>
     </div>
 </div>
 
-<div class="card col-4">
+<div class="card col-12">
     <div class="card-title">Tabel Growth RPKWH (%)</div>
-    <div class="custom-scroll" style="overflow-x:auto; overflow-y:auto; max-height:300px; border:1px solid #333; border-radius:8px;">
+    <div class="custom-scroll" style="overflow-x:auto; border:1px solid #333; border-radius:8px;">
         <table style="width:100%; border-collapse:collapse; white-space:nowrap;">
             <thead>
                 <tr>
@@ -134,14 +134,14 @@
 
 <div class="card col-6">
     <div class="card-title">Delta Analisa RPKWH (Rp/kWh)</div>
-    <div class="chart-wrapper">
+    <div class="chart-wrapper" style="height:280px;">
         <canvas id="chartAnalisaDelta"></canvas>
     </div>
 </div>
 
 <div class="card col-6">
     <div class="card-title">% Realisasi RPKWH</div>
-    <div class="chart-wrapper">
+    <div class="chart-wrapper" style="height:280px;">
         <canvas id="chartPersenRpkwh"></canvas>
     </div>
 </div>

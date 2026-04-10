@@ -105,7 +105,10 @@ select {
     letter-spacing: 1px;
     flex-shrink: 0;
 }
-
+canvas {
+    display: block;
+    image-rendering: crisp-edges;
+}
 /* STATS */
 .stat-value  { font-size: 2.5rem; font-weight: 800; color: var(--accent-orange); }
 .stat-change { font-size: 1.5rem; font-weight: 700; color: var(--accent-green); }
