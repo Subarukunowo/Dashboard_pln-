@@ -90,27 +90,26 @@ class AuthController extends Controller
         );
     }
 
-    private function getDeviceName(Request $request): string
-    {
-        $ua = $request->userAgent();
+   private function getDeviceName(Request $request): string
+{
+    $agent = new \hisorange\BrowserDetect\Parser();
+    $agent->setHttpHeaders($request->headers->all());
+    $agent->setUserAgent($request->userAgent());
 
-        $os = match(true) {
-            str_contains($ua, 'Windows')   => 'Windows',
-            str_contains($ua, 'Macintosh') => 'Mac',
-            str_contains($ua, 'Linux')     => 'Linux',
-            str_contains($ua, 'Android')   => 'Android',
-            str_contains($ua, 'iPhone')    => 'iPhone',
-            default                         => 'Unknown OS'
-        };
+    $browser  = $agent->browserName() ?: 'Unknown Browser';
+    $os       = $agent->osPlatform() ?: 'Unknown OS';
+    $device   = $agent->deviceModel() ?: null;
+    $isMobile = $agent->isMobile();
 
-        $browser = match(true) {
-            str_contains($ua, 'Edg')     => 'Edge',
-            str_contains($ua, 'Chrome')  => 'Chrome',
-            str_contains($ua, 'Firefox') => 'Firefox',
-            str_contains($ua, 'Safari')  => 'Safari',
-            default                       => 'Unknown Browser'
-        };
-
-        return "$browser on $os";
+    if ($device && $device !== 'unknown') {
+        return "$device — $browser";
     }
+
+    if ($isMobile) {
+        $family = $agent->deviceFamily() ?: 'Mobile';
+        return "$family — $browser";
+    }
+
+    return "$browser on $os";
+}
 }
