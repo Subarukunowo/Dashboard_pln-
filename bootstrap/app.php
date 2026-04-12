@@ -14,6 +14,7 @@ return Application::configure(basePath: dirname(__DIR__))
     
     $middleware->alias([
         '2fa' => \App\Http\Middleware\TwoFactor::class,
+        'admin' => \App\Http\Middleware\AdminOnly::class,
     ]);
 })
     ->withExceptions(function (Exceptions $exceptions): void {

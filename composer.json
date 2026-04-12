@@ -9,10 +9,12 @@
         "php": "^8.2",
         "doctrine/dbal": "^4.4",
         "hisorange/browser-detect": "^5.0",
+        "jeroennoten/laravel-adminlte": "^3.15",
         "laravel/framework": "^12.0",
         "laravel/socialite": "^5.26",
         "laravel/tinker": "^2.10.1",
-        "pragmarx/google2fa-laravel": "^3.0"
+        "pragmarx/google2fa-laravel": "^3.0",
+        "spatie/laravel-permission": "^6.25"
     },
     "require-dev": {
         "fakerphp/faker": "^1.23",

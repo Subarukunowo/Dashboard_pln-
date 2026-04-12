@@ -12,7 +12,21 @@ class TwoFactor
     {
         $user = Auth::user();
 
-        if ($user && $user->two_factor_enabled && !session('2fa_verified')) {
+        if (!$user) return $next($request);
+
+        // Belum setup 2FA — paksa setup dulu
+        if (!$user->two_factor_enabled) {
+            if ($request->routeIs('2fa.*') || $request->routeIs('logout')) {
+                return $next($request);
+            }
+            return redirect()->route('2fa.setup');
+        }
+
+        // Sudah setup tapi belum verify di session ini
+        if (!session('2fa_verified')) {
+            if ($request->routeIs('2fa.*') || $request->routeIs('logout')) {
+                return $next($request);
+            }
             return redirect()->route('2fa.verify');
         }
 

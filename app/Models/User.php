@@ -7,21 +7,21 @@ use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use Spatie\Permission\Traits\HasRoles;
 
 class User extends Authenticatable
 {
     /** @use HasFactory<UserFactory> */
     use HasFactory, Notifiable;
-
+    use HasRoles;
     /**
      * The attributes that are mass assignable.
      *
      * @var list<string>
      */
     protected $fillable = [
-        'name',
-        'email',
-        'password',
+      'name', 'email', 'password', 'google_id', 'avatar',
+        'two_factor_secret', 'two_factor_enabled', 'is_active'
     ];
 
     /**
@@ -46,4 +46,6 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+       public function devices()      { return $this->hasMany(UserDevice::class); }
+    public function activityLogs() { return $this->hasMany(ActivityLog::class); }
 }
