@@ -11,11 +11,10 @@ class RoleSeeder extends Seeder
 {
     public function run()
     {
-        // Gunakan firstOrCreate agar tidak error jika role sudah ada
+        // 1. Setup Role & Permission (Hmph, ini sudah benar)
         $admin = Role::firstOrCreate(['name' => 'admin', 'guard_name' => 'web']);
-        $user  = Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
+        $userRole = Role::firstOrCreate(['name' => 'user', 'guard_name' => 'web']);
 
-        // Begitu juga dengan permission
         $permissions = [
             'approve devices',
             'manage users',
@@ -26,15 +25,27 @@ class RoleSeeder extends Seeder
             Permission::firstOrCreate(['name' => $permission, 'guard_name' => 'web']);
         }
 
-        // Sinkronisasi permission ke admin
         $admin->syncPermissions($permissions);
 
-        // Cari user berdasarkan email kamu (Sandy)
-        // Pastikan email ini sesuai dengan yang ada di database atau profil Google kamu
-        $firstAdmin = User::where('email', 'sandy.mulia.k@gmail.com')->first(); 
+        // 2. Tentukan Email Target (Gunakan yang ada di database kamu!)
+        $email = 'sandymuliakesuma@gmail.com'; 
+
+        // 3. Cari user, kalau tidak ada kita buatkan sekalian
+        $sandy = User::where('email', $email)->first();
         
-        if ($firstAdmin) {
-            $firstAdmin->assignRole($admin);
+        if ($sandy) {
+            $sandy->assignRole($admin);
+            $this->command->info("Hmph, Role admin sudah diberikan ke: $email");
+        } else {
+            // Kalau usernya belum ada di DB, kita buatkan biar kamu bisa langsung login Google
+            $newUser = User::create([
+                'name' => 'Sandy Mulia Kesuma',
+                'email' => $email,
+                'password' => bcrypt('password123'), // Ini formalitas saja karena kamu pakai Google
+                'is_active' => 1,
+            ]);
+            $newUser->assignRole($admin);
+            $this->command->warn("User baru dibuat dan dijadikan admin: $email");
         }
     }
 }

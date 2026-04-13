@@ -14,16 +14,16 @@ class DeviceController extends Controller
     /**
      * Tampilan daftar perangkat untuk User (Personal)
      */
-    public function index(Request $request)
+  public function index(Request $request)
     {
         $devices = UserDevice::where('user_id', Auth::id())
             ->orderBy('last_seen_at', 'desc')
             ->get();
 
+        // HARUS SAMA DENGAN AuthController!
         $currentToken = hash('sha256', 
             $request->userAgent() . 
-            $request->header('Accept-Language') . 
-            $request->header('Accept-Encoding')
+            $request->header('Accept-Language')
         );
 
         return view('devices.index', compact('devices', 'currentToken'));

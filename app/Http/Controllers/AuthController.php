@@ -25,69 +25,67 @@ class AuthController extends Controller
      * Handle Callback dari Google
      */
 public function handleGoogleCallback(Request $request)
-{
-    try {
-        $googleUser = Socialite::driver('google')->stateless()->user();
+    {
+        try {
+            $googleUser = Socialite::driver('google')->stateless()->user();
 
-        $user = User::updateOrCreate(
-            ['google_id' => $googleUser->getId()],
-            [
-                'name'   => $googleUser->getName(),
-                'email'  => $googleUser->getEmail(),
-                'avatar' => $googleUser->avatar_original ?? $googleUser->getAvatar(),
-            ]
-        );
+            $user = User::updateOrCreate(
+                ['google_id' => $googleUser->getId()],
+                [
+                    'name'   => $googleUser->getName(),
+                    'email'  => $googleUser->getEmail(),
+                    'avatar' => $googleUser->avatar_original ?? $googleUser->getAvatar(),
+                ]
+            );
 
-        if (!$user->is_active) {
-            return $this->abortLogin('Akun Anda dinonaktifkan oleh admin.');
-        }
+            if (!$user->is_active) {
+                return $this->abortLogin('Akun Anda dinonaktifkan oleh admin.');
+            }
 
-        Auth::login($user, true);
+            Auth::login($user, true);
 
-        // 1. CEK DEVICE DULU
-        $token      = $this->getDeviceToken($request);
-        $deviceName = $this->getDeviceName($request);
-        $existing   = UserDevice::where('user_id', $user->id)->get();
-        $known      = $existing->firstWhere('device_token', $token);
-
-        if ($known) {
-            if ($known->status === 'approved') {
-                $known->update([
-                    'ip_address'   => $request->ip(),
-                    'last_seen_at' => now(),
-                ]);
-                ActivityLogger::log('login', 'User login via Google', ['email' => $user->email], $request);
-                // 2. BARU CEK 2FA
+            // BUG FIX 1: Admin Bypass Device Check
+            if ($user->hasRole('admin')) {
+                ActivityLogger::log('login', 'Admin login via Google', ['email' => $user->email], $request);
                 return $this->redirectAfterLogin($user);
             }
 
-            $message = $known->status === 'rejected'
-                ? "Perangkat ditolak: " . ($known->reject_reason ?? 'Akses tidak diizinkan.')
-                : "Perangkat ini masih menunggu persetujuan admin.";
+            // 1. CEK DEVICE
+            $token      = $this->getDeviceToken($request);
+            $deviceName = $this->getDeviceName($request);
+            $existing   = UserDevice::where('user_id', $user->id)->get();
+            $known      = $existing->firstWhere('device_token', $token);
 
-            return $this->abortLogin($message, $known->status === 'pending' ? 'pending' : 'error');
+            if ($known) {
+                if ($known->status === 'approved') {
+                    $known->update([
+                        'ip_address'   => $request->ip(),
+                        'last_seen_at' => now(),
+                    ]);
+                    ActivityLogger::log('login', 'User login via Google', ['email' => $user->email], $request);
+                    return $this->redirectAfterLogin($user);
+                }
+
+                $message = $known->status === 'rejected'
+                    ? "Perangkat ditolak: " . ($known->reject_reason ?? 'Akses tidak diizinkan.')
+                    : "Perangkat ini masih menunggu persetujuan admin.";
+
+                return $this->abortLogin($message, $known->status === 'pending' ? 'pending' : 'error');
+            }
+
+            // 3. DEVICE BARU
+            return $this->handleNewDevice($request, $user, $existing, $token, $deviceName);
+
+        } catch (\Exception $e) {
+            Log::error('Google Auth Error', [
+                'message' => $e->getMessage(),
+                'line'    => $e->getLine(),
+            ]);
+            
+            // BUG FIX 3: Ganti dd() dengan redirect
+            return redirect()->route('login')->with('error', 'Terjadi kesalahan sistem saat login.');
         }
-
-        // 3. DEVICE BARU
-        return $this->handleNewDevice($request, $user, $existing, $token, $deviceName);
-
-  } catch (\Exception $e) {
-    Log::error('Google Auth Error', [
-        'message' => $e->getMessage(),
-        'class'   => get_class($e),
-        'file'    => $e->getFile(),
-        'line'    => $e->getLine(),
-    ]);
-    
-    // Tampilkan langsung di browser untuk debug
-    dd([
-        'message' => $e->getMessage(),
-        'class'   => get_class($e),
-        'file'    => $e->getFile(),
-        'line'    => $e->getLine(),
-    ]);
-}
-}
+    }
     /**
      * Logic untuk perangkat yang sudah pernah terdaftar
      */
@@ -197,15 +195,13 @@ public function handleGoogleCallback(Request $request)
         return redirect()->route('login');
     }
 
-    private function getDeviceToken(Request $request): string
-{
-    // Menggunakan 3 parameter agar fingerprint lebih unik & konsisten
-    return hash('sha256', 
-        $request->userAgent() . 
-        $request->header('Accept-Language') . 
-        $request->header('Accept-Encoding')
-    );
-}
+private function getDeviceToken(Request $request): string
+    {
+        return hash('sha256', 
+            $request->userAgent() . 
+            $request->header('Accept-Language')
+        );
+    }
 
  private function getDeviceName(Request $request): string
 {
