@@ -17,9 +17,27 @@
 </head>
 <body>
 
-<nav class="navbar">
-    <a href="/dashboard" class="nav-link {{ request()->is('dashboard') ? 'active' : '' }}">Overview</a>
-    <a href="/realisasi-penjualan" class="nav-link {{ request()->is('realisasi-penjualan') ? 'active' : '' }}">Realisasi Penjualan</a>
+<nav class="navbar" style="justify-content: flex-end;">
+    <div class="nav-right">
+        <div class="profile-dropdown">
+            <button class="profile-btn">
+                <img src="{{ auth()->user()->avatar ?? '/img/default-avatar.png' }}" alt="Profile" class="nav-avatar">
+                <span class="nav-username">{{ auth()->user()->name }}</span>
+                <i class="fas fa-caret-down"></i>
+            </button>
+            <div class="dropdown-content">
+                <a href="/profile"><i class="fas fa-user-circle"></i> Profile</a>
+                <a href="javascript:void(0)" onclick="openSettings()"><i class="fas fa-cog"></i> Settings</a>
+                <hr class="dropdown-divider">
+                <form action="{{ route('logout') }}" method="POST">
+                    @csrf
+                    <button type="submit" class="logout-item">
+                        <i class="fas fa-sign-out-alt"></i> Logout
+                    </button>
+                </form>
+            </div>
+        </div>
+    </div>
 </nav>
 
 <div class="container">
@@ -32,6 +50,38 @@
 {{-- Tempat script --}}
 @yield('scripts')
 @stack('scripts')
+<script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+<script>
+    const Toast = Swal.mixin({
+        toast: true,
+        position: 'top-end',
+        showConfirmButton: false,
+        timer: 3000,
+        timerProgressBar: true,
+    });
 
+    @if(session('success'))
+        Toast.fire({ icon: 'success', title: '{{ session('success') }}' });
+    @endif
+
+    @if(session('error'))
+        Toast.fire({ icon: 'error', title: '{{ session('error') }}' });
+    @endif
+
+    @if(session('pending'))
+        Swal.fire({
+            icon: 'info',
+            title: 'Menunggu Persetujuan',
+            text: '{{ session('pending') }}',
+            confirmButtonColor: '#ff9800',
+            confirmButtonText: 'OK'
+        });
+    @endif
+
+    @if(session('warning'))
+        Toast.fire({ icon: 'warning', title: '{{ session('warning') }}' });
+    @endif
+</script>   
 </body>
+
 </html>

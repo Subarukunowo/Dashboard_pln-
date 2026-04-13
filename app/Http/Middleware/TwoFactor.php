@@ -8,28 +8,25 @@ use Illuminate\Support\Facades\Auth;
 
 class TwoFactor
 {
-    public function handle(Request $request, Closure $next)
-    {
-        $user = Auth::user();
+   public function handle(Request $request, Closure $next)
+{
+    $user = Auth::user();
 
-        if (!$user) return $next($request);
+    if (!$user) return $next($request);
 
-        // Belum setup 2FA — paksa setup dulu
-        if (!$user->two_factor_enabled) {
-            if ($request->routeIs('2fa.*') || $request->routeIs('logout')) {
-                return $next($request);
-            }
-            return redirect()->route('2fa.setup');
-        }
-
-        // Sudah setup tapi belum verify di session ini
-        if (!session('2fa_verified')) {
-            if ($request->routeIs('2fa.*') || $request->routeIs('logout')) {
-                return $next($request);
-            }
-            return redirect()->route('2fa.verify');
-        }
-
+    if ($request->routeIs('2fa.*') || $request->routeIs('logout')) {
         return $next($request);
     }
+
+    if (!$user->two_factor_enabled) {
+        return redirect()->route('2fa.setup');
+    }
+
+    // Gunakan === true agar false dan null keduanya diblokir
+    if (session('2fa_verified') !== true) {
+        return redirect()->route('2fa.verify');
+    }
+
+    return $next($request);
+}
 }

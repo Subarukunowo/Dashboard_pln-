@@ -7,6 +7,7 @@
 @stop
 
 @section('content')
+{{-- 1. Widget Row (Statistik) --}}
 <div class="row">
     <div class="col-lg-3 col-6">
         <div class="small-box bg-info">
@@ -38,6 +39,7 @@
     </div>
 </div>
 
+{{-- 2. Aktivitas Terbaru Table --}}
 <div class="card">
     <div class="card-header"><h3 class="card-title">Aktivitas Terbaru</h3></div>
     <div class="card-body p-0">
@@ -59,4 +61,8 @@
         </table>
     </div>
 </div>
+@stop
+
+@section('js')
+    @include('admin.partials.alerts')
 @stop

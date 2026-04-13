@@ -3,16 +3,20 @@
 @section('title', 'PLN Commercial Dashboard')
 
 @push('styles')
-    {{-- Memastikan CSS chatbot dan dashboard spesifik dimuat ke layout utama --}}
     <link rel="stylesheet" href="{{ asset('css/chatbot.css') }}">
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/sidebar.css') }}">
 @endpush
 
 @section('content')
-<header class="header">
-    <div>
-        <h2>PLN COMMERCIAL DASHBOARD</h2>
-        <div id="clock" style="color:var(--text-muted); font-size:0.9rem;"></div>
+
+<header class="dash-header">
+    <div style="display:flex; align-items:center; gap:12px;">
+        <button class="sidebar-toggle" id="sidebarToggle">☰</button>
+        <div>
+            <div style="font-size:0.95rem; font-weight:700; color:#fff; letter-spacing:0.5px;">PLN COMMERCIAL DASHBOARD</div>
+            <div id="clock" style="color:var(--text-muted); font-size:0.72rem;"></div>
+        </div>
     </div>
     <div class="filters">
         <select id="filterYear">
@@ -20,62 +24,81 @@
         </select>
         <select id="filterMonth">
             <option value="all">Januari - Desember</option>
-            @foreach(['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'] as $index => $month)
+            @foreach(['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $index => $month)
                 <option value="{{ $index }}">{{ $month }}</option>
             @endforeach
         </select>
     </div>
 </header>
 
-{{-- Kontainer utama dashboard --}}
-<main class="dashboard-grid">
-    {{-- ===== STATISTIK ===== --}}
-    @include('partials.stats')
+<div class="dashboard-layout">
 
-    {{-- ===== BIAYA POKOK PRODUKSI (BPP) ===== --}}
-    @include('partials.BppChart')
+    @include('partials.sidebar')
 
-    {{-- ===== KINERJA PENJUALAN ===== --}}
-    @include('partials.PenjualanChart')
-    @include('partials.PenjualanKwh')
+    <div class="dash-content">
+        <div class="dashboard-grid">
 
-    {{-- ===== PENDAPATAN PLN BATAM ===== --}}
-    @include('partials.GolTarifBatam')
-    @include('partials.PendapatanBatam')
+            @include('partials.stats')
 
-    {{-- ===== RPKWH ===== --}}
-    @include('partials.Rpkwh')
+            <div class="dash-section active" data-section-content="bpp">
+                @include('partials.BppChart')
+            </div>
 
-    {{-- ===== PELANGGAN ===== --}}
-    @include('partials.Pelanggan')
+            <div class="dash-section active" data-section-content="penjualan">
+                @include('partials.PenjualanChart')
+            </div>
 
-    {{-- ===== KVA ===== --}}
-    @include('partials.Kva')
+            <div class="dash-section active" data-section-content="kwh">
+                @include('partials.PenjualanKwh')
+            </div>
 
-    {{-- ===== BABIN & WRKR ===== --}}
-    @include('partials.Babin')
+            <div class="dash-section active" data-section-content="goltarif">
+                @include('partials.GolTarifBatam')
+            </div>
 
-    {{-- ===== JAM NYALA ===== --}}
-    @include('partials.JamNyala')
+            <div class="dash-section active" data-section-content="pendapatan">
+                @include('partials.PendapatanBatam')
+            </div>
 
-    {{-- ===== LOSSES ===== --}}
-    @include('partials.Losses')
+            <div class="dash-section active" data-section-content="rpkwh">
+                @include('partials.Rpkwh')
+            </div>
 
-    {{-- ===== KINERJA TUNGGAKAN ===== --}}
-    @include('partials.Tunggakan')
+            <div class="dash-section active" data-section-content="pelanggan">
+                @include('partials.Pelanggan')
+            </div>
 
-    {{-- ===== P2TL ===== --}}
-    @include('partials.P2tl')
-</main>
+            <div class="dash-section active" data-section-content="kva">
+                @include('partials.Kva')
+            </div>
 
-{{-- 
-    PENTING: Chatbot ditaruh di LUAR <main> agar tidak masuk ke hitungan grid.
-    Ini yang membuat dashboard kamu muncul kembali dengan benar.
---}}
+            <div class="dash-section active" data-section-content="babin">
+                @include('partials.Babin')
+            </div>
+
+            <div class="dash-section active" data-section-content="jamnyala">
+                @include('partials.JamNyala')
+            </div>
+
+            <div class="dash-section active" data-section-content="losses">
+                @include('partials.Losses')
+            </div>
+
+            <div class="dash-section active" data-section-content="tunggakan">
+                @include('partials.Tunggakan')
+            </div>
+
+            <div class="dash-section active" data-section-content="p2tl">
+                @include('partials.P2tl')
+            </div>
+
+        </div>
+    </div>
+</div>
 
 @endsection
 
 @section('scripts')
-{{-- Memanggil logika dashboard utama (termasuk inisialisasi chatbot) --}}
-<script type="module" src="{{ asset('js/Dashboard/pages/dashboard.js') }}"></script>
+    <script type="module" src="{{ asset('js/Dashboard/pages/dashboard.js') }}"></script>
+    <script src="{{ asset('js/sidebar.js') }}"></script>
 @endsection

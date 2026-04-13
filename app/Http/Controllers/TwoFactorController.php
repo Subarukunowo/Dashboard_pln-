@@ -65,24 +65,25 @@ class TwoFactorController extends Controller
         return view('auth.two-factor-verify');
     }
 
-    public function check(Request $request)
-    {
-        $request->validate(['otp' => 'required|digits:6']);
+  public function check(Request $request)
+{
+    $request->validate(['otp' => 'required|digits:6']);
 
-        $user      = Auth::user();
-        $google2fa = new Google2FA();
+    $user = Auth::user();
+    $google2fa = new Google2FA();
 
-        if (!$google2fa->verifyKey($user->two_factor_secret, $request->otp)) {
-            return back()->withErrors(['otp' => 'Kode OTP salah atau sudah kedaluwarsa.']);
-        }
+    $valid = $google2fa->verifyKey($user->two_factor_secret, $request->otp);
 
-        session(['2fa_verified' => true]);
-
-        ActivityLogger::log('2fa_verified', 'User berhasil verifikasi 2FA', null, $request);
-
-        $route = $user->hasRole('admin') ? 'admin.dashboard' : 'dashboard';
-        return redirect()->intended(route($route));
+    if (!$valid) {
+        return back()->withErrors(['otp' => 'Kode OTP salah atau sudah kedaluwarsa.']);
     }
+
+    // Set true secara eksplisit
+    session(['2fa_verified' => true]);
+
+    $redirectTo = $user->hasRole('admin') ? 'admin.dashboard' : 'dashboard';
+    return redirect()->route($redirectTo);
+}
 
     public function disable(Request $request)
     {
