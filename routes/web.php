@@ -6,6 +6,7 @@ use App\Http\Controllers\ChatbotController;
 use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\Admin\AdminController;
+use App\Http\Controllers\DeviceController;
 
 // ===== PUBLIC API =====
 Route::get('/api/dashboard/bpp', [DashboardController::class, 'bpp']);
@@ -56,6 +57,7 @@ Route::middleware(['auth', '2fa'])->group(function () {
     Route::get('/dashboard',           fn() => view('dashboard'))->name('dashboard');
     Route::get('/realisasi-penjualan', fn() => view('realisasi-penjualan'));
     Route::get('/penjualan-kwh',       fn() => view('penjualan-kwh'));
+    Route::patch('/admin/devices/{id}/approve', [DeviceController::class, 'approve'])->name('devices.approve');
 });
 
 // ===== AUTH + 2FA + ADMIN — Admin Panel =====
