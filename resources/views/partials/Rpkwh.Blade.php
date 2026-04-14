@@ -99,11 +99,19 @@
     </div>
 </div>
 
-<div class="card col-4">
-    <div class="card-title">Tabel BPP HJR RPKWH (Rp/kWh)</div>
+{{-- SECTION 4: BPP vs HJR --}}
+<div class="card col-12">
+    <div class="card-title">Tabel Detail HJR vs BPP (Tahunan)</div>
     <div class="custom-scroll" style="overflow-x:auto; overflow-y:auto; max-height:300px; border:1px solid #333; border-radius:8px;">
         <table style="width:100%; border-collapse:collapse; white-space:nowrap;">
-            <thead id="theadBppHjr"></thead>
+            <thead>
+                <tr style="background:#222; text-align:left;">
+                    <th style="padding:10px; border-bottom:1px solid #444;">BULAN</th>
+                    <th style="padding:10px; border-bottom:1px solid #444; color:#36a2eb;">HJR (Rp/kWh)</th>
+                    <th style="padding:10px; border-bottom:1px solid #444; color:#ff9f40;">BPP (Rp/kWh)</th>
+                    <th style="padding:10px; border-bottom:1px solid #444;">SELISIH</th>
+                </tr>
+            </thead>
             <tbody id="tabelBppHjr"></tbody>
         </table>
     </div>

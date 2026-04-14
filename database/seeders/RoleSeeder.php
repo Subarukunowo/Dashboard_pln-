@@ -35,7 +35,7 @@ class RoleSeeder extends Seeder
         
         if ($sandy) {
             $sandy->assignRole($admin);
-            $this->command->info("Hmph, Role admin sudah diberikan ke: $email");
+            $this->command->info("Role admin sudah diberikan ke: $email");
         } else {
             // Kalau usernya belum ada di DB, kita buatkan biar kamu bisa langsung login Google
             $newUser = User::create([

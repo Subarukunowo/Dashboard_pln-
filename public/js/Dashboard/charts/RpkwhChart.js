@@ -18,11 +18,71 @@ export default class RpkwhChart {
                 plugins: { legend: { labels: { color: "#ccc", font: { size: 11 } } } },
                 scales: {
                     y: { grid: { color: "#333" }, ticks: { color: "#888", callback: yFmt || undefined } },
-                    x: { grid: { display: false }, ticks: { color: "#888" } }
+                    x: { grid: { display: false }, ticks: { color: "#888", font: { size: 9 }, maxRotation: 45 } }
                 }
             }
         })
     }
+
+    // Chart BPP vs HJR — X axis = tarif, grouped bar per bulan yang dipilih
+// Ganti method bppVsHjr lama dengan yang ini
+bppVsHjr(id, bppSeries, hjrSeries, labelsBulan) {
+    const ctx = document.getElementById(id);
+    if (!ctx) return;
+    this.destroy(id);
+
+    // Guard: Pastikan data berupa array dan tidak kosong
+    if (!bppSeries || !hjrSeries || bppSeries.length === 0) {
+        console.warn("bppVsHjr: Data series kosong");
+        return;
+    }
+
+    this.charts[id] = new Chart(ctx, {
+        type: 'bar',
+        data: {
+            labels: labelsBulan, // ['Jan', 'Feb', 'Mar', ..., 'Des']
+            datasets: [
+                { 
+                    label: 'HJR (Rp/kWh)', 
+                    data: hjrSeries, 
+                    backgroundColor: '#2196f3', 
+                    borderRadius: 2 
+                },
+                { 
+                    label: 'BPP (Rp/kWh)', 
+                    data: bppSeries, 
+                    backgroundColor: '#ff9800', 
+                    borderRadius: 2 
+                }
+            ]
+        },
+        options: {
+            responsive: true,
+            maintainAspectRatio: false,
+            plugins: {
+                legend: { labels: { color: "#ccc", font: { size: 11 } } },
+                tooltip: {
+                    callbacks: {
+                        label: ctx => `${ctx.dataset.label}: ${ctx.raw.toFixed(0)} Rp/kWh`
+                    }
+                }
+            },
+            scales: {
+                y: {
+                    grid: { color: "#333" },
+                    ticks: { 
+                        color: "#888", 
+                        callback: v => v.toLocaleString() + " Rp/kWh" 
+                    }
+                },
+                x: {
+                    grid: { display: false },
+                    ticks: { color: "#888", font: { size: 10 } }
+                }
+            }
+        }
+    });
+}
 
     pie(id, labels, data) {
         const COLORS = ["#ff9800","#00ff88","#2196f3","#e91e63","#9c27b0","#00bcd4"]

@@ -94,37 +94,58 @@ export default class RpkwhModule {
         }
     }
 
-    _renderBppHjr(data, state) {
-        const tarifBpp = Object.keys(data.bppHjrData)
+ _renderBppHjr(data, state) {
+    const bppData = data.bppData || {};
+    const hjrData = data.hjrData || {};
+    const listTarif = Object.keys(hjrData);
 
-        this.chart.make("chartBppHjr", "line", LABELS,
-            tarifBpp.map((t, i) => ({
-                label: t, data: data.bppHjrData[t],
-                borderColor: COLORS[i % COLORS.length], tension: 0.4, fill: false, pointRadius: 3
-            })),
-            v => v.toFixed(0) + " Rp/kWh"
-        )
-
-        // tabel bppHjr
-        const tbody = document.getElementById("tabelBppHjr")
-        if (tbody) {
-            tbody.innerHTML = LABELS.map((bln, i) => `<tr>
-                <td>${bln}</td>
-                ${tarifBpp.map(t => `<td>${(data.bppHjrData[t][i] || 0).toFixed(0)}</td>`).join("")}
-            </tr>`).join("")
-
-            // update thead dinamis
-            const thead = document.getElementById("theadBppHjr")
-            if (thead) {
-                thead.innerHTML = `<tr>
-                    <th>Bulan</th>
-                    ${tarifBpp.map(t => `<th style="font-size:0.65rem;">${t}</th>`).join("")}
-                </tr>`
-            }
+    // 1. Pastikan selectedTarif ada nilainya
+    if (!state.selectedTarif && listTarif.length > 0) {
+        state.selectedTarif = listTarif[0];
+        // Isi dropdown filter secara otomatis jika belum ada
+        const filter = document.getElementById("filterTarifRpkwh");
+        if (filter && filter.options.length === 0) {
+            filter.innerHTML = listTarif.map(t => `<option value="${t}">${t}</option>`).join("");
         }
     }
 
-    _renderAnalisa(data, state) {
+    const selectedTarif = state.selectedTarif;
+
+    // 2. RENDER CHART (Sumbu X: Bulan, Sumbu Y: kWh)
+    if (selectedTarif && this.chart.bppVsHjr) {
+        const hjrSeries = hjrData[selectedTarif] || new Array(12).fill(0);
+        const bppSeries = bppData[selectedTarif] || new Array(12).fill(0);
+        const labelsBulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+
+        // Panggil method chart dengan data 12 bulan
+        this.chart.bppVsHjr("chartBppHjr", bppSeries, hjrSeries, labelsBulan);
+    }
+
+    // 3. UPDATE TABEL BAWAH (Detail Tahunan)
+    const tbody = document.getElementById("tabelBppHjr");
+    if (tbody && selectedTarif) {
+        const labelsBulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
+        const hjrArray = hjrData[selectedTarif] || [];
+        const bppArray = bppData[selectedTarif] || [];
+
+        tbody.innerHTML = labelsBulan.map((bulan, idx) => {
+            const hjr     = hjrArray[idx] || 0;
+            const bpp     = bppArray[idx] || 0;
+            const selisih = hjr - bpp;
+            const color   = selisih >= 0 ? '#4caf50' : '#f44336';
+
+            return `<tr>
+                <td style="text-align:left; padding:8px; color:#ccc;">${bulan}</td>
+                <td style="text-align:right; padding:8px; color:#2196f3;">${hjr.toLocaleString(undefined, {minimumFractionDigits: 0})}</td>
+                <td style="text-align:right; padding:8px; color:#ff9800;">${bpp.toLocaleString(undefined, {minimumFractionDigits: 0})}</td>
+                <td style="text-align:right; padding:8px; color:${color}; font-weight:600;">
+                    ${selisih >= 0 ? '+' : ''}${selisih.toLocaleString(undefined, {minimumFractionDigits: 0})}
+                </td>
+            </tr>`;
+        }).join("");
+    }
+}
+  _renderAnalisa(data, state) {
         const akum = state.view === "akumulasi"
         const a = data.analisaData
 
