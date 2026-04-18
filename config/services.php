@@ -18,6 +18,12 @@ return [
     'client_secret' => env('GOOGLE_CLIENT_SECRET'),
     'redirect'      => env('GOOGLE_REDIRECT_URI'),
 ],
+'pln' => [
+    // Tambah fallback URL langsung di config
+    'historis_api_url' => env('PLN_HISTORIS_API_URL', 
+        'https://script.google.com/macros/s/AKfycbwiOdv2-ZTA3qLp8XqhzZDH4NTUJmIQdjtsRA-L6BHLOIvMQCe8253uNUl7gFIeIUbWNA/exec'),
+    'api_timeout' => env('PLN_API_TIMEOUT', 120),
+],
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),
     ],

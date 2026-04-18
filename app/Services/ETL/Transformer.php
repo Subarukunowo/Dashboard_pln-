@@ -2,287 +2,367 @@
 
 namespace App\Services\ETL;
 
+use Illuminate\Support\Facades\Log;
+
 class Transformer
 {
-    // Mapping ke kode standar di database (dim_golongan)
+    private const JENIS_MAP = [
+        'mwh jual' => 'mwh_jual', 'kwh jual' => 'kwh_jual',
+        'rupiah penjualan' => 'rupiah', 'penjualan (ribuan' => 'rupiah',
+        'pelanggan' => 'pelanggan', 'pelanggan akumulasi' => 'pelanggan',
+        'daya tersambung' => 'daya_va', 'rp/kwh jual' => 'rpkwh',
+        '% pertumbuhan' => 'pertumbuhan_yoy', 'growth' => 'pertumbuhan_yoy',
+    ];
+
     private const GOLONGAN_MAP = [
-        'sosial'                 => 'S',
-        's (sosial)'             => 'S',
-        'residensial'            => 'R',
-        'rumahtangga'            => 'R',
-        'rumah tangga'           => 'R',
-        'r (residensial)'        => 'R',
-        'bisnis'                 => 'B',
-        'b (bisnis)'             => 'B',
-        'industri'               => 'I',
-        'i (industri)'           => 'I',
-        'publik'                 => 'P',
-        'pemerintah'             => 'P',
-        'publik/ pemerintah'     => 'P',
-        'p (publik/ pemerintah)' => 'P',
-        'multiguna'              => 'M',
-        'multiguna / prabayar'   => 'M',
-        'm (multiguna)'          => 'M',
-        'jumlah'                 => 'TOTAL', // Diubah dari JUMLAH ke TOTAL
-        'total'                  => 'TOTAL',
+        'sosial' => 'S', 's (sosial)' => 'S',
+        'residensial' => 'R', 'rumahtangga' => 'R', 'rumah tangga' => 'R', 'r (residensial)' => 'R',
+        'bisnis' => 'B', 'b (bisnis)' => 'B',
+        'industri' => 'I', 'i (industri)' => 'I',
+        'publik' => 'P', 'pemerintah' => 'P', 'publik/ pemerintah' => 'P', 'p (publik/ pemerintah)' => 'P',
+        'multiguna' => 'M', 'multiguna / prabayar' => 'M', 'multiguna /prabayar' => 'M', 'm (multiguna)' => 'M',
+        'jumlah' => 'TOTAL', 'total' => 'TOTAL',
     ];
 
-    private const BULAN_MAP = [
-        'jan'=>1,'feb'=>2,'mar'=>3,'apr'=>4,'may'=>5,'mei'=>5,
-        'jun'=>6,'jul'=>7,'aug'=>8,'agu'=>8,'sep'=>9,
-        'oct'=>10,'okt'=>10,'nov'=>11,'dec'=>12,'des'=>12,
+    private const SATUAN_MAP = [
+        'kwh_jual' => 'KWH', 'mwh_jual' => 'MWH', 'rupiah' => 'Rp',
+        'pelanggan' => 'pelanggan', 'daya_va' => 'VA',
+        'rpkwh' => 'Rp/kWh', 'pertumbuhan_yoy' => '%',
     ];
-
-  private const JENIS_MAP = [
-    'kwh jual'            => 'kwh_jual',
-    'mwh jual'            => 'mwh_jual',
-    'rupiah penjualan'    => 'rupiah',      // Gunakan 'rupiah' (kecil) sesuai dim_metrik
-    'pelanggan'           => 'pelanggan',
-    'daya tersambung'     => 'daya_va',     // Gunakan 'daya_va' sesuai dim_metrik
-    'rp/kwh jual'         => 'rpkwh',       // Gunakan 'rpkwh' sesuai dim_metrik
-    // Tambahkan mapping untuk variasi kapital jika diperlukan
-    'PENJUALAN'           => 'kwh_jual',    // Diarahkan ke kwh_jual agar konsisten
-    'PENDAPATAN'          => 'rupiah',      // Diarahkan ke rupiah agar konsisten
-    'PELANGGAN'           => 'pelanggan',
-];
 
     /**
-     * Transformasi data 1997-2004 (format triwulan)
+     * ✅ Dynamic key validation - NO MORE hardcoded array
      */
-    public function transformTriwulan(array $sheets, int $tahun): array
+    private function isValidDataKey(string $key, int $tahun): bool
     {
-        $records      = [];
-        $currentJenis = null;
-        $twToBulan    = [1 => 3, 2 => 6, 3 => 9, 4 => 12];
-
-        foreach ($sheets as $sheet) {
-            foreach ($sheet as $row) {
-                $jenisDeteksi = $this->detectJenis($row);
-                if ($jenisDeteksi) { $currentJenis = $jenisDeteksi; continue; }
-                if (!$currentJenis) continue;
-
-                $golongan = $this->normalizeGolongan($row[0] ?? '');
-                if (!$golongan) continue;
-
-                foreach ($twToBulan as $tw => $bulan) {
-                    $nilai = $this->parseAngka($row[$tw] ?? null);
-                    if ($nilai === null) continue;
-
-                    $records[] = [
-                        'tahun'             => $tahun,
-                        'bulan'             => $bulan,
-                        'is_triwulan'       => true,
-                        'is_akumulasi'      => false,
-                        'is_jumlah_tahunan' => false,
-                        'golongan_kode'     => $golongan,
-                        'metrik_kode'       => $currentJenis, // Sinkron dengan fact_historis
-                        'nilai'             => $nilai,
-                        'satuan'            => $this->getSatuan($currentJenis),
-                        'sumber'            => 'import',
-                    ];
-                }
-
-                $jumlah = $this->parseAngka($row[5] ?? null);
-                if ($jumlah !== null) {
-                    $records[] = [
-                        'tahun'             => $tahun,
-                        'bulan'             => 12,
-                        'is_triwulan'       => false,
-                        'is_akumulasi'      => false,
-                        'is_jumlah_tahunan' => true,
-                        'golongan_kode'     => $golongan,
-                        'metrik_kode'       => $currentJenis,
-                        'nilai'             => $jumlah,
-                        'satuan'            => $this->getSatuan($currentJenis),
-                        'sumber'            => 'import',
-                    ];
-                }
-            }
+        $keyUpper = strtoupper(trim($key));
+        
+        // Plain month names (for 1997-2004, 2025+ eras)
+        if (preg_match('/^(JAN|FEB|MAR|APR|MEI|JUN|JUL|AGU|SEP|OKT|NOV|DES)$/i', $keyUpper)) {
+            return true;
         }
-        return $records;
+        
+        // Month with hyphen + 2-digit year: JAN-05 to DES-99
+        if (preg_match('/^(JAN|FEB|MAR|APR|MEI|JUN|JUL|AGU|SEP|OKT|NOV|DES)-\d{2}$/i', $keyUpper)) {
+            return true;
+        }
+        
+        // Month with underscore + 4-digit year (fallback)
+        if (preg_match('/^(JAN|FEB|MAR|APR|MEI|JUN|JUL|AGU|SEP|OKT|NOV|DES)_\d{4}$/i', $keyUpper)) {
+            return true;
+        }
+        
+        // Special columns with optional year suffix
+        if (preg_match('/^(JUMLAH|TOTAL|MUTASI|RKAP|PENCAPAIAN|RATA-RATA)(_|\s+)?\d{4}?$/i', $keyUpper)) {
+            return true;
+        }
+        
+        // Triwulan keys
+        if (preg_match('/^TRW[_\s\-]?[IVX]+$/i', $keyUpper)) {
+            return true;
+        }
+        
+        return false;
     }
 
     /**
-     * Transformasi data 2005-2023 (format bulanan)
+     * Filter noise values (shared with Extractor logic)
      */
-    public function transformBulanan(array $sheets, int $tahun): array
+    private function isNoiseValue($val): bool
     {
-        $records      = [];
-        $currentJenis = null;
-        $headerRow    = null;
+        if ($val === null || $val === '' || $val === '-' || $val === 'NULL') return true;
+        if (is_string($val)) {
+            $trimmed = strtoupper(trim($val));
+            if (in_array($trimmed, ['#DIV/0!', '#N/A', '#REF!', '#VALUE!', ''])) return true;
+        }
+        if (is_numeric($val) && in_array((float) $val, [-1, -999, -9999], true)) return true;
+        return false;
+    }
 
-        foreach ($sheets as $sheet) {
-            foreach ($sheet as $row) {
-                $jenisDeteksi = $this->detectJenis($row);
-                if ($jenisDeteksi) {
-                    $currentJenis = $jenisDeteksi;
-                    $headerRow    = null;
-                    continue;
-                }
+    /**
+     * Detect growth rate rows (not actual data)
+     */
+    private function isGrowthRateRow(array $row, string $jenis): bool
+    {
+        if ($jenis === 'pertumbuhan_yoy') return false; // Don't filter actual growth data
+        
+        $values = array_filter($row, fn($k, $v) => 
+            !in_array(strtoupper($k), ['KEL_TARIF', 'KEL. TARIF', 'TARIF']) && is_numeric($v),
+            ARRAY_FILTER_USE_BOTH);
+        
+        if (empty($values)) return false;
+        
+        // Growth rates: small values (-10 < x < 10) with negatives present
+        $allSmall = array_every($values, fn($v) => abs($v) < 10 && $v != 0);
+        $hasNegative = count(array_filter($values, fn($v) => $v < 0)) > 0;
+        
+        return $allSmall && $hasNegative && count($values) >= 3;
+    }
 
-                if (!$currentJenis) continue;
+    public function transform(array $rawData, int $tahun): array
+    {
+        if (empty($rawData)) return [];
 
-                if ($this->isHeaderRow($row, $tahun)) {
-                    $headerRow = $row;
-                    continue;
-                }
+        $records = [];
+        $isGrouped = !array_is_list($rawData);
 
-                if (!$headerRow) continue;
+        if ($isGrouped) {
+            foreach ($rawData as $kategori => $rows) {
+                if (!is_array($rows)) continue;
+                $jenis = $this->detectJenis($kategori);
+                if (!$jenis) continue;
 
-                $golongan = $this->normalizeGolongan($row[0] ?? '');
-                if (!$golongan) continue;
-
-                foreach ($headerRow as $colIdx => $headerVal) {
-                    if ($colIdx === 0) continue;
-
-                    $bulan = $this->parseBulanFromHeader((string)$headerVal);
-
-                    if ($bulan) {
-                        $nilai = $this->parseAngka($row[$colIdx] ?? null);
-                        if ($nilai === null) continue;
-
-                        $records[] = [
-                            'tahun'         => $tahun,
-                            'bulan'         => $bulan,
-                            'golongan_kode' => $golongan,
-                            'metrik_kode'   => $currentJenis,
-                            'nilai'         => $nilai,
-                            'satuan'        => $this->getSatuan($currentJenis),
-                            'sumber'        => 'import_excel',
-                        ];
-                    } elseif (str_contains(strtolower((string)$headerVal), 'jumlah')) {
-                        $nilai = $this->parseAngka($row[$colIdx] ?? null);
-                        if ($nilai !== null) {
-                            $records[] = [
-                                'tahun'         => $tahun,
-                                'bulan'         => 12, // Default ke Des untuk record tahunan
-                                'golongan_kode' => $golongan,
-                                'metrik_kode'   => $currentJenis,
-                                'nilai'         => $nilai,
-                                'satuan'        => $this->getSatuan($currentJenis),
-                                'sumber'        => 'import_excel',
-                            ];
-                        }
+                foreach ($rows as $row) {
+                    if (!is_array($row)) continue;
+                    $parsed = $this->processRow($row, $tahun, $jenis);
+                    if (!empty($parsed)) {
+                        $records = array_merge($records, $parsed);
                     }
                 }
             }
+        } else {
+            $currentJenis = null;
+            foreach ($rawData as $row) {
+                if (!is_array($row)) continue;
+                
+                $label = $row['TARIF'] ?? $row['KEL_TARIF'] ?? $row['KEL. TARIF'] ?? '';
+                $labelLower = strtolower(trim((string) $label));
+
+                if ($this->isCategoryTitle($labelLower, $row)) {
+                    $currentJenis = $this->detectJenis($label);
+                    continue;
+                }
+                if (in_array($labelLower, ['tarif', 'kel. tarif'])) continue;
+                if (!$currentJenis) continue;
+
+                $parsed = $this->processRow($row, $tahun, $currentJenis);
+                if (!empty($parsed)) {
+                    $records = array_merge($records, $parsed);
+                }
+            }
         }
+
+        return $records;
+    }
+
+    private function processRow(array $row, int $tahun, string $jenis): array
+    {
+        $golRaw = $row['KEL_TARIF'] ?? $row['KEL. TARIF'] ?? $row['TARIF'] ?? '';
+        $golongan = $this->normalizeGolongan($golRaw);
+        
+        if (!$golongan || $golongan === 'TOTAL') return [];
+        
+        // ✅ Skip growth rate rows (noise)
+        if ($this->isGrowthRateRow($row, $jenis)) return [];
+        
+        $isTriwulan = $this->isTriwulanFormat($row);
+        return $isTriwulan 
+            ? $this->parseTriwulanRow($row, $tahun, $golongan, $jenis)
+            : $this->parseBulananRow($row, $tahun, $golongan, $jenis);
+    }
+
+    private function parseTriwulanRow(array $row, int $tahun, string $golongan, string $jenis): array
+    {
+        $records = [];
+        $mapping = [
+            'TRW_I' => 3, 'TRW II' => 3, 'TRW_II' => 6, 
+            'TRW_III' => 9, 'TRW III' => 9, 'TRW_IV' => 12, 'TRW IV' => 12,
+        ];
+
+        $processed = [];
+        foreach ($mapping as $key => $bulan) {
+            if (isset($row[$key]) && !isset($processed[$bulan])) {
+                $angka = $this->parseAngka($row[$key]);
+                if ($angka !== null && !$this->isNoiseValue($angka)) {
+                    if ($jenis === 'rupiah') $angka *= 1000;
+                    $records[] = $this->makeRecord($tahun, $bulan, true, false, false, $golongan, $jenis, $angka);
+                    $processed[$bulan] = true;
+                }
+            }
+        }
+
+        if (isset($row['JUMLAH']) || isset($row['TOTAL'])) {
+            $val = $row['JUMLAH'] ?? $row['TOTAL'] ?? null;
+            $angka = $this->parseAngka($val);
+            if ($angka !== null && !$this->isNoiseValue($angka)) {
+                if ($jenis === 'rupiah') $angka *= 1000;
+                $records[] = $this->makeRecord($tahun, 12, false, false, true, $golongan, $jenis, $angka);
+            }
+        }
+        return $records;
+    }
+
+    private function parseBulananRow(array $row, int $tahun, string $golongan, string $jenis): array
+    {
+        $records = [];
+        
+        // Month → number mapping (base)
+        $bulanMap = [
+            'JAN'=>1, 'FEB'=>2, 'MAR'=>3, 'APR'=>4, 'MAY'=>5, 'JUN'=>6,
+            'JUL'=>7, 'AUG'=>8, 'SEP'=>9, 'OCT'=>10, 'NOV'=>11, 'DEC'=>12,
+            'MEI'=>5, 'AGU'=>8, 'OKT'=>10, 'DES'=>12,
+        ];
+        
+        // ✅ Generate dynamic mapping for ALL suffixes 00-99 (covers 1900-2099)
+        foreach (range(0, 99) as $y) {
+            $suffix = str_pad($y, 2, '0', STR_PAD_LEFT);
+            foreach (array_keys($bulanMap) as $m) {
+                $bulanMap["{$m}-{$suffix}"] = $bulanMap[$m];
+            }
+        }
+
+        $processed = [];
+        foreach ($row as $key => $val) {
+            $keyUpper = strtoupper(trim((string) $key));
+            
+            // ✅ Use dynamic validation instead of hardcoded array
+            if (!$this->isValidDataKey($keyUpper, $tahun)) continue;
+            if (isset($processed[$keyUpper])) continue;
+
+            // Lookup bulan (handle plain + suffixed keys)
+            $bulan = $bulanMap[$keyUpper] ?? null;
+            
+            // Handle special columns
+            if (preg_match('/^(JUMLAH|TOTAL|MUTASI|RKAP|PENCAPAIAN)/i', $keyUpper)) {
+                $bulan = 0;
+            }
+            
+            if ($bulan === null) continue;
+            if ($this->isNoiseValue($val)) continue;
+
+            $angka = $this->parseAngka($val);
+            if ($angka === null) continue;
+            
+            // ✅ Filter suspicious values per metric type
+            if ($this->isValueSuspicious($angka, $jenis)) continue;
+
+            if ($jenis === 'rupiah') $angka *= 1000;
+            $bulanFinal = ($bulan === 0) ? 12 : $bulan;
+
+            $records[] = $this->makeRecord(
+                $tahun, $bulanFinal, false, false, $bulan === 0,
+                $golongan, $jenis, $angka
+            );
+            $processed[$keyUpper] = true;
+        }
+
         return $records;
     }
 
     /**
-     * Transformasi data 2024
+     * Filter values that don't make sense for the metric type
      */
-    public function transform2024(array $sheets, int $tahun): array
+    private function isValueSuspicious(float $value, string $jenis): bool
     {
-        $records = $this->transformBulanan($sheets, $tahun);
-
-        foreach ($sheets as $sheet) {
-            foreach ($sheet as $row) {
-                if ($this->isHeaderRowDelta($row)) continue;
-
-                $golongan = $this->normalizeGolongan($row[0] ?? '');
-                if (!$golongan) continue;
-
-                $jenisList = [
-                    1 => ['jenis' => 'kwh_jual',       'tahun_override' => 2023],
-                    2 => ['jenis' => 'kwh_jual',       'tahun_override' => 2024],
-                    3 => ['jenis' => 'delta_gwh',      'tahun_override' => null],
-                    4 => ['jenis' => 'growth',         'tahun_override' => null],
-                    5 => ['jenis' => 'komposisi',      'tahun_override' => null],
-                ];
-
-                foreach ($jenisList as $col => $config) {
-                    $nilai = $this->parseAngka($row[$col] ?? null);
-                    if ($nilai === null) continue;
-
-                    $records[] = [
-                        'tahun'         => $config['tahun_override'] ?? $tahun,
-                        'bulan'         => 12,
-                        'golongan_kode' => $golongan,
-                        'metrik_kode'   => $config['jenis'],
-                        'nilai'         => $nilai,
-                        'satuan'        => ($config['jenis'] === 'kwh_jual' || $config['jenis'] === 'delta_gwh') ? 'GWh' : '%',
-                        'sumber'        => 'import_excel',
-                    ];
-                }
-            }
+        if ($jenis === 'kwh_jual' || $jenis === 'mwh_jual') {
+            return $value > 0 && $value < 100; // KWH shouldn't be tiny
         }
-        return $records;
+        if ($jenis === 'rupiah') {
+            return $value > 0 && $value < 1000; // Rupiah (in thousands) shouldn't be tiny
+        }
+        if ($jenis === 'rpkwh') {
+            return $value < 100 || $value > 50000; // Rp/kWh typical range
+        }
+        if ($jenis === 'pelanggan' || $jenis === 'daya_va') {
+            return $value < 0 || ($value > 0 && $value < 1 && floor($value) != $value);
+        }
+        if ($jenis === 'pertumbuhan_yoy') {
+            return $value < -100 || $value > 1000; // Growth % typical range
+        }
+        return false;
     }
 
-    // --- Helpers ---
-
-    private function detectJenis(array $row): ?string
+    private function isCategoryTitle(string $label, array $row): bool
     {
-        foreach ($row as $cell) {
-            $lower = strtolower(trim((string)$cell));
-            if (isset(self::JENIS_MAP[$lower])) {
-                return self::JENIS_MAP[$lower];
+        $keywords = array_keys(self::JENIS_MAP);
+        foreach ($keywords as $kw) {
+            if (str_contains($label, $kw)) {
+                $hasData = false;
+                foreach ($row as $k => $v) {
+                    if (!in_array(strtoupper($k), ['TARIF', 'KEL_TARIF', 'KEL. TARIF']) && 
+                        $v !== null && $v !== '' && $v !== 0) {
+                        $hasData = true; break;
+                    }
+                }
+                return !$hasData;
             }
+        }
+        return false;
+    }
+
+    private function detectJenis($label): ?string
+    {
+        if (!$label) return null;
+        $lower = strtolower(trim((string) $label));
+        foreach (self::JENIS_MAP as $kw => $kode) {
+            if (str_contains($lower, $kw)) return $kode;
         }
         return null;
     }
 
-    private function normalizeGolongan(?string $val): ?string
+    private function normalizeGolongan($val): ?string
     {
         if (!$val) return null;
-        $lower = strtolower(trim($val));
-        return self::GOLONGAN_MAP[$lower] ?? null;
-    }
-
-    private function isHeaderRow(array $row, int $tahun): bool
-    {
-        $shortYear = substr((string)$tahun, 2);
-        foreach ($row as $cell) {
-            $lower = strtolower(trim((string)$cell));
-            if (preg_match('/^(jan|feb|mar|apr|may|mei|jun|jul|aug|agu|sep|oct|okt|nov|dec|des)-?' . $shortYear . '$/i', $lower)) {
-                return true;
-            }
+        $lower = strtolower(trim((string) $val));
+        if (isset(self::GOLONGAN_MAP[$lower])) return self::GOLONGAN_MAP[$lower];
+        foreach (self::GOLONGAN_MAP as $kw => $kode) {
+            if (str_starts_with($lower, $kw)) return $kode;
         }
-        return false;
+        return null;
     }
 
-    private function isHeaderRowDelta(array $row): bool
+    private function isTriwulanFormat(array $row): bool
     {
-        foreach ($row as $cell) {
-            if (str_contains(strtolower((string)$cell), 'gwh 202')) return true;
-        }
-        return false;
-    }
-
-    private function parseBulanFromHeader(string $val): ?int
-    {
-        preg_match('/^([a-zA-Z]+)[-\s]?\d{2,4}$/', trim($val), $m);
-        if (!$m) return null;
-        $key = strtolower($m[1]);
-        return self::BULAN_MAP[$key] ?? null;
+        $keys = implode('|', array_keys($row));
+        return (bool) preg_match('/TRW[_\s\-]?[IVX]+/i', $keys);
     }
 
     public function parseAngka($val): ?float
     {
-        if ($val === null || $val === '' || $val === '-' || $val === '#N/A') return null;
-        if (is_numeric($val)) return (float)$val;
-        $clean = str_replace(['.', ' '], '', (string)$val);
-        $clean = str_replace(',', '.', $clean);
-        $clean = preg_replace('/[^0-9.\-]/', '', $clean);
-        return is_numeric($clean) ? (float)$clean : null;
+        if ($val === null || $val === '' || $val === '-' || $val === '#REF!' || $val === '#N/A' || $val === '#DIV/0!') return null;
+        if (is_numeric($val)) return (float) $val;
+        
+        $str = (string) $val;
+        
+        // European format: 1.234,56
+        if (preg_match('/^\d{1,3}(?:\.\d{3})*(?:,\d+)?$/', $str)) {
+            $clean = str_replace('.', '', $str);
+            $clean = str_replace(',', '.', $clean);
+            return is_numeric($clean) ? (float) $clean : null;
+        }
+        // US format: 1,234.56
+        if (preg_match('/^\d{1,3}(?:,\d{3})*(?:\.\d+)?$/', $str)) {
+            $clean = str_replace(',', '', $str);
+            return is_numeric($clean) ? (float) $clean : null;
+        }
+        // Fallback
+        $clean = preg_replace('/[^0-9.\-]/', '', $str);
+        return is_numeric($clean) && $clean !== '' ? (float) $clean : null;
     }
 
-   private function getSatuan(string $jenis): string
-{
-    return match($jenis) {
-        'kwh_jual'        => 'KWH',
-        'mwh_jual'        => 'MWH',
-        'rupiah'          => 'Rp',      // Diubah dari rupiah_penjualan
-        'pelanggan'       => 'pelanggan',
-        'daya_va'         => 'VA',      // Diubah dari daya_tersambung
-        'rpkwh'           => 'Rp/kWh',  // Diubah dari rpkwh_jual
-        'pertumbuhan_yoy', 
-        'growth', 
-        'komposisi'       => '%',
-        'delta_gwh'       => 'GWh',
-        default           => '',
-    };
+    private function makeRecord($tahun, $bulan, $isTw, $isAkum, $isJumlah, $gol, $metrik, $nilai)
+    {
+        return [
+            'tahun' => $tahun, 'bulan' => $bulan,
+            'is_triwulan' => $isTw, 'is_akumulasi' => $isAkum, 'is_jumlah_tahunan' => $isJumlah,
+            'golongan_kode' => $gol, 'metrik_kode' => $metrik,
+            'nilai' => $nilai, 'satuan' => self::SATUAN_MAP[$metrik] ?? '',
+            'sumber' => 'import', 'created_at' => now(), 'updated_at' => now(),
+        ];
+    }
 }
+
+if (!function_exists('array_is_list')) {
+    function array_is_list(array $array): bool {
+        if ($array === []) return true;
+        return array_keys($array) === range(0, count($array) - 1);
+    }
+}
+if (!function_exists('array_every')) {
+    function array_every(array $array, callable $callback): bool {
+        foreach ($array as $item) {
+            if (!$callback($item)) return false;
+        }
+        return true;
+    }
 }

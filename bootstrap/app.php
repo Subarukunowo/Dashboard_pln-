@@ -14,9 +14,11 @@ return Application::configure(basePath: dirname(__DIR__))
     
     $middleware->alias([
         '2fa' => \App\Http\Middleware\TwoFactor::class,
+        'data_historis' => env('DATA_HISTORIS_URL'),
         'admin' => \App\Http\Middleware\AdminOnly::class,
     ]);
 })
+
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })->create();

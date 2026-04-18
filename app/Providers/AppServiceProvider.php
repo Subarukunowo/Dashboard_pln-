@@ -11,8 +11,12 @@ class AppServiceProvider extends ServiceProvider
      */
     public function register(): void
     {
-        //
+      // Daftarkan sebagai singleton
+        $this->app->singleton(Era1997_2004Transformer::class, function ($app) {
+            return new Era1997_2004Transformer();
+            });
     }
+    
 
     /**
      * Bootstrap any application services.
