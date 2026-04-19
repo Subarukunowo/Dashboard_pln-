@@ -108,4 +108,15 @@
         P2TL
     </div>
 
+    {{-- Analisis — link ke halaman lain, bukan toggle section --}}
+    <div class="sidebar-section-label">Analisis</div>
+    <a href="{{ route('historis.index') }}"
+       class="sidebar-item {{ Request::is('historis*') ? 'active' : '' }}"
+       style="text-decoration:none; color:inherit;">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-6"/>
+        </svg>
+        Data Historis
+    </a>
+
 </nav>

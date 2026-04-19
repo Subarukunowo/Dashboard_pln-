@@ -7,7 +7,7 @@ use App\Http\Controllers\AuthController;
 use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\DeviceController;
-
+use App\Http\Controllers\HistorisController;
 // ===== PUBLIC API =====
 Route::get('/api/dashboard/bpp', [DashboardController::class, 'bpp']);
 Route::post('/api/chatbot', [ChatbotController::class, 'ask']);
@@ -72,3 +72,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', '2fa', 'admin'])->gr
     Route::delete('/devices/{device}/revoke', [AdminController::class, 'revokeDevice'])->name('devices.revoke');
     Route::get('/logs',                       [AdminController::class, 'logs'])->name('logs');
 });
+Route::get('/historis',        [HistorisController::class, 'index'])->name('historis.index');
+Route::get('/historis/chart',  [HistorisController::class, 'chart'])->name('historis.chart');
+Route::get('/historis/table',  [HistorisController::class, 'table'])->name('historis.table');
+Route::get('/historis/metrik', [HistorisController::class, 'availableMetrik'])->name('historis.metrik');
