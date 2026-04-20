@@ -16,13 +16,26 @@ class HistorisController extends Controller
     // ── Halaman utama ──────────────────────────────────────────────────────────
     public function index()
     {
+        // Untuk filter VIEW data historis (1997-2025)
         $tahunTersedia = DimPeriode::orderBy('tahun')->pluck('tahun');
+        
+        // Untuk INPUT data baru (current year sampai +2)
+        $currentYear = now()->year;
+        $tahunInputTersedia = collect(range($currentYear, $currentYear + 2));
+        
         $metrikList    = DimMetrik::whereIn('kode', ['kwh_jual','mwh_jual','rupiah','pelanggan','daya_va','rpkwh'])
                                   ->orderBy('kategori')->orderBy('nama')->get();
         $golonganList  = DimGolongan::orderBy('urutan')->get();
 
-        return view('partials.historis', compact('tahunTersedia', 'metrikList', 'golonganList'));
+        return view('partials.historis', compact(
+            'tahunTersedia',
+            'tahunInputTersedia', 
+            'currentYear',
+            'metrikList', 
+            'golonganList'
+        ));
     }
+
 
     // ── Chart data ─────────────────────────────────────────────────────────────
     public function chart(Request $request)

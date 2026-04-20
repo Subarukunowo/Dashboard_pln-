@@ -1,0 +1,260 @@
+/* public/css/historis-page.css */
+/* Scoped styles for Historis Page */
+
+/* Labels & Selects */
+.hist-label {
+    display: block;
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-muted, #888);
+    letter-spacing: 0.5px;
+    margin-bottom: 4px;
+    text-transform: uppercase;
+}
+
+.hist-select {
+    background: #1a1a1a;
+    color: #ccc;
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 7px 10px;
+    font-size: 0.8rem;
+    outline: none;
+    cursor: pointer;
+    min-width: 120px;
+}
+
+.hist-select:focus {
+    border-color: var(--accent-orange, #ff9800);
+}
+
+.hist-filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+}
+
+/* Buttons */
+.hist-btn-primary {
+    background: var(--accent-orange, #ff9800);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 9px 22px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s;
+    align-self: flex-end;
+}
+
+.hist-btn-primary:hover {
+    background: #ffb74d;
+}
+
+.hist-btn-primary:disabled {
+    background: #444;
+    color: #888;
+    cursor: not-allowed;
+}
+
+.hist-btn-sm {
+    background: #252525;
+    color: #888;
+    border: 1px solid #333;
+    border-radius: 4px;
+    padding: 4px 10px;
+    font-size: 0.72rem;
+    cursor: pointer;
+    transition: all 0.15s;
+}
+
+.hist-btn-sm:hover,
+.hist-btn-sm.active {
+    background: var(--accent-orange, #ff9800);
+    color: #000;
+    border-color: var(--accent-orange, #ff9800);
+}
+
+/* Golongan Chips */
+.hist-gol-chip {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 12px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 20px;
+    font-size: 0.78rem;
+    color: #888;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+}
+
+.hist-gol-chip:hover {
+    border-color: #555;
+    color: #ccc;
+}
+
+.hist-gol-chip.checked {
+    background: rgba(255, 152, 0, 0.1);
+    border-color: var(--accent-orange, #ff9800);
+    color: var(--accent-orange, #ff9800);
+}
+
+.hist-gol-chip input {
+    display: none;
+}
+
+/* Tables */
+#histThead th,
+#entryThead th {
+    padding: 8px 10px;
+    text-align: right;
+    color: var(--text-muted, #888);
+    font-size: 0.7rem;
+    font-weight: 600;
+    letter-spacing: 0.3px;
+    border-bottom: 1px solid #333;
+}
+
+#histThead th:first-child,
+#entryThead th:first-child {
+    text-align: left;
+}
+
+#histTbody tr,
+#entryTbody tr {
+    border-bottom: 1px solid #1e1e1e;
+    transition: background 0.1s;
+}
+
+#histTbody tr:hover,
+#entryTbody tr:hover {
+    background: #1e1e1e;
+}
+
+#histTbody td,
+#entryTbody td {
+    padding: 7px 10px;
+    text-align: right;
+    font-size: 0.78rem;
+    font-variant-numeric: tabular-nums;
+}
+
+#histTbody td:first-child,
+#entryTbody td:first-child {
+    text-align: left;
+    color: #888;
+}
+
+/* Entry Inputs */
+.entry-input {
+    width: 100%;
+    padding: 5px 8px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: #ccc;
+    font-size: 0.78rem;
+    text-align: right;
+}
+
+.entry-input:focus {
+    border-color: var(--accent-orange, #ff9800);
+    outline: none;
+    background: #252525;
+}
+
+.entry-input.has-value {
+    background: rgba(0, 255, 136, 0.05);
+    border-color: #00ff88;
+}
+
+.entry-input.locked {
+    background: #1a1a1a;
+    color: #555;
+    border-color: #333;
+    cursor: not-allowed;
+}
+
+/* Status Messages */
+#entryStatus.success {
+    background: rgba(0, 255, 136, 0.1);
+    border: 1px solid rgba(0, 255, 136, 0.3);
+    color: #00ff88;
+}
+
+#entryStatus.error {
+    background: rgba(255, 68, 68, 0.1);
+    border: 1px solid rgba(255, 68, 68, 0.3);
+    color: #ff4444;
+}
+
+#entryStatus.warning {
+    background: rgba(255, 152, 0, 0.1);
+    border: 1px solid rgba(255, 152, 0, 0.3);
+    color: var(--accent-orange, #ff9800);
+}
+
+/* Loading State */
+.entry-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--text-muted, #888);
+}
+
+.entry-loading i {
+    font-size: 2rem;
+    color: var(--accent-orange, #ff9800);
+    margin-bottom: 12px;
+}
+
+/* Card Styles */
+.historis-card {
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 8px;
+    padding: 16px;
+    margin-bottom: 16px;
+}
+
+.card-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #fff;
+    margin-bottom: 8px;
+}
+
+/* Custom Scroll */
+.custom-scroll {
+    overflow-x: auto;
+    max-height: 400px;
+    overflow-y: auto;
+}
+
+.custom-scroll::-webkit-scrollbar {
+    width: 8px;
+    height: 8px;
+}
+
+.custom-scroll::-webkit-scrollbar-track {
+    background: #1a1a1a;
+    border-radius: 4px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb {
+    background: #333;
+    border-radius: 4px;
+}
+
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+    background: #444;
+}

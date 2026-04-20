@@ -8,6 +8,7 @@ use App\Http\Controllers\TwoFactorController;
 use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\HistorisController;
+use App\Http\Controllers\FactHistorisEntryController;
 // ===== PUBLIC API =====
 Route::get('/api/dashboard/bpp', [DashboardController::class, 'bpp']);
 Route::post('/api/chatbot', [ChatbotController::class, 'ask']);
@@ -76,3 +77,15 @@ Route::get('/historis',        [HistorisController::class, 'index'])->name('hist
 Route::get('/historis/chart',  [HistorisController::class, 'chart'])->name('historis.chart');
 Route::get('/historis/table',  [HistorisController::class, 'table'])->name('historis.table');
 Route::get('/historis/metrik', [HistorisController::class, 'availableMetrik'])->name('historis.metrik');
+// routes/web.php
+
+
+// Fact Historis Entry - Semua dalam satu partial
+Route::middleware(['auth'])->group(function () {
+    Route::get('/fact-historis/create', [App\Http\Controllers\FactHistorisEntryController::class, 'create'])
+        ->name('fact-historis.create');
+    Route::get('/fact-historis/existing-data', [App\Http\Controllers\FactHistorisEntryController::class, 'getExistingData'])
+        ->name('fact-historis.existing-data');
+    Route::post('/fact-historis', [App\Http\Controllers\FactHistorisEntryController::class, 'store'])
+        ->name('fact-historis.store');
+});

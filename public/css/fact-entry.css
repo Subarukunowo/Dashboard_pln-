@@ -1,0 +1,265 @@
+/* public/css/fact-entry.css */
+/* Scoped styles for fact-entry page */
+
+.fact-entry-container {
+    padding: var(--gap, 16px);
+    display: flex;
+    flex-direction: column;
+    gap: var(--gap, 16px);
+}
+
+/* Info Banner */
+.fact-entry-container .info-banner {
+    display: flex;
+    align-items: flex-start;
+    gap: 12px;
+    padding: 12px 16px;
+    background: linear-gradient(135deg, rgba(255,152,0,0.1) 0%, rgba(255,152,0,0.05) 100%);
+    border: 1px solid rgba(255,152,0,0.3);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: var(--text-muted, #888);
+}
+.fact-entry-container .info-banner i {
+    color: var(--accent-orange, #ff9800);
+    font-size: 1.2rem;
+    margin-top: 2px;
+}
+.fact-entry-container .info-banner strong {
+    display: block;
+    color: var(--accent-orange, #ff9800);
+    margin-bottom: 4px;
+}
+.fact-entry-container .info-banner ul {
+    margin: 0;
+    padding-left: 20px;
+    line-height: 1.6;
+}
+
+/* Filter Row */
+.fact-entry-container .filter-row {
+    display: flex;
+    gap: 16px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.fact-entry-container .filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 140px;
+}
+
+.fact-entry-container .filter-label {
+    font-size: 0.68rem;
+    font-weight: 700;
+    color: var(--text-muted, #888);
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.fact-entry-container .form-select {
+    background: #1a1a1a;
+    color: #ccc;
+    border: 1px solid #333;
+    border-radius: 5px;
+    padding: 7px 10px;
+    font-size: 0.8rem;
+    outline: none;
+    cursor: pointer;
+    min-width: 120px;
+}
+.fact-entry-container .form-select:focus {
+    border-color: var(--accent-orange, #ff9800);
+}
+.fact-entry-container .form-select .badge-current,
+.fact-entry-container .form-select .badge-future {
+    font-size: 0.75rem;
+    opacity: 0.8;
+}
+.fact-entry-container .form-select .badge-current { color: #00ff88; }
+.fact-entry-container .form-select .badge-future { color: #2196f3; }
+
+.fact-entry-container .hint {
+    color: var(--text-muted, #888);
+    font-size: 0.7rem;
+    margin-top: 4px;
+}
+
+/* Action Buttons */
+.fact-entry-container .action-buttons {
+    display: flex;
+    gap: 8px;
+    align-self: flex-end;
+}
+
+.fact-entry-container .btn {
+    background: var(--accent-orange, #ff9800);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 9px 22px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s;
+}
+.fact-entry-container .btn:hover { background: #ffb74d; }
+.fact-entry-container .btn:disabled {
+    background: #444;
+    color: #888;
+    cursor: not-allowed;
+}
+.fact-entry-container .btn-success {
+    background: #00ff88;
+    color: #000;
+}
+.fact-entry-container .btn-success:hover { background: #66ffbb; }
+.fact-entry-container .btn-sm {
+    padding: 4px 10px;
+    font-size: 0.72rem;
+    background: #252525;
+    color: #888;
+    border: 1px solid #333;
+}
+.fact-entry-container .btn-sm:hover {
+    background: var(--accent-orange, #ff9800);
+    color: #000;
+    border-color: var(--accent-orange, #ff9800);
+}
+
+/* Status Message */
+.fact-entry-container .status-message {
+    margin-top: 10px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    display: none;
+}
+
+/* Form Header */
+.fact-entry-container .form-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #333;
+}
+.fact-entry-container .form-title {
+    font-weight: 700;
+    font-size: 0.95rem;
+    color: #fff;
+}
+.fact-entry-container .form-subtitle {
+    font-size: 0.75rem;
+    color: var(--text-muted, #888);
+}
+.fact-entry-container .form-actions {
+    display: flex;
+    gap: 8px;
+}
+
+/* Loading State */
+.fact-entry-container .loading-state {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    color: var(--text-muted, #888);
+}
+.fact-entry-container .loading-state i {
+    font-size: 2rem;
+    color: var(--accent-orange, #ff9800);
+    margin-bottom: 12px;
+}
+
+/* Entry Table */
+.fact-entry-container .kategori-section {
+    margin-bottom: 24px;
+}
+.fact-entry-container .kategori-title {
+    font-size: 0.85rem;
+    font-weight: 700;
+    color: var(--accent-orange, #ff9800);
+    border-bottom: 2px solid var(--accent-orange, #ff9800);
+    padding-bottom: 8px;
+    margin-bottom: 12px;
+    text-transform: uppercase;
+}
+
+.fact-entry-container .table-responsive {
+    overflow-x: auto;
+}
+
+.fact-entry-container .entry-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.8rem;
+}
+
+.fact-entry-container .entry-table th,
+.fact-entry-container .entry-table td {
+    padding: 8px 10px;
+    border-bottom: 1px solid #1e1e1e;
+}
+
+.fact-entry-container .entry-table th {
+    background: #1a1a1a;
+    color: var(--text-muted, #888);
+    font-weight: 600;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+}
+.fact-entry-container .entry-table th.col-metrik { text-align: left; }
+.fact-entry-container .entry-table th.col-golongan {
+    text-align: center;
+    color: var(--accent-orange, #ff9800);
+    min-width: 110px;
+}
+
+.fact-entry-container .entry-table td.cell-metrik {
+    color: #ccc;
+    font-weight: 500;
+}
+.fact-entry-container .entry-table td.cell-satuan {
+    color: var(--text-muted, #888);
+    font-size: 0.75rem;
+}
+.fact-entry-container .entry-table td.cell-input {
+    padding: 4px 6px;
+}
+
+/* Input Fields */
+.fact-entry-container .data-input {
+    width: 100%;
+    padding: 5px 8px;
+    background: #1a1a1a;
+    border: 1px solid #333;
+    border-radius: 4px;
+    color: #ccc;
+    font-size: 0.78rem;
+    text-align: right;
+    transition: border-color 0.15s, background 0.15s;
+}
+.fact-entry-container .data-input:focus {
+    border-color: var(--accent-orange, #ff9800);
+    outline: none;
+    background: #252525;
+}
+.fact-entry-container .data-input.has-value {
+    background: rgba(0,255,136,0.05);
+    border-color: #00ff88;
+}
+.fact-entry-container .data-input:disabled {
+    background: #1a1a1a;
+    color: #555;
+    border-color: #333;
+    cursor: not-allowed;
+}
