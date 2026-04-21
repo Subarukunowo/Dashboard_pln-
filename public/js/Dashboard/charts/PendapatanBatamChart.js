@@ -1,87 +1,56 @@
-export default class PendapatanBatamChart {
-    constructor() {
-        this.charts = {};
-    }
+import BaseChart from './BaseChart.js'
 
-    render(container, viewType, tarif) {
-        const allData = container?.data;
-        if (!allData) { console.error("Data Pendapatan tidak ditemukan!"); return; }
+/**
+ * PendapatanBatamChart — extend BaseChart
+ *
+ * PendapatanBatamModule memanggil:
+ *   this.chart.renderWithLabels(id, labels, {rencana, realisasi})
+ *   this.chart.make(id, type, datasets, yCallback)   ← signature lama, perlu wrapper
+ *
+ * Kita pertahankan API lama agar PendapatanBatamModule tidak perlu diubah,
+ * sambil mewarisi destroy() dari BaseChart.
+ */
+export default class PendapatanBatamChart extends BaseChart {
 
-        let selectedData = allData[tarif];
-        if (!selectedData) {
-            console.warn(`Tarif ${tarif} tidak ditemukan, fallback ke JUMLAH`);
-            selectedData = allData["JUMLAH"];
+    /**
+     * Dipakai oleh PendapatanBatamModule untuk chart delta (tanpa labels param)
+     * Signature lama: make(id, type, datasets, yCallback)
+     * Override untuk mendukung 2 signature:
+     *   make(id, type, labels, datasets, yFmt)   ← BaseChart standard
+     *   make(id, type, datasets, yCallback)       ← legacy PendapatanBatam
+     */
+    make(id, type, labelsOrDatasets, datasetsOrFmt = null, yFmt = null) {
+        // Deteksi: apakah arg ke-3 adalah array of strings (labels) atau array of dataset objects
+        const isLabels = Array.isArray(labelsOrDatasets) && (
+            labelsOrDatasets.length === 0 ||
+            typeof labelsOrDatasets[0] === 'string'
+        )
+
+        if (isLabels) {
+            // Signature baru: make(id, type, labels, datasets, yFmt)
+            super.make(id, type, labelsOrDatasets, datasetsOrFmt, yFmt)
+        } else {
+            // Signature lama: make(id, type, datasets, yCallback)
+            // Gunakan label bulan standar
+            const LABELS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
+            super.make(id, type, LABELS, labelsOrDatasets, datasetsOrFmt)
         }
-        if (!selectedData) { console.error("Data kosong."); return; }
-
-        this.renderBar("chartPendapatanBatam", {
-            rencana: selectedData.rencana,
-            realisasi: selectedData.realisasi,
-        });
-
-        const delta = selectedData.realisasi.map((v, i) => v - (selectedData.rencana[i] || 0));
-        this.make("chartDeltaPendapatan", "bar", [{
-            label: "Delta (Realisasi - Rencana)",
-            data: delta,
-            backgroundColor: delta.map(v => v >= 0 ? "#00ff88" : "#ff4444"),
-        }], v => "Rp " + (v / 1_000_000_000).toFixed(2) + "M");
     }
 
-    destroy(id) {
-        if (this.charts[id]) { this.charts[id].destroy(); delete this.charts[id]; }
-    }
-
-    make(id, type, datasets, yCallback = null) {
-        const ctx = document.getElementById(id);
-        if (!ctx) return;
-        this.destroy(id);
-        this.charts[id] = new Chart(ctx, {
-            type,
-            data: {
-                labels: ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"],
-                datasets
-            },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { labels: { color: "#ccc", font: { size: 11 } } } },
-                scales: {
-                    y: { grid: { color: "#333" }, ticks: { color: "#888", callback: yCallback || undefined } },
-                    x: { grid: { display: false }, ticks: { color: "#888" } }
-                }
-            }
-        });
+    renderWithLabels(id, labels, { rencana, realisasi }) {
+        super.make(id, 'bar', labels, [
+            { label: 'Rencana',   data: rencana,   backgroundColor: '#ff9800' },
+            { label: 'Realisasi', data: realisasi, backgroundColor: '#00ff88' },
+        ], v => 'Rp ' + (v / 1_000_000_000).toFixed(2) + 'M')
     }
 
     renderBar(id, { rencana, realisasi }) {
-        this.make(id, "bar", [
-            { label: "Rencana",   data: rencana,   backgroundColor: "#ff9800" },
-            { label: "Realisasi", data: realisasi, backgroundColor: "#00ff88" },
-        ], v => "Rp " + (v / 1_000_000_000).toFixed(2) + "M");
+        const LABELS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
+        this.renderWithLabels(id, LABELS, { rencana, realisasi })
     }
-    renderWithLabels(id, labels, { rencana, realisasi }) {
-    this.make2(id, "bar", labels, [
-        { label: "Rencana",   data: rencana,   backgroundColor: "#ff9800" },
-        { label: "Realisasi", data: realisasi, backgroundColor: "#00ff88" },
-    ], v => "Rp " + (v / 1_000_000_000).toFixed(2) + "M")
-}
 
-make2(id, type, labels, datasets, yCallback = null) {
-    const ctx = document.getElementById(id)
-    if (!ctx) return
-    this.destroy(id)
-    this.charts[id] = new Chart(ctx, {
-        type,
-        data: { labels, datasets },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: { legend: { labels: { color: "#ccc", font: { size: 11 } } } },
-            scales: {
-                y: { grid: { color: "#333" }, ticks: { color: "#888", callback: yCallback || undefined } },
-                x: { grid: { display: false }, ticks: { color: "#888" } }
-            }
-        }
-    })
-}
+    // make2 dipertahankan sebagai alias make untuk backward compat
+    make2(id, type, labels, datasets, yCallback = null) {
+        super.make(id, type, labels, datasets, yCallback)
+    }
 }

@@ -42,11 +42,22 @@ class HistorisQueryService
         $originalMode = $mode;
         $isMixed = $this->isMixed($dari, $sampai);
         
+        Log::info('🔍 [HISTORIS] getChartData START', [
+            'dari' => $dari,
+            'sampai' => $sampai,
+            'metrik' => $metrik,
+            'golongans' => $golongans,
+            'original_mode' => $originalMode,
+            'is_mixed_era' => $isMixed,
+        ]);
+
         // Auto-switch bulanan → triwulan jika mixed era
         if ($isMixed && $mode === 'bulanan') {
+            Log::info('⚠️ Auto-switch: bulanan → triwulan karena mixed era');
             $mode = 'triwulan';
         }
 
+        // ── QUERY DATA ─────────────────────────────────────────────────────
         $raw = FactHistoris::whereBetween('tahun', [$dari, $sampai])
             ->where('metrik_kode', strtolower(trim($metrik)))
             ->whereIn('golongan_kode', $golongans)
@@ -55,15 +66,25 @@ class HistorisQueryService
             ->orderBy('bulan')
             ->get();
 
-        Log::info('HistorisQueryService.getChartData', [
-            'metrik'   => $metrik,
-            'golongan' => $golongans,
-            'range'    => "$dari-$sampai",
-            'mode'     => $mode,
-            'rows'     => $raw->count(),
+        Log::info('📊 [HISTORIS] Query result', [
+            'rows_found' => $raw->count(),
+            'unique_golongan' => $raw->pluck('golongan_kode')->unique()->values(),
+            'unique_tahun' => $raw->pluck('tahun')->unique()->sort()->values(),
+            'sample_row' => $raw->first()?->toArray(),
         ]);
 
-        // Susun: golongan → tahun → bulan → data
+        if ($raw->isEmpty()) {
+            Log::warning('⚠️ [HISTORIS] Tidak ada data dari database', [
+                'filter' => [
+                    'tahun' => [$dari, $sampai],
+                    'metrik' => $metrik,
+                    'golongans' => $golongans,
+                ]
+            ]);
+            return $this->emptyResponse($originalMode, $metrik, $dari, $sampai, $golongans);
+        }
+
+        // ── BUILD TREE STRUCTURE ───────────────────────────────────────────
         $tree = [];
         foreach ($raw as $r) {
             $tree[$r->golongan_kode][$r->tahun][$r->bulan] = [
@@ -73,74 +94,121 @@ class HistorisQueryService
             ];
         }
 
-        // 🔄 FALLBACK LOGIC: Jika mode requested tidak menghasilkan data, coba mode lain
+        Log::info('🌳 [HISTORIS] Tree structure built', [
+            'golongan_keys' => array_keys($tree),
+            'sample_golongan' => array_key_first($tree),
+            'sample_years' => $tree[array_key_first($tree)] ?? [],
+        ]);
+
+        // ── BUILD RESULT BY MODE ───────────────────────────────────────────
         $result = match ($mode) {
             'bulanan'  => $this->buildBulanan($tree, $golongans, $dari, $sampai),
             'triwulan' => $this->buildTriwulan($tree, $golongans, $dari, $sampai),
             default    => $this->buildTahunan($tree, $golongans, $dari, $sampai),
         };
 
-        // Jika result empty dan user requested bulanan, coba triwulan sebagai fallback
+        Log::info('📈 [HISTORIS] Result after build', [
+            'mode_used' => $mode,
+            'labels_count' => count($result['labels'] ?? []),
+            'datasets_count' => count($result['datasets'] ?? []),
+            'is_empty' => $this->isEmptyResult($result),
+        ]);
+
+        // ── FALLBACK LOGIC ─────────────────────────────────────────────────
         if ($originalMode === 'bulanan' && $this->isEmptyResult($result)) {
-            Log::info("Bulanan mode empty, trying triwulan fallback", [
-                'metrik' => $metrik,
-                'range' => "$dari-$sampai"
-            ]);
-            
+            Log::info('🔄 Fallback: bulanan empty → coba triwulan');
             $result = $this->buildTriwulan($tree, $golongans, $dari, $sampai);
             
             if (!$this->isEmptyResult($result)) {
-                $result['warning'] = "Data untuk {$metrik} ({$dari}-{$sampai}) hanya tersedia dalam format triwulan. Mode otomatis: triwulan.";
+                $result['warning'] = "Data untuk {$metrik} ({$dari}-{$sampai}) hanya tersedia dalam format triwulan.";
                 $result['mode'] = 'triwulan';
+                Log::info('✅ Fallback triwulan berhasil');
             }
         }
         
-        // Jika masih empty, coba tahunan sebagai last resort
         if ($this->isEmptyResult($result) && $originalMode !== 'tahunan') {
-            Log::info("Fallback to tahunan mode", [
-                'metrik' => $metrik,
-                'range' => "$dari-$sampai"
-            ]);
-            
+            Log::info('🔄 Fallback: coba mode tahunan');
             $result = $this->buildTahunan($tree, $golongans, $dari, $sampai);
             
             if (!$this->isEmptyResult($result)) {
                 $result['warning'] = "Data detail tidak tersedia, menampilkan agregat tahunan.";
                 $result['mode'] = 'tahunan';
+                Log::info('✅ Fallback tahunan berhasil');
             }
         }
 
-        // Jika semua fallback gagal, return dengan pesan error yang jelas
+        // ── FINAL CHECK ────────────────────────────────────────────────────
         if ($this->isEmptyResult($result)) {
-            return [
-                'labels' => [],
-                'datasets' => [],
-                'mode' => $originalMode,
-                'warning' => "Tidak ada data tersedia untuk {$metrik} ({$dari}-{$sampai}) dalam mode {$originalMode}.",
+            Log::error('❌ [HISTORIS] Semua mode gagal menghasilkan data', [
+                'metrik' => $metrik,
+                'range' => "$dari-$sampai",
                 'debug' => [
                     'rows_found' => $raw->count(),
                     'golongans_checked' => $golongans,
                     'available_months' => $this->getAvailableMonths($tree),
-                ],
-            ];
+                ]
+            ]);
+            return $this->emptyResponse($originalMode, $metrik, $dari, $sampai, $golongans, [
+                'rows_found' => $raw->count(),
+                'available_months' => $this->getAvailableMonths($tree),
+            ]);
         }
+
+        Log::info('✅ [HISTORIS] getChartData SUCCESS', [
+            'mode' => $result['mode'],
+            'labels' => count($result['labels']),
+            'datasets' => count($result['datasets']),
+        ]);
 
         return $result;
     }
 
     /**
-     * Cek apakah result chart kosong (semua values null/empty)
+     * Helper: Return empty response dengan debug info
+     */
+    private function emptyResponse(string $mode, string $metrik, int $dari, int $sampai, array $golongans, array $debug = []): array
+    {
+        return [
+            'labels' => [],
+            'datasets' => [],
+            'mode' => $mode,
+            'warning' => "Tidak ada data tersedia untuk {$metrik} ({$dari}-{$sampai}) dalam mode {$mode}.",
+            'debug' => array_merge([
+                'filter_applied' => [
+                    'tahun' => [$dari, $sampai],
+                    'metrik' => $metrik,
+                    'golongans' => $golongans,
+                ],
+            ], $debug),
+        ];
+    }
+
+    /**
+     * Cek apakah result chart kosong
      */
     private function isEmptyResult(array $result): bool
     {
-        if (empty($result['datasets'])) return true;
+        if (empty($result['datasets'])) {
+            Log::debug('🔍 isEmptyResult: datasets array kosong');
+            return true;
+        }
         
-        foreach ($result['datasets'] as $dataset) {
-            if (!empty($dataset['data']) && 
-                count(array_filter($dataset['data'], fn($v) => $v !== null)) > 0) {
+        foreach ($result['datasets'] as $idx => $dataset) {
+            $nonNull = array_filter($dataset['data'] ?? [], fn($v) => $v !== null);
+            
+            Log::debug('🔍 isEmptyResult: check dataset', [
+                'index' => $idx,
+                'golongan' => $dataset['golongan'] ?? $dataset['label'] ?? 'unknown',
+                'total_points' => count($dataset['data'] ?? []),
+                'non_null_count' => count($nonNull),
+                'first_10_values' => array_slice($dataset['data'] ?? [], 0, 10),
+            ]);
+            
+            if (count($nonNull) > 0) {
                 return false;
             }
         }
+        Log::debug('🔍 isEmptyResult: ALL datasets kosong');
         return true;
     }
 
@@ -154,16 +222,15 @@ class HistorisQueryService
             foreach ($years as $year => $bulanData) {
                 $available = array_keys(array_filter($bulanData));
                 if (!empty($available)) {
-                    $months["{$year}"] = $available;
+                    $months["{$golongan}[{$year}]"] = $available;
                 }
             }
         }
-        return array_slice($months, 0, 5); // Limit untuk log
+        return array_slice($months, 0, 10, true);
     }
 
     public function getAvailableMetrik(int $dari, int $sampai): array
     {
-        // ✅ FIX: Ambil metrik yang BENAR-BENAR ada datanya di fact_historis
         $kodes = FactHistoris::whereBetween('tahun', [$dari, $sampai])
             ->where('is_akumulasi', 0)
             ->where('is_jumlah_tahunan', 0)
@@ -172,7 +239,7 @@ class HistorisQueryService
             ->toArray();
 
         if (empty($kodes)) {
-            // Fallback ke DimPeriode jika tidak ada data langsung
+            Log::warning('⚠️ getAvailableMetrik: fallback ke DimPeriode', ['range' => "$dari-$sampai"]);
             $periodes = DimPeriode::whereBetween('tahun', [$dari, $sampai])->get();
             $all = [];
             foreach ($periodes as $p) {
@@ -191,19 +258,29 @@ class HistorisQueryService
 
     public function isMixed(int $dari, int $sampai): bool
     {
-        return DimPeriode::whereBetween('tahun', [$dari, $sampai])
+        $granularitas = DimPeriode::whereBetween('tahun', [$dari, $sampai])
             ->pluck('granularitas')
             ->unique()
-            ->count() > 1;
+            ->values()
+            ->toArray();
+            
+        Log::debug('🔍 isMixed check', [
+            'range' => "$dari-$sampai",
+            'unique_granularitas' => $granularitas,
+            'is_mixed' => count($granularitas) > 1,
+        ]);
+        
+        return count($granularitas) > 1;
     }
 
     // ──────────────────────────────────────────────────────────────────────────
     // BUILD MODES
     // ──────────────────────────────────────────────────────────────────────────
 
-    /** Satu titik per tahun */
     private function buildTahunan(array $tree, array $golongans, int $dari, int $sampai): array
     {
+        Log::debug('🔧 buildTahunan called', ['dari' => $dari, 'sampai' => $sampai, 'golongans' => $golongans]);
+        
         $labels = range($dari, $sampai);
         $datasets = [];
 
@@ -211,7 +288,12 @@ class HistorisQueryService
             $values = [];
             foreach ($labels as $tahun) {
                 $bulanData = $tree[$kode][$tahun] ?? [];
-                $values[] = $this->resolveNilaiTahunan($bulanData);
+                $nilai = $this->resolveNilaiTahunan($bulanData);
+                $values[] = $nilai;
+                
+                if ($nilai !== null) {
+                    Log::debug("  ✓ {$kode}[{$tahun}] = {$nilai}");
+                }
             }
             $datasets[] = $this->makeDataset($kode, $values);
         }
@@ -223,9 +305,15 @@ class HistorisQueryService
         ];
     }
 
-    /** Satu titik per TW per tahun — konversi bulanan→TW jika diperlukan */
     private function buildTriwulan(array $tree, array $golongans, int $dari, int $sampai): array
     {
+        Log::debug('🔧 buildTriwulan called', [
+            'dari' => $dari, 
+            'sampai' => $sampai, 
+            'golongans' => $golongans,
+            'tree_has_data' => !empty($tree),
+        ]);
+        
         $labels = [];
         for ($t = $dari; $t <= $sampai; $t++) {
             foreach (self::TW_BULAN as $tw => $_) {
@@ -242,11 +330,13 @@ class HistorisQueryService
 
                 foreach (self::TW_BULAN as $tw => $representBulan) {
                     if ($isTw) {
-                        // Data asli triwulan → ambil langsung
-                        $values[] = $bulanData[$representBulan]['nilai'] ?? null;
+                        $val = $bulanData[$representBulan]['nilai'] ?? null;
+                        $values[] = $val;
+                        Log::debug("  TW-mode: {$kode}[{$t}-TW{$tw}] = {$val} (direct)");
                     } else {
-                        // Bulanan → sum bulan dalam TW (konversi)
-                        $values[] = $this->sumBulananToTw($bulanData, $tw);
+                        $val = $this->sumBulananToTw($bulanData, $tw);
+                        $values[] = $val;
+                        Log::debug("  Bulanan→TW: {$kode}[{$t}-TW{$tw}] = {$val} (sum)");
                     }
                 }
             }
@@ -260,9 +350,10 @@ class HistorisQueryService
         ];
     }
 
-    /** Satu titik per bulan per tahun */
     private function buildBulanan(array $tree, array $golongans, int $dari, int $sampai): array
     {
+        Log::debug('🔧 buildBulanan called', ['dari' => $dari, 'sampai' => $sampai]);
+        
         $bulanNames = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
         $labels = [];
         for ($t = $dari; $t <= $sampai; $t++) {
@@ -274,22 +365,18 @@ class HistorisQueryService
             $values = [];
             for ($t = $dari; $t <= $sampai; $t++) {
                 $bulanData = $tree[$kode][$t] ?? [];
-                
-                // Cek apakah data ini triwulan-only
                 $isTriwulanOnly = $this->hasTriwulan($bulanData) && !$this->hasBulanan($bulanData);
                 
                 for ($b = 1; $b <= 12; $b++) {
                     $row = $bulanData[$b] ?? null;
                     
                     if ($isTriwulanOnly) {
-                        // Jika triwulan-only, hanya tampilkan value di bulan representatif
                         if (in_array($b, self::TW_BULAN) && $row && !$row['is_jumlah']) {
                             $values[] = $row['nilai'];
                         } else {
-                            $values[] = null; // Bulan non-triwulan tetap null
+                            $values[] = null;
                         }
                     } else {
-                        // Normal bulanan
                         $values[] = ($row && !$row['is_jumlah']) ? $row['nilai'] : null;
                     }
                 }
@@ -308,9 +395,6 @@ class HistorisQueryService
     // HELPERS
     // ──────────────────────────────────────────────────────────────────────────
 
-    /**
-     * Cek apakah bulanData memiliki data triwulan
-     */
     private function hasTriwulan(array $bulanData): bool
     {
         foreach ($bulanData as $row) {
@@ -319,18 +403,12 @@ class HistorisQueryService
         return false;
     }
 
-    /**
-     * Cek apakah bulanData memiliki data bulanan lengkap (minimal 6 bulan)
-     */
     private function hasBulanan(array $bulanData): bool
     {
         $count = count(array_filter($bulanData, fn($r) => !$r['is_jumlah']));
-        return $count >= 6; // Minimal 6 bulan dianggap data bulanan
+        return $count >= 6;
     }
 
-    /**
-     * Konversi bulanan ke triwulan: jumlahkan bulan dalam rentang TW.
-     */
     public function convertBulananToTriwulan(array $bulananPerBulan): array
     {
         $result = [];
@@ -364,11 +442,9 @@ class HistorisQueryService
 
     private function resolveNilaiTahunan(array $bulanData): ?float
     {
-        // Cari is_jumlah_tahunan dulu
         foreach ($bulanData as $row) {
             if (!empty($row['is_jumlah'])) return $row['nilai'];
         }
-        // Fallback: sum semua non-jumlah
         $sum = 0;
         $found = false;
         foreach ($bulanData as $row) {
@@ -384,6 +460,15 @@ class HistorisQueryService
     {
         $color = self::COLORS[$kode] ?? '#aaaaaa';
         $nama = DimGolongan::find($kode)?->nama ?? $kode;
+        
+        Log::debug('🎨 makeDataset', [
+            'golongan' => $kode,
+            'nama' => $nama,
+            'color' => $color,
+            'values_count' => count($values),
+            'non_null' => count(array_filter($values, fn($v) => $v !== null)),
+        ]);
+        
         return [
             'label'           => $nama,
             'golongan'        => $kode,

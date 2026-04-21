@@ -1,116 +1,37 @@
-export default class RpkwhChart {
-    constructor() { this.charts = {} }
+import BaseChart from './BaseChart.js'
 
-    destroy(id) {
-        if (this.charts[id]) { this.charts[id].destroy(); delete this.charts[id] }
-    }
-
-    make(id, type, labels, datasets, yFmt = null) {
-        const ctx = document.getElementById(id)
-        if (!ctx) return
-        this.destroy(id)
-        this.charts[id] = new Chart(ctx, {
-            type,
-            data: { labels, datasets },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: { legend: { labels: { color: "#ccc", font: { size: 11 } } } },
-                scales: {
-                    y: { grid: { color: "#333" }, ticks: { color: "#888", callback: yFmt || undefined } },
-                    x: { grid: { display: false }, ticks: { color: "#888", font: { size: 9 }, maxRotation: 45 } }
-                }
-            }
-        })
-    }
-
-    // Chart BPP vs HJR — X axis = tarif, grouped bar per bulan yang dipilih
-// Ganti method bppVsHjr lama dengan yang ini
-bppVsHjr(id, bppSeries, hjrSeries, labelsBulan) {
-    const ctx = document.getElementById(id);
-    if (!ctx) return;
-    this.destroy(id);
-
-    // Guard: Pastikan data berupa array dan tidak kosong
-    if (!bppSeries || !hjrSeries || bppSeries.length === 0) {
-        console.warn("bppVsHjr: Data series kosong");
-        return;
-    }
-
-    this.charts[id] = new Chart(ctx, {
-        type: 'bar',
-        data: {
-            labels: labelsBulan, // ['Jan', 'Feb', 'Mar', ..., 'Des']
-            datasets: [
-                { 
-                    label: 'HJR (Rp/kWh)', 
-                    data: hjrSeries, 
-                    backgroundColor: '#2196f3', 
-                    borderRadius: 2 
-                },
-                { 
-                    label: 'BPP (Rp/kWh)', 
-                    data: bppSeries, 
-                    backgroundColor: '#ff9800', 
-                    borderRadius: 2 
-                }
-            ]
-        },
-        options: {
-            responsive: true,
-            maintainAspectRatio: false,
-            plugins: {
-                legend: { labels: { color: "#ccc", font: { size: 11 } } },
-                tooltip: {
-                    callbacks: {
-                        label: ctx => `${ctx.dataset.label}: ${ctx.raw.toFixed(0)} Rp/kWh`
-                    }
-                }
+/**
+ * RpkwhChart — extend BaseChart
+ *
+ * RpkwhModule memanggil:
+ *   this.chart.make(id, type, labels, datasets, yFmt)  ← BaseChart.make()
+ *   this.chart.pie(id, labels, data)                   ← BaseChart.pie()
+ *   this.chart.bppVsHjr(id, bpp, hjr, labels)          ← method khusus di bawah
+ */
+export default class RpkwhChart extends BaseChart {
+    /**
+     * Chart khusus BPP vs HJR — dua line dengan area fill
+     */
+    bppVsHjr(id, bppSeries, hjrSeries, labels) {
+        this.make(id, 'line', labels, [
+            {
+                label:           'HJR (Harga Jual Rata-rata)',
+                data:            hjrSeries,
+                borderColor:     '#2196f3',
+                backgroundColor: 'rgba(33,150,243,0.1)',
+                tension:         0.4,
+                fill:            true,
+                pointRadius:     3,
             },
-            scales: {
-                y: {
-                    grid: { color: "#333" },
-                    ticks: { 
-                        color: "#888", 
-                        callback: v => v.toLocaleString() + " Rp/kWh" 
-                    }
-                },
-                x: {
-                    grid: { display: false },
-                    ticks: { color: "#888", font: { size: 10 } }
-                }
-            }
-        }
-    });
-}
-
-    pie(id, labels, data) {
-        const COLORS = ["#ff9800","#00ff88","#2196f3","#e91e63","#9c27b0","#00bcd4"]
-        const ctx = document.getElementById(id)
-        if (!ctx) return
-        this.destroy(id)
-        this.charts[id] = new Chart(ctx, {
-            type: 'doughnut',
-            data: {
-                labels,
-                datasets: [{ data, backgroundColor: COLORS, borderColor: '#1e1e1e', borderWidth: 2 }]
+            {
+                label:           'BPP (Biaya Pokok Produksi)',
+                data:            bppSeries,
+                borderColor:     '#ff9800',
+                backgroundColor: 'rgba(255,152,0,0.1)',
+                tension:         0.4,
+                fill:            true,
+                pointRadius:     3,
             },
-            options: {
-                responsive: true,
-                maintainAspectRatio: false,
-                plugins: {
-                    legend: { position: 'right', labels: { color: '#ccc', font: { size: 11 } } },
-                    tooltip: {
-                        callbacks: {
-                            label: ctx => {
-                                const total = ctx.dataset.data.reduce((a, b) => a + b, 0)
-                                const pct = total ? ((ctx.raw / total) * 100).toFixed(1) : 0
-                                return `${ctx.label}: ${ctx.raw.toFixed(2)} Rp/kWh (${pct}%)`
-                            }
-                        }
-                    }
-                }
-            }
-        })
+        ], v => v.toLocaleString('id-ID', { maximumFractionDigits: 0 }) + ' Rp/kWh')
     }
 }
