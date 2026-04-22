@@ -1,0 +1,261 @@
+/* ========================================
+   NAVBAR STYLES - Accessibility Optimized
+   ======================================== */
+
+:root {
+    /* 🔥 Warna dengan kontras WCAG AA (min 4.5:1) */
+    --navbar-bg: #161616;
+    --navbar-border: #2a2a2a;
+    --text-primary: #ffffff;        /* Kontras 16:1 ✅ */
+    --text-secondary: #c0c0c0;      /* Kontras 10:1 ✅ (bukan #a0a0a0) */
+    --text-muted: #b8b8b8;          /* Kontras 8.5:1 ✅ */
+    --accent-orange: #ff9800;       /* Kontras 8.5:1 ✅ */
+    --accent-orange-hover: #f57c00;
+    --navbar-hover-bg: #252525;
+    --navbar-active-bg: rgba(255, 152, 0, 0.12);
+    --dropdown-bg: #1e1e1e;
+    --dropdown-border: #333333;
+    --dropdown-hover: #2a2a2a;
+}
+
+/* ===== Navbar Container ===== */
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 56px;
+    background-color: var(--navbar-bg);
+    border-bottom: 1px solid var(--navbar-border);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    color: var(--text-primary);
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+}
+
+/* ===== Nav Left - Links ===== */
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+/* ✅ Hover state - kontras tetap tinggi */
+.nav-item:hover {
+    background-color: var(--navbar-hover-bg);
+    color: var(--accent-orange);
+}
+
+.nav-item:hover i {
+    color: var(--accent-orange);
+}
+
+/* ✅ Active state - jelas dan kontras */
+.nav-item.active {
+    background-color: var(--navbar-active-bg);
+    color: var(--accent-orange);
+    font-weight: 600;
+}
+
+.nav-item.active i {
+    color: var(--accent-orange);
+}
+
+/* ✅ Icon styling */
+.nav-item i {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    width: 16px;
+    text-align: center;
+    transition: color 0.2s ease;
+}
+
+/* ✅ Span text - pastikan inherit warna parent */
+.nav-item span {
+    color: inherit;
+    line-height: 1;
+}
+
+/* ===== Nav Right - Profile ===== */
+.nav-right {
+    display: flex;
+    align-items: center;
+}
+
+.profile-dropdown {
+    position: relative;
+}
+
+.profile-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.profile-btn:hover {
+    background-color: var(--navbar-hover-bg);
+}
+
+.profile-btn:focus {
+    outline: 2px solid var(--accent-orange);
+    outline-offset: 2px;
+}
+
+/* ✅ Avatar */
+.nav-avatar {
+    display: block;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--accent-orange);
+}
+
+/* ✅ Username - HARUS kontras tinggi */
+.nav-username {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+/* ✅ Caret icon */
+.profile-btn .fa-caret-down {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    transition: color 0.2s ease;
+}
+
+.profile-btn:hover .fa-caret-down {
+    color: var(--accent-orange);
+}
+
+/* ===== Dropdown Menu ===== */
+.dropdown-content {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 200px;
+    background-color: var(--dropdown-bg);
+    border: 1px solid var(--dropdown-border);
+    border-radius: 10px;
+    padding: 8px 0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    z-index: 1001;
+}
+
+/* Show dropdown */
+.profile-dropdown:hover .dropdown-content,
+.profile-dropdown:focus-within .dropdown-content {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+/* ✅ Dropdown items */
+.dropdown-content a,
+.dropdown-content button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s ease;
+}
+
+.dropdown-content a:hover,
+.dropdown-content button:hover {
+    background-color: var(--dropdown-hover);
+    color: var(--accent-orange);
+}
+
+.dropdown-content a i,
+.dropdown-content button i {
+    color: var(--text-secondary);
+    width: 16px;
+    font-size: 0.9rem;
+}
+
+.dropdown-content a:hover i,
+.dropdown-content button:hover i {
+    color: var(--accent-orange);
+}
+
+/* ✅ Divider */
+.dropdown-divider {
+    margin: 6px 0;
+    border: none;
+    border-top: 1px solid var(--dropdown-border);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+    .navbar {
+        padding: 0 16px;
+    }
+    
+    .nav-username {
+        display: none; /* Sembunyikan username di mobile */
+    }
+    
+    .nav-item span {
+        display: none; /* Hanya icon di mobile */
+    }
+    
+    .nav-item {
+        padding: 10px;
+    }
+}
+
+/* ===== Focus Visible untuk Keyboard Navigation ===== */
+.nav-item:focus-visible,
+.profile-btn:focus-visible,
+.dropdown-content a:focus-visible,
+.dropdown-content button:focus-visible {
+    outline: 2px solid var(--accent-orange);
+    outline-offset: 2px;
+}
+
+/* ===== Reduced Motion ===== */
+@media (prefers-reduced-motion: reduce) {
+    .nav-item,
+    .profile-btn,
+    .dropdown-content {
+        transition: none !important;
+    }
+}

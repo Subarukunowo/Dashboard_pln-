@@ -1,7 +1,7 @@
 <div class="card col-12">
     <div style="displa21y:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom: 1px solid #333; padding-bottom: 10px;">
         <div class="card-title">Realisasi BPP Rp/kWh: Konsolidasi vs Internal</div>
-        <select id="filterBpp">
+        <select id="filterBpp" aria-label="Filter kategori BPP">
             <option value="BPP PEMBANGKIT">BPP PEMBANGKIT</option>
             <option value="BPP S.D TRANSMISI">BPP S.D TRANSMISI</option>
             <option value="BPP S.D DIDTRIBUSI TM">BPP S.D DISTRIBUSI TM</option>
