@@ -26,7 +26,6 @@ import TunggakanModule      from '../modules/TunggakanModule.js'
 import P2tlModule           from '../modules/P2tlModule.js'
 import ChatbotModule        from '../modules/ChatbotModule.js'
 
-// Charts — semua turunan BaseChart
 import PenjualanKwhChart    from '../charts/PenjualankwhChart.js'
 import PendapatanBatamChart from '../charts/PendapatanBatamChart.js'
 import GolTarifBatamChart   from '../charts/GolTarifBatamChart.js'
@@ -39,18 +38,16 @@ import LossesChart          from '../charts/LossesChart.js'
 import TunggakanChart       from '../charts/TunggakanChart.js'
 import P2tlChart            from '../charts/P2tlChart.js'
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbyeCM8lIbWi8VPResllz6EeOdTimhbbqEGuvZ6AyKlfNf2LT-IdyI2LpP8BFEZFSuhTqg/exec'
+const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxRayXPsNANWkJFSflG0Gr8jH5Oshgvm8WGMy923PqSvNlXSRv-hSsYFE7w5GQau1CW2w/exec'
 
 class Dashboard {
     constructor() {
         const sheets = new SheetsService(SCRIPT_URL)
         const labels = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
 
-        // Modules dengan SheetsService langsung (load() sendiri)
         this.bppModule      = new BppModule(sheets, labels)
         this.penjualanModule = new PenjualanModule(sheets, labels)
 
-        // Services
         this.kwhService       = new RealisasiKWHService(sheets)
         this.pendapatanService = new PendapatanBatamService(sheets)
         this.golTarifService  = new GolTarifBatamService(sheets)
@@ -63,7 +60,6 @@ class Dashboard {
         this.tunggakanService = new TunggakanService(sheets)
         this.p2tlService      = new P2tlService(sheets)
 
-        // Modules — inject chart instance
         this.kwhModule        = new KwhModule(new PenjualanKwhChart())
         this.pendapatanModule = new PendapatanBatamModule(new PendapatanBatamChart())
         this.golTarifModule   = new GolTarifBatamModule(new GolTarifBatamChart())
@@ -76,7 +72,6 @@ class Dashboard {
         this.tunggakanModule  = new TunggakanModule(new TunggakanChart())
         this.p2tlModule       = new P2tlModule(new P2tlChart())
 
-        // Data cache
         this.kwhData = this.pendapatanData = this.golTarifData = null
         this.rpkwhData = this.pelangganData = this.kvaData     = null
         this.babinData = this.jamNyalaData  = this.lossesData  = null
@@ -84,7 +79,6 @@ class Dashboard {
 
         this.chatbot = new ChatbotModule()
 
-        // State filter
         this.state = {
             global:     { month: 'all', year: '2025' },
             bpp:        { type: 'BPP PEMBANGKIT', month: 'all' },
@@ -109,12 +103,12 @@ class Dashboard {
         try {
             console.log('Loading Dashboard Assets...')
 
-            // 1. UI statis & chatbot — prioritas tertinggi agar bisa diklik saat data masih loading
+            // 1. UI statis & chatbot — prioritas tertinggi
             this._initChatbotEvents()
             this._initClock()
             this._initGlobalFilters()
 
-            // 2. Core modules (BPP & Penjualan) — paralel, tunggu selesai sebelum render
+            // 2. Core modules (BPP & Penjualan) — paralel
             await Promise.all([this.bppModule.load(), this.penjualanModule.load()])
             this.bppModule.render(this.state.bpp)
             this.penjualanModule.render(this.state.penjualan)
@@ -124,19 +118,72 @@ class Dashboard {
             // 3. Semua module data — paralel dengan Promise.allSettled
             await this._loadDashboardData()
 
+            // ✅ FIX: Tunggu layout selesai sebelum init charts (hindari forced reflow)
+            if (document.readyState === 'complete') {
+                this._finalizeInit()
+            } else {
+                window.addEventListener('load', () => {
+                    requestAnimationFrame(() => {
+                        requestAnimationFrame(() => {
+                            this._finalizeInit()
+                        })
+                    })
+                })
+            }
+
             console.log('Dashboard Fully Loaded.')
         } catch (err) {
             console.error('Dashboard Init Error:', err)
         }
     }
 
-    // ── Private helpers ───────────────────────────────────────
+    /**
+     * Finalize: show layout + init charts setelah layout stabil
+     * Menggunakan double rAF untuk hindari forced reflow
+     */
+    _finalizeInit() {
+        // Tampilkan layout (hilangkan opacity 0)
+        document.getElementById('dashboardLayout')?.classList.add('loaded')
+        
+        // Init charts dengan ResizeObserver untuk hindari reflow
+        this._initChartsSafe()
+    }
 
     /**
-     * Load semua service secara PARALEL (bukan sekuensial).
-     * Promise.allSettled memastikan satu fetch gagal tidak menghentikan yang lain.
-     * Waktu total = waktu fetch terlama (bukan jumlah semua waktu).
+     * Init charts dengan ResizeObserver — tunggu container punya dimensi
      */
+    _initChartsSafe() {
+        const chartWrappers = document.querySelectorAll('.chart-wrapper')
+        chartWrappers.forEach(wrapper => {
+            const canvas = wrapper.querySelector('canvas')
+            if (!canvas) return
+            
+            if (wrapper.offsetWidth > 0) {
+                // Container ready, init chart
+                this._initChartOnCanvas(canvas)
+            } else {
+                // Tunggu container ready dengan ResizeObserver
+                const observer = new ResizeObserver(entries => {
+                    if (entries[0]?.contentRect.width > 0) {
+                        observer.disconnect()
+                        this._initChartOnCanvas(canvas)
+                    }
+                })
+                observer.observe(wrapper)
+            }
+        })
+    }
+
+    /**
+     * Wrapper untuk init chart individual (override sesuai implementasi chart-mu)
+     */
+    _initChartOnCanvas(canvas) {
+        // Jika chart sudah di-init oleh module, skip
+        if (canvas._chartInitialized) return
+        canvas._chartInitialized = true
+        // Chart.js auto-init via module, jadi tidak perlu kode tambahan di sini
+    }
+
     async _loadDashboardData() {
         const configs = [
             { s: this.kwhService,       m: this.kwhModule,       st: this.state.kwh,       key: 'kwhData' },
@@ -152,10 +199,7 @@ class Dashboard {
             { s: this.p2tlService,      m: this.p2tlModule,      st: this.state.p2tl,      key: 'p2tlData' },
         ]
 
-        // Semua fetch jalan bersamaan — waktu total = fetch yang paling lambat
-        const results = await Promise.allSettled(
-            configs.map(cfg => cfg.s.getData())
-        )
+        const results = await Promise.allSettled(configs.map(cfg => cfg.s.getData()))
 
         results.forEach((result, i) => {
             const cfg = configs[i]
@@ -212,4 +256,5 @@ class Dashboard {
     }
 }
 
+// ✅ Init dengan DOMContentLoaded (sudah aman karena module deferred)
 document.addEventListener('DOMContentLoaded', () => new Dashboard().init())

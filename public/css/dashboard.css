@@ -18,7 +18,7 @@ body {
 
 .container { max-width: 1400px; margin: 0 auto; padding: 30px; }
 
-/* NAVBAR */
+/* ===== NAVBAR ===== */
 .navbar {
     background: #1a1a1a;
     border-bottom: 1px solid #333;
@@ -39,18 +39,18 @@ body {
 }
 .nav-link:hover { background: #2a2a2a; color: white; }
 .nav-link.active { background: var(--accent-orange); color: #000; }
-.nav-avatar { width: 30px; height: 30px; border-radius: 50%; }
+.nav-avatar { width: 30px; height: 30px; border-radius: 50%; object-fit: cover; }
 .dropdown-content { display: none; position: absolute; right: 0; background: #222; min-width: 150px; border-radius: 5px; box-shadow: 0 4px 6px rgba(0,0,0,0.3); z-index: 100; }
 .profile-dropdown:hover .dropdown-content { display: block; }
 .dropdown-content a, .logout-item { display: block; padding: 10px; color: white; text-decoration: none; width: 100%; text-align: left; border: none; background: none; cursor: pointer; }
 .logout-item { color: #ff5555; }
 .dropdown-content a:hover { background: #333; }
 
-/* Dark/Light Mode logic */
+/* Dark/Light Mode */
 [data-theme="light"] { background-color: #ffffff; color: #333333; }
 [data-theme="dark"] { background-color: #121212; color: #ffffff; }
 
-/* HEADER */
+/* ===== HEADER ===== */
 .header {
     display: flex;
     justify-content: space-between;
@@ -61,7 +61,7 @@ body {
 }
 .header h2 { margin: 0; }
 
-/* FILTERS */
+/* ===== FILTERS ===== */
 .filters { display: flex; gap: 10px; }
 select {
     background: var(--card-bg);
@@ -101,8 +101,6 @@ select {
 .col-8  { grid-column: span 8; }
 .col-9  { grid-column: span 9; }
 .col-12 { grid-column: span 12; }
-
-/* Backward compat supaya blade lama tidak rusak */
 .double-column { grid-column: span 8; }
 .full-width    { grid-column: span 12; }
 
@@ -115,18 +113,28 @@ select {
     letter-spacing: 1px;
     flex-shrink: 0;
 }
-canvas {
-    display: block;
-    image-rendering: crisp-edges;
-}
-/* STATS */
+
+/* ===== STATS ===== */
 .stat-value  { font-size: 2.5rem; font-weight: 800; color: var(--accent-orange); }
 .stat-change { font-size: 1.5rem; font-weight: 700; color: var(--accent-green); }
 
-/* CHART */
-.chart-wrapper { position: relative; height: 300px; width: 100%; }
+/* ===== CHART ===== */
+.chart-wrapper {
+    position: relative;
+    height: 300px;
+    width: 100%;
+    min-height: 300px;
+    contain: layout style paint; /* ✅ Browser optimization */
+}
+canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    image-rendering: crisp-edges;
+    contain: layout style paint;
+}
 
-/* TABLE */
+/* ===== TABLE ===== */
 table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
 th {
     background: #2a2a2a;
@@ -164,13 +172,66 @@ tr:hover { background: #252525; }
 /* ===== RESPONSIVE ===== */
 @media (max-width: 1200px) {
     .dashboard-grid { grid-template-columns: repeat(8, 1fr); }
-    .col-12, .full-width   { grid-column: span 8; }
-    .col-9, .col-8, .double-column { grid-column: span 8; }
+    .col-12, .full-width, .col-9, .col-8, .double-column { grid-column: span 8; }
     .col-6 { grid-column: span 4; }
     .col-4, .col-3 { grid-column: span 4; }
 }
-
 @media (max-width: 768px) {
     .dashboard-grid { grid-template-columns: 1fr; }
     [class*="col-"], .double-column, .full-width { grid-column: span 1; }
+}
+
+/* ===== 🚀 PERFORMANCE FIXES ===== */
+
+/* Prevent Layout Shift */
+.dashboard-layout {
+    min-height: calc(100vh - 104px); /* 56px header + 48px navbar */
+    opacity: 0;
+    transition: opacity 0.2s ease-in;
+    will-change: opacity;
+}
+.dashboard-layout.loaded {
+    opacity: 1;
+}
+
+/* Reserve space for charts */
+.chart-wrapper,
+.chart-container {
+    position: relative;
+    height: 300px;
+    min-height: 300px;
+    contain: layout style paint;
+    background: var(--card-bg); /* Placeholder visual */
+}
+
+/* Stats cards - prevent size jumping */
+.card:has(.stat-value) {
+    min-height: 140px;
+    contain: layout style;
+}
+
+/* Prevent grid reflow */
+.dashboard-grid > * {
+    min-width: 0;
+}
+
+/* Loading skeleton animation */
+.chart-loading {
+    background: linear-gradient(90deg, var(--card-bg) 25%, #2a2a2a 50%, var(--card-bg) 75%);
+    background-size: 200% 100%;
+    animation: loading 1.5s infinite;
+}
+@keyframes loading {
+    0% { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+/* Mobile chart height adjustment */
+@media (max-width: 768px) {
+    .chart-wrapper { height: 250px; min-height: 250px; }
+}
+
+/* Prevent FOUC for sections */
+.dash-section {
+    min-height: 200px;
 }

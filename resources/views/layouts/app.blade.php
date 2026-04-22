@@ -6,17 +6,17 @@
     <meta name="csrf-token" content="{{ csrf_token() }}">
     <title>@yield('title', 'PLN Commercial Dashboard')</title>
 
-    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+    {{-- 🎨 CSS: Critical styles tetap di head --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
     <link rel="stylesheet" href="/css/dashboard.css">
     <link rel="stylesheet" href="{{ asset('css/fact-entry.css') }}">
+    
     @stack('styles')
     @yield('head')
 </head>
 <body>
 
 <nav class="navbar">
-
     {{-- Kiri: navigasi halaman --}}
     <div class="nav-left">
         <a href="/dashboard" class="nav-item {{ Request::is('dashboard') || Request::is('/') ? 'active' : '' }}">
@@ -53,19 +53,22 @@
             </div>
         </div>
     </div>
-
 </nav>
 
-<div class="container">
+<div class="app-main">
     @yield('content')
 </div>
 
 @include('partials.chatbot')
 
+{{-- 📜 Scripts: semua JS dipindah ke sebelum </body> agar tidak blocking render --}}
 @yield('scripts')
 @stack('scripts')
 
+{{-- Chart.js & SweetAlert2: tetap pakai script yang sudah disediakan, hanya diposisikan di bawah --}}
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
 <script>
 const Toast = Swal.mixin({
     toast: true,
