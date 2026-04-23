@@ -53,73 +53,61 @@ class FactHistorisEntryController extends Controller
         ));
     }
 
-    public function getExistingData(Request $request)
-    {
-        try {
-            $request->validate([
-                'tahun' => 'required|integer',
-                'bulan' => 'required|integer|between:1,12',
-            ]);
+ public function getExistingData(Request $request)
+{
+    try {
+        $request->validate([
+            'tahun' => 'required|integer',
+            'bulan' => 'required|integer|between:1,12',
+        ]);
 
-            $tahun = (int) $request->tahun;
-            $bulan = (int) $request->bulan;
+        $tahun = (int) $request->tahun;
+        $bulan = (int) $request->bulan;
 
-            if ($tahun < 2026) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Fitur input data hanya tersedia untuk tahun 2026 ke atas.',
-                    'locked' => true,
-                ], 403);
-            }
-
-            $tahunDenganData = FactHistoris::where('tahun', $tahun)
-                ->where('is_akumulasi', 0)
-                ->where('is_jumlah_tahunan', 0)
-                ->exists();
-                
-            if ($tahun < now()->year && $tahunDenganData) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data tahun ini sudah final dan tidak dapat diedit.',
-                    'locked' => true,
-                ], 403);
-            }
-
-            $canEdit = $this->entryService->canEditPeriod($tahun, $bulan);
-            
-            if (!$canEdit) {
-                return response()->json([
-                    'success' => false,
-                    'message' => 'Data untuk periode ini sudah tidak dapat diedit karena sudah melewati minggu pertama bulan berikutnya.',
-                    'locked' => true,
-                ]);
-            }
-
-            $data = FactHistoris::where('tahun', $tahun)
-                ->where('bulan', $bulan)
-                ->where('is_akumulasi', 0)
-                ->where('is_jumlah_tahunan', 0)
-                ->with(['metrik', 'golongan'])
-                ->get()
-                ->groupBy('metrik_kode');
-
-            return response()->json([
-                'success' => true,
-                'data' => $data,
-                'locked' => false,
-                'canEdit' => $canEdit,
-            ]);
-
-        } catch (\Exception $e) {
-            Log::error("getExistingData error: " . $e->getMessage());
+        if ($tahun < 2026) {
             return response()->json([
                 'success' => false,
-                'message' => 'Server error: ' . $e->getMessage(),
-                'locked' => true,
-            ], 500);
+                'message' => 'Fitur input hanya untuk tahun 2026 ke atas.',
+                'locked'  => true,
+            ], 403);
         }
-    }
 
+        // Cek deadline per bulan, BUKAN per tahun
+        $canEdit = $this->entryService->canEditPeriod($tahun, $bulan);
+
+        if (!$canEdit) {
+            return response()->json([
+                'success' => false,
+                'message' => 'Periode ' . $this->getBulanName($bulan) . " {$tahun} sudah melewati batas edit (hari ke-7 bulan berikutnya).",
+                'locked'  => true,
+            ]);
+        }
+
+        // Ambil data yang sudah ada untuk periode ini
+        $data = FactHistoris::where('tahun', $tahun)
+            ->where('bulan', $bulan)
+            ->where('is_akumulasi', 0)
+            ->where('is_jumlah_tahunan', 0)
+            ->with(['metrik', 'golongan'])
+            ->get()
+            ->groupBy('metrik_kode');
+
+        return response()->json([
+            'success' => true,
+            'data'    => $data,
+            'locked'  => false,
+            'canEdit' => true,
+        ]);
+
+    } catch (\Exception $e) {
+        Log::error("getExistingData error: " . $e->getMessage());
+        return response()->json([
+            'success' => false,
+            'message' => 'Server error: ' . $e->getMessage(),
+            'locked'  => true,
+        ], 500);
+    }
+}
     public function store(Request $request)
     {
         $request->validate([
