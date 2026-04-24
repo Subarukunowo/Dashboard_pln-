@@ -3,6 +3,13 @@
 @section('title', 'Data Historis PLN Batam')
 
 @push('styles')
+{{-- 🔥 GLOBAL FAVICON (Embedded Direct - No Cache) --}}
+<link rel="icon" type="image/png" href="{{ asset('assets/favicons/favicon-96x96.png') }}?v={{ time() }}" sizes="96x96" />
+<link rel="icon" type="image/svg+xml" href="{{ asset('assets/favicons/favicon.svg') }}?v={{ time() }}" />
+<link rel="shortcut icon" href="{{ asset('assets/favicons/favicon.ico') }}?v={{ time() }}" />
+<link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/favicons/apple-touch-icon.png') }}?v={{ time() }}" />
+<link rel="manifest" href="{{ asset('assets/favicons/site.webmanifest') }}?v={{ time() }}" />
+
 <link rel="stylesheet" href="{{ asset('css/historis-page.css') }}">
 <style>
     /* ─── Filter & Button Components ─── */
@@ -38,7 +45,7 @@
     .hist-gol-chip.checked { background: rgba(0,255,136,0.08); border-color: var(--accent-green); color: var(--accent-green); }
     .hist-gol-chip input { display: none; }
 
-    /* ─── Cards ─── */
+    /* ─── Cards ── */
     .card {
         background: #141414; border: 1px solid #2a2a2a; border-radius: 12px;
         padding: 18px; margin-bottom: var(--gap);

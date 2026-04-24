@@ -63,12 +63,12 @@ return [
     |
     */
 
-    'logo' => '<b>Admin</b>LTE',
-    'logo_img' => 'vendor/adminlte/dist/img/AdminLTELogo.png',
-    'logo_img_class' => 'brand-image img-circle elevation-3',
-    'logo_img_xl' => null,
-    'logo_img_xl_class' => 'brand-image-xs',
-    'logo_img_alt' => 'Admin Logo',
+   'logo' => '<b>PLN BATAM</b>',  // Ganti "Admin" jadi "PLN"
+'logo_img' => 'logo/pln.png',  // Gunakan dash (-) bukan spasi
+'logo_img_class' => 'brand-image elevation-3',  // ❌ HAPUS 'img-circle'
+'logo_img_xl' => null,
+'logo_img_xl_class' => 'brand-image elevation-3',  // ✅ PERBAIKI (bukan path logo)
+'logo_img_alt' => 'Logo PLN Commercial',
 
     /*
     |--------------------------------------------------------------------------
