@@ -75,7 +75,7 @@
             <span>⚠ Akses terbatas.</span> Hanya akun yang terdaftar dan diizinkan yang dapat mengakses dashboard ini.
         </div>
 
-        <div class="footer">© 2025 PLN Batam · Commercial Division</div>
+        <div class="footer">© PLN Batam · REVAS Division</div>
     </div>
 </div>
 
