@@ -130,6 +130,7 @@
     border-radius: 50%;
     object-fit: cover;
     border: 2px solid var(--accent-orange);
+    background-color: #2a2a2a;
 }
 
 /* ✅ Username - HARUS kontras tinggi */

@@ -1,5 +1,7 @@
+
 <?php
 // app/Console/Commands/TestPlnApi.php
+/*
 namespace App\Console\Commands;
 
 use Illuminate\Console\Command;
@@ -45,3 +47,4 @@ class TestPlnApi extends Command
         }
     }
 }
+*/

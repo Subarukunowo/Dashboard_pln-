@@ -1,20 +1,10 @@
 /**
  * Fact Entry — Standalone Input Page
  * Handles data entry for historical metrics (2026+)
- * 
- * Features:
- * - Load existing data via API
- * - Save/create entries with validation
- * - Handle JSON errors gracefully
- * - Auto CSRF token detection
  */
 
 (function() {
     'use strict';
-
-    // ════════════════════════════════════════════════════════════════════
-    // CONFIG & STATE
-    // ════════════════════════════════════════════════════════════════════
 
     const CONFIG = {
         endpoints: {
@@ -56,10 +46,6 @@
         golongans: [],
     };
 
-    // ════════════════════════════════════════════════════════════════════
-    // DOM CACHE
-    // ════════════════════════════════════════════════════════════════════
-
     const DOM = {};
 
     function cacheElements() {
@@ -68,17 +54,10 @@
         });
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    // INITIALIZATION
-    // ════════════════════════════════════════════════════════════════════
-
     function init() {
         cacheElements();
         bindEvents();
         fetchGolongans();
-        
-        // Auto-load current period on page load (optional)
-        // loadExistingData();
     }
 
     function bindEvents() {
@@ -94,7 +73,6 @@
     }
 
     function fetchGolongans() {
-        // Extract golongan from existing chips or use default
         const chips = document.querySelectorAll('.cb-golongan, .hist-gol-chip input[type=checkbox]');
         if (chips.length > 0) {
             state.golongans = Array.from(chips).map(cb => ({
@@ -102,7 +80,6 @@
                 nama: cb.closest('label')?.textContent?.trim() || cb.value,
             }));
         } else {
-            // Default fallback
             state.golongans = [
                 { kode: 'S', nama: 'Sosial' },
                 { kode: 'R', nama: 'Rumah Tangga' },
@@ -115,12 +92,22 @@
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    // API: LOAD DATA
-    // ════════════════════════════════════════════════════════════════════
+       async function loadExistingData(tahun, bulan) {
+        // Ambil nilai langsung dari DOM, jangan andalkan parameter
+        const tahunEl = document.getElementById('inputTahun');
+        const bulanEl = document.getElementById('inputBulan');
+        
+        const tahunVal = tahunEl ? tahunEl.value : null;
+        const bulanVal = bulanEl ? bulanEl.value : null;
 
-    async function loadExistingData(tahun, bulan) {
-        if (!tahun || !bulan) {
+        // Debug log ke console
+        console.log('DEBUG: inputTahun value:', tahunVal, 'inputBulan value:', bulanVal);
+        console.log('DEBUG: Elements found:', { tahun: !!tahunEl, bulan: !!bulanEl });
+
+        const tahunInt = parseInt(tahunVal, 10);
+        const bulanInt = parseInt(bulanVal, 10);
+        
+        if (!tahunVal || !bulanVal || isNaN(tahunInt) || isNaN(bulanInt)) {
             showStatus('Pilih tahun dan bulan terlebih dahulu', 'warning');
             return;
         }
@@ -130,12 +117,12 @@
         setButtonLoading(DOM.btnLoad, true);
 
         try {
-            const response = await fetch(
-                `${CONFIG.endpoints.loadData}?tahun=${tahun}&bulan=${bulan}`,
-                { headers: { 'Accept': 'application/json' } }
-            );
+            // Gunakan variabel yang sudah divalidasi
+            const url = `${CONFIG.endpoints.loadData}?tahun=${tahunInt}&bulan=${bulanInt}`;
+            console.log('DEBUG: Fetching URL:', url);
+            
+            const response = await fetch(url, { headers: { 'Accept': 'application/json' } });
 
-            // 🔍 Handle non-JSON responses (auth redirect, 404, 500)
             const contentType = response.headers.get('content-type');
             if (!contentType?.includes('application/json')) {
                 const text = await response.text();
@@ -157,13 +144,14 @@
                 return;
             }
 
-            // Success: populate form
             state.currentData = result.data || {};
             state.isLocked = false;
             
             renderTable();
             showForm(true);
-            showStatus(`✓ Data dimuat: ${getBulanName(bulan)} ${tahun}`, 'success');
+            
+            const deadlineMsg = result.reason ?? '';
+            showStatus(`✓ Data dimuat: ${getBulanName(bulanInt)} ${tahunInt}. ${deadlineMsg}`, 'success');
 
         } catch (error) {
             console.error('loadExistingData error:', error);
@@ -173,19 +161,23 @@
             setButtonLoading(DOM.btnLoad, false);
         }
     }
-
-    // ════════════════════════════════════════════════════════════════════
-    // API: SAVE DATA
-    // ════════════════════════════════════════════════════════════════════
-
     async function saveData() {
         if (state.isLocked) {
             showStatus('Data terkunci, tidak dapat disimpan', 'error');
             return;
         }
 
-        const tahun = DOM.tahun?.value;
-        const bulan = DOM.bulan?.value;
+        const tahunRaw = DOM.tahun?.value;
+        const bulanRaw = DOM.bulan?.value;
+        
+        const tahun = parseInt(tahunRaw, 10);
+        const bulan = parseInt(bulanRaw, 10);
+
+        if (!tahunRaw || !bulanRaw || isNaN(tahun) || isNaN(bulan) || bulan < 1 || bulan > 12) {
+            showStatus('Pilih tahun dan bulan terlebih dahulu', 'warning');
+            return;
+        }
+
         const entries = collectFormData();
 
         if (!entries.length) {
@@ -207,13 +199,12 @@
                     'X-CSRF-TOKEN': csrfToken,
                 },
                 body: JSON.stringify({
-                    tahun: parseInt(tahun),
-                    bulan: parseInt(bulan),
-                    data: entries,
+                    tahun: tahun,
+                    bulan: bulan,
+                    data: entries,  
                 }),
             });
 
-            // Handle non-JSON error response
             const contentType = response.headers.get('content-type');
             if (!contentType?.includes('application/json')) {
                 const text = await response.text();
@@ -245,15 +236,10 @@
         }
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    // FORM RENDERING
-    // ════════════════════════════════════════════════════════════════════
-
     function renderTable() {
         const { tableHead, tableBody } = DOM;
         if (!tableHead || !tableBody) return;
 
-        // Build header
         tableHead.innerHTML = `
             <tr>
                 <th class="col-metrik">Metrik</th>
@@ -264,7 +250,6 @@
             </tr>
         `;
 
-        // Build body rows
         tableBody.innerHTML = CONFIG.metrics.map(metric => {
             const existingRows = state.currentData[metric.kode] || [];
             
@@ -294,7 +279,6 @@
             `;
         }).join('');
 
-        // Add focus/blur handlers for visual feedback
         document.querySelectorAll('.data-input').forEach(input => {
             input.addEventListener('focus', function() {
                 this.style.borderColor = 'var(--accent-orange, #ff9800)';
@@ -327,10 +311,6 @@
         return entries;
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    // UI HELPERS
-    // ════════════════════════════════════════════════════════════════════
-
     function setLoading(show) {
         if (DOM.loading) DOM.loading.style.display = show ? 'flex' : 'none';
         if (DOM.entryForm) DOM.entryForm.style.display = show ? 'none' : 'block';
@@ -344,7 +324,7 @@
     function showLocked(message) {
         showForm(false);
         if (DOM.status) {
-            DOM.status.textContent = `🔒 ${message}`;
+            DOM.status.textContent = `Terkunci: ${message}`;
             Object.assign(DOM.status.style, CONFIG.statusStyles.warning);
             DOM.status.style.display = 'block';
         }
@@ -366,7 +346,6 @@
             margin-top: 10px;
         `;
 
-        // Auto-hide success messages
         if (type === 'success') {
             setTimeout(() => {
                 if (DOM.status?.textContent === message) {
@@ -434,17 +413,16 @@
         return names[+num] || '';
     }
 
-    // ════════════════════════════════════════════════════════════════════
-    // BOOTSTRAP
-    // ════════════════════════════════════════════════════════════════════
-
     if (document.readyState === 'loading') {
         document.addEventListener('DOMContentLoaded', init);
     } else {
         init();
     }
 
-    // Expose for debugging/testing
-    window.FactEntry = { load: loadExistingData, save: saveData, state };
+    window.FactEntry = { 
+        load: loadExistingData, 
+        save: saveData, 
+        state 
+    };
 
 })();

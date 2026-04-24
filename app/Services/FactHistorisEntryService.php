@@ -11,20 +11,23 @@ use Illuminate\Support\Collection;
 
 class FactHistorisEntryService
 {
+    // Daftar metrik lengkap yang wajib tersedia untuk input
+    private const COMPLETE_METRICS = [
+        'kwh_jual',
+        'rupiah',
+        'pelanggan',
+        'daya_va',
+        'rpkwh',
+        'pertumbuhan_yoy'
+    ];
+
     // =========================================================
-    // LOCK LOGIC
+    // LOCK LOGIC - PER BULAN (Poin 1)
     // =========================================================
 
     /**
-     * Cek apakah periode masih bisa diedit.
-     *
-     * Aturan:
-     * - Tahun < 2026 = TIDAK bisa diedit (data historis read-only)
-     * - Periode berjalan atau masa depan = bisa diedit sampai deadline
-     * - Deadline = tanggal 7 bulan BERIKUTNYA pukul 23:59:59
-     *
-     * Contoh: April 2026 → deadline = 7 Mei 2026 23:59:59
-     * Jika sekarang 22 April 2026 → MASIH bisa edit ✓
+     * Cek apakah periode bulan tertentu masih bisa diedit.
+     * Aturan: Edit tersedia sampai tanggal 7 bulan berikutnya pukul 23:59:59.
      */
     public function canEditPeriod(int $tahun, int $bulan): bool
     {
@@ -37,7 +40,7 @@ class FactHistorisEntryService
     }
 
     /**
-     * Deadline edit = tanggal 7 bulan berikutnya pukul 23:59:59
+     * Hitung deadline edit: tanggal 7 bulan berikutnya, akhir hari.
      */
     public function getEditDeadline(int $tahun, int $bulan): Carbon
     {
@@ -48,7 +51,7 @@ class FactHistorisEntryService
     }
 
     /**
-     * Pesan informatif tentang status periode
+     * Dapatkan informasi status periode untuk ditampilkan ke user.
      */
     public function getPeriodeStatus(int $tahun, int $bulan): array
     {
@@ -63,7 +66,7 @@ class FactHistorisEntryService
         $deadline   = $this->getEditDeadline($tahun, $bulan);
         $now        = Carbon::now();
         $canEdit    = $now->lte($deadline);
-        $bulanNama  = $now->setMonth($bulan)->isoFormat('MMMM');
+        $bulanNama  = Carbon::create()->month($bulan)->isoFormat('MMMM');
 
         return [
             'can_edit' => $canEdit,
@@ -75,93 +78,67 @@ class FactHistorisEntryService
     }
 
     // =========================================================
-    // AVAILABLE YEARS
+    // YEAR AVAILABILITY LOGIC - PER TAHUN (Poin 2)
     // =========================================================
 
     /**
-     * Dapatkan tahun yang TERSEDIA untuk input.
-     *
-     * Bug sebelumnya: tahun dihapus dari daftar begitu ada SATU bulan tersimpan.
-     * Fix: tahun tetap tersedia selama masih ada bulan yang bisa diedit.
-     *
-     * Logika:
-     * - Tahun mulai dari 2026
-     * - Tersedia = ada minimal 1 bulan di tahun tsb yang belum lewat deadline
-     * - Atau tahun tersebut belum ada data sama sekali
+     * Cek apakah sebuah tahun masih tersedia untuk input.
+     * 
+     * Logika (Poin 2):
+     * Tahun TIDAK dikunci selama masih ada minimal 1 bulan yang belum lewat deadline.
+     * Tahun hanya akan hilang dari dropdown jika Bulan 1-12 SEMUANYA sudah lewat tanggal 7 bulan berikutnya.
+     */
+    public function isYearEditable(int $tahun): bool
+    {
+        for ($bulan = 1; $bulan <= 12; $bulan++) {
+            if ($this->canEditPeriod($tahun, $bulan)) {
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /**
+     * Dapatkan daftar tahun yang tersedia untuk dropdown.
      */
     public function getAvailableYears(int $startYear = 2026, int $yearsAhead = 2): Collection
     {
-        $now     = Carbon::now();
+        $now     = now();
         $endYear = $now->year + $yearsAhead;
 
         return collect(range($startYear, $endYear))
-            ->filter(function (int $tahun) use ($now) {
-                // Selalu tersedia jika ada bulan yang masih bisa diedit
-                for ($bulan = 1; $bulan <= 12; $bulan++) {
-                    if ($this->canEditPeriod($tahun, $bulan)) {
-                        return true;
-                    }
-                }
-                return false;
-            })
+            ->filter(fn($tahun) => $this->isYearEditable($tahun))
             ->values();
     }
 
     // =========================================================
-    // DIM_PERIODE AUTO-REGISTER
+    // DIM_PERIODE MANAGEMENT (Poin 3)
     // =========================================================
 
     /**
-     * Pastikan tahun ada di dim_periode.
-     * Dipanggil setelah store data berhasil.
-     *
-     * Jika tahun belum ada di dim_periode, buat row baru dengan:
-     * - granularitas = 'bulanan' (data entry selalu bulanan)
-     * - metrik_tersedia = daftar metrik dari data yang disimpan
+     * Pastikan entri dim_periode ada dan terisi dengan daftar metrik LENGKAP.
+     * 
+     * Poin 3: Selalu simpan metrik_tersedia dengan daftar lengkap,
+     * bukan hanya metrik yang diinput saat itu.
      */
-    public function ensureDimPeriode(int $tahun, array $metrikKodes = []): DimPeriode
+    public function ensureDimPeriode(int $tahun): DimPeriode
     {
-        // Ambil metrik yang ada di DB untuk tahun ini
-        if (empty($metrikKodes)) {
-            $metrikKodes = FactHistoris::where('tahun', $tahun)
-                ->where('is_akumulasi', 0)
-                ->whereRaw('LOWER(metrik_kode) IN (?)', [
-                    implode(',', ['kwh_jual','mwh_jual','rupiah','pelanggan','daya_va'])
-                ])
-                ->distinct()
-                ->pluck('metrik_kode')
-                ->map(fn($k) => strtolower($k))
-                ->unique()
-                ->values()
-                ->toArray();
-        }
-
-        // Upsert dim_periode
         $periode = DimPeriode::firstOrNew(['tahun' => $tahun]);
 
-        // Update metrik_tersedia: gabungkan yang sudah ada + yang baru
-        $existing = [];
-        if ($periode->metrik_tersedia) {
-            $decoded = json_decode($periode->metrik_tersedia, true);
-            $existing = is_array($decoded) ? $decoded : [];
-        }
-
-        $merged = array_values(array_unique(array_merge($existing, $metrikKodes)));
-
         $periode->granularitas    = 'bulanan';
-        $periode->metrik_tersedia = json_encode($merged);
+        $periode->metrik_tersedia = json_encode(self::COMPLETE_METRICS);
         $periode->save();
 
         return $periode;
     }
 
     // =========================================================
-    // UTIL
+    // UTILITIES
     // =========================================================
 
     public function isYearComplete(int $tahun): bool
     {
-        $metrikCount   = DimMetrik::count();
+        $metrikCount   = DimMetrik::whereIn('kode', self::COMPLETE_METRICS)->count();
         $golonganCount = DimGolongan::count();
         $required      = $metrikCount * $golonganCount * 12;
 

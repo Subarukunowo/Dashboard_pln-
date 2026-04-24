@@ -17,43 +17,43 @@ class FactHistorisEntryController extends Controller
 {
     public function __construct(private FactHistorisEntryService $entryService) {}
 
+    /**
+     * Tampilkan form input dengan filter tahun yang benar (Poin 2).
+     */
     public function create()
     {
-        $tahunDenganData = FactHistoris::where('is_akumulasi', 0)
-            ->where('is_jumlah_tahunan', 0)
-            ->distinct()
-            ->pluck('tahun')
-            ->toArray();
-
-        $tahunMulai = 2026;
-        $tahunAkhir = now()->year + 2;
+        $now = now();
         
-        $tahunTersedia = collect(range($tahunMulai, $tahunAkhir))
-            ->filter(fn($t) => !in_array($t, $tahunDenganData))
-            ->values();
+        // Ambil daftar tahun yang MASIH BISA diedit berdasarkan logika Service
+        $tahunTersedia = $this->entryService->getAvailableYears(2026, 2);
 
-        $metrikList = DimMetrik::whereIn('kode', ['kwh_jual','mwh_jual','rupiah','pelanggan','daya_va','rpkwh'])
-                              ->orderBy('kategori')->orderBy('nama')->get();
+        $metrikList = DimMetrik::whereIn('kode', [
+                'kwh_jual','mwh_jual','rupiah','pelanggan','daya_va','rpkwh','pertumbuhan_yoy'
+            ])
+            ->orderBy('kategori')
+            ->orderBy('nama')
+            ->get();
+            
         $golonganList = DimGolongan::orderBy('urutan')->get();
-        
-        $currentYear = now()->year;
-        $currentMonth = now()->month;
-        
-        $defaultTahun = $tahunTersedia->firstWhere(fn($t) => $t == $currentYear) 
-                      ?? $tahunTersedia->first() 
-                      ?? $tahunMulai;
-        
+
+        // Default: Ambil tahun pertama yang tersedia, atau fallback ke 2026
+        $defaultTahun = $tahunTersedia->first() ?? 2026;
+        $defaultBulan = $now->month;
+
         return view('partials.fact-historis-entry', compact(
             'tahunTersedia',
             'metrikList',
             'golonganList',
-            'currentYear',
-            'currentMonth',
-            'defaultTahun'
+            'defaultTahun',
+            'defaultBulan'
         ));
     }
 
- public function getExistingData(Request $request)
+    /**
+     * Ambil data existing untuk periode tertentu.
+     * Lock logic diterapkan per bulan di sini (Poin 1).
+     */
+public function getExistingData(Request $request)
 {
     try {
         $request->validate([
@@ -64,59 +64,83 @@ class FactHistorisEntryController extends Controller
         $tahun = (int) $request->tahun;
         $bulan = (int) $request->bulan;
 
+        // 🔒 Lock historis data (1997-2025)
         if ($tahun < 2026) {
             return response()->json([
                 'success' => false,
-                'message' => 'Fitur input hanya untuk tahun 2026 ke atas.',
+                'message' => 'Data historis 1997–2025 hanya bisa dibaca.',
                 'locked'  => true,
             ], 403);
         }
 
-        // Cek deadline per bulan, BUKAN per tahun
-        $canEdit = $this->entryService->canEditPeriod($tahun, $bulan);
+        // 🔒 Cek status lock per bulan
+        $status = $this->entryService->getPeriodeStatus($tahun, $bulan);
 
-        if (!$canEdit) {
+        if (!$status['can_edit']) {
             return response()->json([
-                'success' => false,
-                'message' => 'Periode ' . $this->getBulanName($bulan) . " {$tahun} sudah melewati batas edit (hari ke-7 bulan berikutnya).",
-                'locked'  => true,
+                'success'  => false,
+                'message'  => $status['reason'],
+                'locked'   => true,
+                'deadline' => $status['deadline'],
             ]);
         }
 
-        // Ambil data yang sudah ada untuk periode ini
-        $data = FactHistoris::where('tahun', $tahun)
+        // 📦 Ambil data dari database
+        $records = FactHistoris::where('tahun', $tahun)
             ->where('bulan', $bulan)
             ->where('is_akumulasi', 0)
             ->where('is_jumlah_tahunan', 0)
-            ->with(['metrik', 'golongan'])
-            ->get()
-            ->groupBy('metrik_kode');
+            ->select('id', 'metrik_kode', 'golongan_kode', 'nilai') // ✅ Hanya ambil field yang diperlukan
+            ->get();
+
+        // 🔄 Transform ke format yang diharapkan frontend:
+        // { metrik_kode: [ { golongan_kode, nilai }, ... ] }
+        $transformedData = $records->groupBy('metrik_kode')->map(function ($items) {
+            return $items->map(function ($item) {
+                return [
+                    'golongan_kode' => $item->golongan_kode,
+                    'nilai' => $item->nilai !== null ? (float) $item->nilai : null,
+                ];
+            })->values(); // ✅ Convert to indexed array
+        });
 
         return response()->json([
-            'success' => true,
-            'data'    => $data,
-            'locked'  => false,
-            'canEdit' => true,
+            'success'  => true,
+            'data'     => $transformedData,  // ✅ Format sudah bersih
+            'locked'   => false,
+            'canEdit'  => true,
+            'deadline' => $status['deadline'],
+            'reason'   => $status['reason'],
         ]);
 
     } catch (\Exception $e) {
-        Log::error("getExistingData error: " . $e->getMessage());
+        // 📝 Log error dengan detail lebih lengkap
+        Log::error("getExistingData error", [
+            'message' => $e->getMessage(),
+            'trace' => $e->getTraceAsString(),
+            'request' => $request->all(),
+        ]);
+        
         return response()->json([
             'success' => false,
             'message' => 'Server error: ' . $e->getMessage(),
             'locked'  => true,
+            // ✅ Hapus 'trace' dari response production (security)
         ], 500);
     }
 }
+    /**
+     * Simpan data dan update dim_periode (Poin 3).
+     */
     public function store(Request $request)
     {
         $request->validate([
             'tahun' => 'required|integer|min:2026|max:2099',
             'bulan' => 'required|integer|between:1,12',
-            'data' => 'required|array',
-            'data.*.metrik_kode' => 'required|string|exists:dim_metrik,kode',
-            'data.*.golongan_kode' => 'required|string|exists:dim_golongan,kode',
-            'data.*.nilai' => 'required|numeric',
+            'data'  => 'required|array',
+            'data.*.metrik_kode'   => 'required|string',
+            'data.*.golongan_kode' => 'required|string',
+            'data.*.nilai'         => 'required|numeric',
         ]);
 
         $tahun = (int) $request->tahun;
@@ -130,6 +154,7 @@ class FactHistorisEntryController extends Controller
             ], 403);
         }
 
+        // Validasi lock per bulan (Poin 1)
         if (!$this->entryService->canEditPeriod($tahun, $bulan)) {
             return response()->json([
                 'success' => false,
@@ -144,9 +169,9 @@ class FactHistorisEntryController extends Controller
             $createdCount = 0;
 
             foreach ($dataEntries as $entry) {
-                $metrikKode = strtolower(trim($entry['metrik_kode']));
+                $metrikKode   = strtolower(trim($entry['metrik_kode']));
                 $golonganKode = strtoupper(trim($entry['golongan_kode']));
-                $nilai = (float) $entry['nilai'];
+                $nilai        = (float) $entry['nilai'];
 
                 $existing = FactHistoris::where('tahun', $tahun)
                     ->where('bulan', $bulan)
@@ -163,18 +188,23 @@ class FactHistorisEntryController extends Controller
                     }
                 } else {
                     FactHistoris::create([
-                        'tahun' => $tahun,
-                        'bulan' => $bulan,
-                        'metrik_kode' => $metrikKode,
-                        'golongan_kode' => $golonganKode,
-                        'nilai' => $nilai,
-                        'is_triwulan' => 0,
-                        'is_akumulasi' => 0,
+                        'tahun'             => $tahun,
+                        'bulan'             => $bulan,
+                        'metrik_kode'       => $metrikKode,
+                        'golongan_kode'     => $golonganKode,
+                        'nilai'             => $nilai,
+                        'is_triwulan'       => 0,
+                        'is_akumulasi'      => 0,
                         'is_jumlah_tahunan' => 0,
-                        'sumber' => 'manual',
+                        'sumber'            => 'manual',
                     ]);
                     $createdCount++;
                 }
+            }
+
+            // Poin 3: Update dim_periode dengan daftar metrik LENGKAP
+            if ($createdCount > 0 || $updatedCount > 0) {
+                $this->entryService->ensureDimPeriode($tahun);
             }
 
             DB::commit();
