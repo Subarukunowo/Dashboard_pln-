@@ -46,6 +46,28 @@ class User extends Authenticatable
             'password' => 'hashed',
         ];
     }
+    public function getAvatarUrlAttribute(): ?string
+    {
+        // 1. Kolom 'avatar' sudah berisi URL lengkap (Google OAuth)
+        if (!empty($this->attributes['avatar'])) {
+            return $this->attributes['avatar'];
+        }
+ 
+        // 2. Jetstream / custom path (opsional — hapus jika tidak pakai)
+        // if (!empty($this->profile_photo_path)) {
+        //     return Storage::url($this->profile_photo_path);
+        // }
+ 
+        return null;
+    }
+ 
+    /**
+     * Helper: apakah user login via Google OAuth?
+     */
+    public function isGoogleUser(): bool
+    {
+        return !empty($this->google_id);
+    }
        public function devices()      { return $this->hasMany(UserDevice::class); }
     public function activityLogs() { return $this->hasMany(ActivityLog::class); }
 }

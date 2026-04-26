@@ -3,45 +3,24 @@
 @section('title', 'PLN Commercial Dashboard')
 
 @push('styles')
-    {{-- 🔥 GLOBAL FAVICON (Embedded Direct - No Cache) --}}
-    <link rel="icon" type="image/png" href="{{ asset('assets/favicons/favicon-96x96.png') }}?v={{ time() }}" sizes="96x96" />
-    <link rel="icon" type="image/svg+xml" href="{{ asset('assets/favicons/favicon.svg') }}?v={{ time() }}" />
-    <link rel="shortcut icon" href="{{ asset('assets/favicons/favicon.ico') }}?v={{ time() }}" />
-    <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/favicons/apple-touch-icon.png') }}?v={{ time() }}" />
-    <link rel="manifest" href="{{ asset('assets/favicons/site.webmanifest') }}?v={{ time() }}" />
+    {{-- ===== FAVICON ===== --}}
+    <link rel="icon"             type="image/png"  href="{{ asset('assets/favicons/favicon-96x96.png') }}?v={{ time() }}" sizes="96x96">
+    <link rel="icon"             type="image/svg+xml" href="{{ asset('assets/favicons/favicon.svg') }}?v={{ time() }}">
+    <link rel="shortcut icon"                       href="{{ asset('assets/favicons/favicon.ico') }}?v={{ time() }}">
+    <link rel="apple-touch-icon" sizes="180x180"    href="{{ asset('assets/favicons/apple-touch-icon.png') }}?v={{ time() }}">
+    <link rel="manifest"                            href="{{ asset('assets/favicons/site.webmanifest') }}?v={{ time() }}">
 
-    {{-- 🔥 CRITICAL CSS: Inline langsung di HTML (di atas fold) --}}
-    <style>
-        /* Critical styles untuk layout dasar - render instan */
-        :root{--bg-dark:#121212;--card-bg:#1e1e1e;--accent-orange:#ff9800;--accent-green:#00ff88;--text-main:#fff;--text-muted:#888;--gap:20px}
-        *{box-sizing:border-box;margin:0;padding:0}
-        body{background:var(--bg-dark);color:var(--text-main);font-family:'Inter','Segoe UI',sans-serif;line-height:1.5}
-        .dash-header{display:flex;align-items:center;justify-content:space-between;padding:0 30px;height:56px;background:#161616;border-bottom:1px solid #222;position:sticky;top:0;z-index:100}
-        .dashboard-layout{display:flex;min-height:calc(100vh - 104px)}
-        .dash-content{flex:1;padding:30px;overflow-y:auto}
-        .dashboard-grid{display:grid;grid-template-columns:repeat(12,1fr);gap:var(--gap)}
-        .card{background:var(--card-bg);border-radius:12px;padding:20px;border:1px solid #333}
-        .chart-wrapper{position:relative;height:300px;width:100%}
-        .filters{display:flex;gap:10px}
-        select{background:var(--card-bg);color:#fff;border:1px solid #444;padding:8px 15px;border-radius:5px}
-        .sidebar-toggle{display:none;background:var(--accent-orange);border:none;border-radius:6px;width:32px;height:32px;color:#000;cursor:pointer}
-        @media(max-width:900px){.sidebar-toggle{display:flex}}
-        
-        /* Loading state yang halus */
-        .chart-wrapper{background:linear-gradient(90deg,var(--card-bg) 25%,#2a2a2a 50%,var(--card-bg) 75%);background-size:200% 100%;animation:loading 1.5s infinite}
-        @keyframes loading{0%{background-position:200% 0}100%{background-position:-200% 0}}
-        
-        /* Hide scrollbar untuk cleaner look saat loading */
-        .dash-content{scrollbar-width:thin;scrollbar-color:var(--accent-orange) #1a1a1a}
-    </style>
+    {{-- ===== CSS DASHBOARD (urutan penting) ===== --}}
 
-    {{-- 📦 Full CSS: load setelah critical CSS --}}
-    <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
-    
-    {{-- ⚡ Non-critical CSS: tetap async --}}
-    <link rel="stylesheet" href="{{ asset('css/chatbot.css') }}" media="print" onload="this.media='all'">
-    <link rel="stylesheet" href="{{ asset('css/sidebar.css') }}" media="print" onload="this.media='all'">
-    
+    {{-- 1. Critical: design tokens + skeleton loader (above-the-fold) --}}
+    <link rel="stylesheet" href="{{ asset('css/dashboard-critical.css') }}">
+
+    {{-- 2. Layout: sidebar, header, main content, section visibility --}}
+    <link rel="stylesheet" href="{{ asset('css/dashboard-layout.css') }}">
+
+    {{-- 3. Non-critical: chatbot & sidebar style (async) --}}
+    <link rel="stylesheet" href="{{ asset('css/chatbot.css') }}"  media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="{{ asset('css/sidebar.css') }}"  media="print" onload="this.media='all'">
     <noscript>
         <link rel="stylesheet" href="{{ asset('css/chatbot.css') }}">
         <link rel="stylesheet" href="{{ asset('css/sidebar.css') }}">
@@ -50,6 +29,7 @@
 
 @section('content')
 
+{{-- ===== HEADER ===== --}}
 <header class="dash-header">
     <div style="display:flex; align-items:center; gap:12px;">
         <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">☰</button>
@@ -73,7 +53,7 @@
     </div>
 </header>
 
-{{-- ✅ HAPUS opacity trick - biarkan render natural --}}
+{{-- ===== DASHBOARD BODY ===== --}}
 <div class="dashboard-layout" id="dashboardLayout">
 
     @include('partials.sidebar')
@@ -83,7 +63,6 @@
 
             @include('partials.stats')
 
-            {{-- Semua section tetap ada, chart akan di-init progresif --}}
             <div class="dash-section active" data-section-content="bpp">
                 @include('partials.BppChart')
             </div>
@@ -143,9 +122,10 @@
 @endsection
 
 @section('scripts')
+    {{-- Modulepreload: hint browser untuk fetch modul JS lebih awal --}}
     <link rel="modulepreload" href="{{ asset('js/Dashboard/charts/BaseChart.js') }}">
     <link rel="modulepreload" href="{{ asset('js/Dashboard/services/SheetsService.js') }}">
-    
+
     <script type="module" src="{{ asset('js/Dashboard/pages/dashboard.js') }}"></script>
     <script src="{{ asset('js/sidebar.js') }}" defer></script>
 @endsection

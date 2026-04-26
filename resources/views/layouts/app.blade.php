@@ -8,24 +8,35 @@
     {{-- SEO & Metadata --}}
     <meta name="description" content="PLN Commercial Dashboard - Sistem monitoring real-time untuk performa penjualan, pendapatan, dan data statistik pelanggan PT PLN Batam.">
     <meta name="author" content="Sandy Mulia Kesuma">
-    
+
     <title>@yield('title', 'PLN Commercial Dashboard')</title>
 
-    {{-- Preconnect & Preload --}}
+    @include('partials.meta-config')
+
+    {{-- Preconnect --}}
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
+
+    {{-- Preload: font-awesome (above the fold icon) --}}
     <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style">
 
-    {{-- Stylesheets --}}
+    {{-- ===== GLOBAL CSS ===== --}}
+    {{-- 1. Font Awesome --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
+
+    {{-- 2. Komponen global --}}
     <link rel="stylesheet" href="{{ asset('css/navbar.css') }}">
     <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
     <link rel="stylesheet" href="{{ asset('css/fact-entry.css') }}">
-    
+
+    {{-- ===== PAGE-LEVEL CSS: diisi tiap halaman via @push('styles') ===== --}}
     @stack('styles')
     @yield('head')
 
-    {{-- Accessibility: Utility classes --}}
+    {{-- ===== UTILITY: visually-hidden & design tokens global ===== --}}
+    {{-- Catatan: token --text-muted, --accent-orange, dll. sudah ada di
+         navbar.css & dashboard.css. Style ini HANYA untuk utilitas aksesibilitas
+         yang belum tercakup di file manapun. --}}
     <style>
         .visually-hidden {
             position: absolute;
@@ -38,29 +49,21 @@
             white-space: nowrap;
             border: 0;
         }
-        :root {
-            --text-muted: #b8b8b8;
-            --accent-orange: #ff9800;
-            --accent-green: #00ff88;
-            --gap: 16px;
-        }
     </style>
 </head>
 <body>
 
-    {{-- ✅ NAVBAR: Aksesibilitas Optimized --}}
+    {{-- NAVBAR --}}
     <nav class="navbar" role="navigation" aria-label="Navigasi utama">
         <div class="nav-left">
-            {{-- Link Dashboard --}}
-            <a href="/dashboard" 
+            <a href="/dashboard"
                class="nav-item {{ Request::is('dashboard') || Request::is('/') ? 'active' : '' }}"
                aria-current="{{ Request::is('dashboard') || Request::is('/') ? 'page' : 'false' }}">
                 <i class="fas fa-chart-line" aria-hidden="true"></i>
                 <span class="nav-label">Dashboard</span>
             </a>
-            
-            {{-- Link Historis --}}
-            <a href="/historis" 
+
+            <a href="/historis"
                class="nav-item {{ Request::is('historis*') ? 'active' : '' }}"
                aria-current="{{ Request::is('historis*') ? 'page' : 'false' }}">
                 <i class="fas fa-history" aria-hidden="true"></i>
@@ -70,21 +73,19 @@
 
         <div class="nav-right">
             <div class="profile-dropdown">
-                {{-- Tombol Profile dengan accessible name --}}
-                <button class="profile-btn" 
-                        aria-label="Menu profil {{ auth()->user()->name }}" 
-                        aria-haspopup="true" 
+                <button class="profile-btn"
+                        aria-label="Menu profil {{ auth()->user()->name }}"
+                        aria-haspopup="true"
                         aria-expanded="false"
                         type="button">
                     <img src="{{ auth()->user()->avatar ?? asset('img/default-avatar.png') }}"
-                         alt="" 
+                         alt=""
                          class="nav-avatar"
                          aria-hidden="true">
                     <span class="nav-username">{{ auth()->user()->name }}</span>
                     <i class="fas fa-caret-down" aria-hidden="true"></i>
                 </button>
-                
-                {{-- Dropdown Menu --}}
+
                 <div class="dropdown-content" role="menu">
                     <a href="/profile" role="menuitem">
                         <i class="fas fa-user-circle" aria-hidden="true"></i> Profile
@@ -104,24 +105,24 @@
         </div>
     </nav>
 
-    {{-- ✅ MAIN CONTENT --}}
+    {{-- MAIN CONTENT --}}
     <main class="app-main" id="main-content" role="main">
         @yield('content')
     </main>
 
-    {{-- ✅ CHATBOT PARTIAL --}}
+    {{-- CHATBOT --}}
     @include('partials.chatbot')
 
-    {{-- ✅ SCRIPTS: Non-blocking loading --}}
+    {{-- SCRIPTS: non-blocking --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
 
     @yield('scripts')
     @stack('scripts')
 
-    {{-- ✅ Toast Notifications --}}
+    {{-- Toast Notifications --}}
     <script>
-    document.addEventListener('DOMContentLoaded', function() {
+    document.addEventListener('DOMContentLoaded', function () {
         const Toast = Swal.mixin({
             toast: true,
             position: 'top-end',
@@ -146,7 +147,6 @@
     });
     </script>
 
-    {{-- ✅ Global Scripts Stack --}}
     @stack('global-scripts')
 
 </body>

@@ -18,11 +18,14 @@ return [
     'client_secret' => env('GOOGLE_CLIENT_SECRET'),
     'redirect'      => env('GOOGLE_REDIRECT_URI'),
 ],
-'pln' => [
-    // Tambah fallback URL langsung di config
-    'historis_api_url' => env('PLN_HISTORIS_API_URL', 
-        'https://script.google.com/macros/s/AKfycbwiOdv2-ZTA3qLp8XqhzZDH4NTUJmIQdjtsRA-L6BHLOIvMQCe8253uNUl7gFIeIUbWNA/exec'),
-    'api_timeout' => env('PLN_API_TIMEOUT', 120),
+'gas' => [
+    'data_url' => env('GAS_DATA_URL'),
+    'historis_url' => env('DATA_HISTORIS_URL'),
+],
+'pln' => ['api_timeout' => env('PLN_API_TIMEOUT', 60)],
+'proxy' => [
+    'rate_limit' => env('PROXY_RATE_LIMIT', 60),
+    'cache_minutes' => env('PROXY_CACHE_MINUTES', 5),
 ],
     'postmark' => [
         'key' => env('POSTMARK_API_KEY'),

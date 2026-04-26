@@ -38,14 +38,17 @@ import LossesChart          from '../charts/LossesChart.js'
 import TunggakanChart       from '../charts/TunggakanChart.js'
 import P2tlChart            from '../charts/P2tlChart.js'
 
-const SCRIPT_URL = 'https://script.google.com/macros/s/AKfycbxRayXPsNANWkJFSflG0Gr8jH5Oshgvm8WGMy923PqSvNlXSRv-hSsYFE7w5GQau1CW2w/exec'
+// ✅ Baca SCRIPT_URL dari meta tag yang di-inject blade (dari .env via config())
+// Tidak hardcode URL di JS — aman untuk git dan deployment
+const SCRIPT_URL = document.querySelector('meta[name="gas-data-url"]')?.content
+    ?? ''
 
 class Dashboard {
     constructor() {
         const sheets = new SheetsService(SCRIPT_URL)
         const labels = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
 
-        this.bppModule      = new BppModule(sheets, labels)
+        this.bppModule       = new BppModule(sheets, labels)
         this.penjualanModule = new PenjualanModule(sheets, labels)
 
         this.kwhService       = new RealisasiKWHService(sheets)
@@ -103,31 +106,23 @@ class Dashboard {
         try {
             console.log('Loading Dashboard Assets...')
 
-            // 1. UI statis & chatbot — prioritas tertinggi
             this._initChatbotEvents()
             this._initClock()
             this._initGlobalFilters()
 
-            // 2. Core modules (BPP & Penjualan) — paralel
             await Promise.all([this.bppModule.load(), this.penjualanModule.load()])
             this.bppModule.render(this.state.bpp)
             this.penjualanModule.render(this.state.penjualan)
             this.bppModule.initFilters(this.state.bpp, () => this.bppModule.render(this.state.bpp))
             this.penjualanModule.initFilters(this.state.penjualan, () => this.penjualanModule.render(this.state.penjualan))
 
-            // 3. Semua module data — paralel dengan Promise.allSettled
             await this._loadDashboardData()
 
-            // ✅ FIX: Tunggu layout selesai sebelum init charts (hindari forced reflow)
             if (document.readyState === 'complete') {
                 this._finalizeInit()
             } else {
                 window.addEventListener('load', () => {
-                    requestAnimationFrame(() => {
-                        requestAnimationFrame(() => {
-                            this._finalizeInit()
-                        })
-                    })
+                    requestAnimationFrame(() => requestAnimationFrame(() => this._finalizeInit()))
                 })
             }
 
@@ -137,32 +132,18 @@ class Dashboard {
         }
     }
 
-    /**
-     * Finalize: show layout + init charts setelah layout stabil
-     * Menggunakan double rAF untuk hindari forced reflow
-     */
     _finalizeInit() {
-        // Tampilkan layout (hilangkan opacity 0)
         document.getElementById('dashboardLayout')?.classList.add('loaded')
-        
-        // Init charts dengan ResizeObserver untuk hindari reflow
         this._initChartsSafe()
     }
 
-    /**
-     * Init charts dengan ResizeObserver — tunggu container punya dimensi
-     */
     _initChartsSafe() {
-        const chartWrappers = document.querySelectorAll('.chart-wrapper')
-        chartWrappers.forEach(wrapper => {
+        document.querySelectorAll('.chart-wrapper').forEach(wrapper => {
             const canvas = wrapper.querySelector('canvas')
             if (!canvas) return
-            
             if (wrapper.offsetWidth > 0) {
-                // Container ready, init chart
                 this._initChartOnCanvas(canvas)
             } else {
-                // Tunggu container ready dengan ResizeObserver
                 const observer = new ResizeObserver(entries => {
                     if (entries[0]?.contentRect.width > 0) {
                         observer.disconnect()
@@ -174,14 +155,9 @@ class Dashboard {
         })
     }
 
-    /**
-     * Wrapper untuk init chart individual (override sesuai implementasi chart-mu)
-     */
     _initChartOnCanvas(canvas) {
-        // Jika chart sudah di-init oleh module, skip
         if (canvas._chartInitialized) return
         canvas._chartInitialized = true
-        // Chart.js auto-init via module, jadi tidak perlu kode tambahan di sini
     }
 
     async _loadDashboardData() {
@@ -219,8 +195,8 @@ class Dashboard {
     }
 
     _initChatbotEvents() {
-        const bubble  = document.getElementById('chat-bubble')
-        const sendBtn = document.getElementById('send-btn')
+        const bubble   = document.getElementById('chat-bubble')
+        const sendBtn  = document.getElementById('send-btn')
         const closeBtn = document.querySelector('.close-btn')
 
         bubble?.addEventListener('click',   e => this.chatbot.toggle(e))
@@ -233,9 +209,9 @@ class Dashboard {
 
     _initGlobalFilters() {
         document.getElementById('filterMonth')?.addEventListener('change', e => {
-            this.state.global.month     = e.target.value
-            this.state.bpp.month        = e.target.value
-            this.state.penjualan.month  = e.target.value
+            this.state.global.month    = e.target.value
+            this.state.bpp.month       = e.target.value
+            this.state.penjualan.month = e.target.value
             this.bppModule.render(this.state.bpp)
             this.penjualanModule.render(this.state.penjualan)
         })
@@ -256,5 +232,4 @@ class Dashboard {
     }
 }
 
-// ✅ Init dengan DOMContentLoaded (sudah aman karena module deferred)
 document.addEventListener('DOMContentLoaded', () => new Dashboard().init())
