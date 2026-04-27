@@ -1,0 +1,297 @@
+/* public/css/historis-components.css */
+/* ── COMPONENT STYLES FOR HISTORIS PAGE ── */
+/* Requires: historis-base.css loaded first */
+
+/* ═══════════════════════════════════════════════════════ */
+/* 1. FILTER & LAYOUT GROUPS */
+/* ═══════════════════════════════════════════════════════ */
+.filter-controls {
+    display: flex;
+    gap: 14px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    flex: 1;
+    min-width: 150px;
+}
+.filter-group--wide { min-width: 200px; flex: 2; }
+
+.action-buttons {
+    display: flex;
+    gap: 6px;
+}
+
+/* ═══════════════════════════════════════════════════════ */
+/* 2. GOLONGAN CHIPS */
+/* ═══════════════════════════════════════════════════════ */
+.golongan-chips {
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+}
+
+.hist-gol-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 11px;
+    background: var(--bg-input);
+    border: 1px solid var(--border-input);
+    border-radius: var(--radius-pill);
+    font-size: 0.74rem;
+    color: #bbb;
+    cursor: pointer;
+    transition: all 0.15s;
+    user-select: none;
+}
+
+.hist-gol-chip:hover { border-color: #555; color: var(--text-primary); }
+.hist-gol-chip.checked {
+    background: rgba(0, 255, 136, 0.08);
+    border-color: var(--accent-green);
+    color: var(--accent-green);
+    font-weight: 500;
+}
+.hist-gol-chip input { display: none; }
+
+/* ═══════════════════════════════════════════════════════ */
+/* 3. CHART SECTION */
+/* ═══════════════════════════════════════════════════════ */
+.chart-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 12px;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+.chart-controls {
+    display: flex;
+    gap: 6px;
+    align-items: center;
+}
+
+#histChartWrap {
+    position: relative;
+    height: 420px;
+    width: 100%;
+}
+
+.section-chart,
+.section-table { display: none; }
+.section-chart.active,
+.section-table.active { display: block; }
+
+/* ═══════════════════════════════════════════════════════ */
+/* 4. TABLES */
+/* ═══════════════════════════════════════════════════════ */
+.hist-table,
+.entry-table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 0.78rem;
+    white-space: nowrap;
+    table-layout: auto;
+}
+
+/* Common Header Styles */
+.hist-table th,
+.entry-table th {
+    padding: 8px 10px;
+    text-align: right;
+    border-bottom: 1px solid var(--border-default);
+    color: #aaa;
+    font-weight: 600;
+    position: sticky;
+    top: 0;
+    background: var(--bg-card);
+    z-index: 2;
+}
+
+.hist-table th:first-child,
+.entry-table th:first-child {
+    text-align: left;
+    position: sticky;
+    left: 0;
+    background: var(--bg-card);
+    z-index: 3;
+    box-shadow: 2px 0 5px rgba(0,0,0,0.2);
+}
+
+/* Common Body Styles */
+.hist-table td,
+.entry-table td {
+    padding: 7px 10px;
+    text-align: right;
+    border-bottom: 1px solid #1e1e1e;
+    color: #888;
+    font-variant-numeric: tabular-nums;
+}
+
+.hist-table td:first-child,
+.entry-table td:first-child {
+    text-align: left;
+    color: #ccc;
+    position: sticky;
+    left: 0;
+    background: var(--bg-card);
+    z-index: 1;
+    font-weight: 500;
+}
+
+.hist-table tr:hover td,
+.entry-table tr:hover td { background: var(--bg-input); }
+
+/* Entry Table Specific Z-Index */
+#entryThead th { z-index: 2; }
+#entryThead th:first-child { z-index: 3; }
+#entryTbody td:first-child { z-index: 1; }
+
+.table-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 10px;
+}
+
+/* ═══════════════════════════════════════════════════════ */
+/* 5. ENTRY PANEL (Collapsible Section) */
+/* ═══════════════════════════════════════════════════════ */
+.section-entry { border-left: 3px solid var(--accent-green); }
+
+.entry-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 2px 0;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    color: inherit;
+    font: inherit;
+}
+
+.entry-toggle:hover .toggle-info h3 { color: var(--text-primary); }
+
+.toggle-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toggle-info h3 {
+    font-weight: 700;
+    font-size: 0.9rem;
+    color: var(--text-primary);
+    margin: 0;
+}
+
+.entry-panel {
+    margin-top: 16px;
+    border-top: 1px solid #222;
+    padding-top: 16px;
+}
+
+.entry-panel[hidden] { display: none; }
+
+.entry-controls {
+    display: flex;
+    gap: 12px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    margin-bottom: 14px;
+}
+
+.entry-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* ═══════════════════════════════════════════════════════ */
+/* 6. RESPONSIVE DESIGN */
+/* ═══════════════════════════════════════════════════════ */
+@media (max-width: 768px) {
+    .historis-container { padding: 12px; }
+    
+    .filter-controls,
+    .entry-controls {
+        flex-direction: column;
+        align-items: stretch;
+    }
+    
+    .filter-group,
+    .filter-group--wide { min-width: 100%; }
+    
+    .hist-btn-primary {
+        width: 100%;
+        justify-content: center;
+    }
+    
+    .section-header,
+    .chart-header,
+    .table-header,
+    .section-actions {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 12px;
+    }
+    
+    .chart-controls,
+    .action-buttons {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    
+    #histChartWrap { height: 320px; }
+    
+    /* Mobile Table Card View */
+    .hist-table,
+    .hist-table thead,
+    .hist-table tbody,
+    .hist-table th,
+    .hist-table td,
+    .hist-table tr { display: block; }
+    
+    .hist-table tr {
+        margin-bottom: 12px;
+        border: 1px solid var(--border-default);
+        border-radius: var(--radius-md);
+        padding: 8px;
+    }
+    
+    .hist-table td:first-child {
+        position: static;
+        font-weight: 700;
+        color: var(--text-primary);
+        padding-bottom: 4px;
+        border-bottom: 1px dashed var(--border-input);
+    }
+}
+
+/* ═══════════════════════════════════════════════════════ */
+/* 7. ACCESSIBILITY & PREFERENCES */
+/* ═══════════════════════════════════════════════════════ */
+@media (prefers-reduced-motion: reduce) {
+    *, *::before, *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+}
+
+/* High Contrast Mode Support */
+@media (prefers-contrast: high) {
+    .hist-select,
+    .entry-input { border-width: 2px; }
+    .hist-btn-primary,
+    .hist-btn-sm { border: 2px solid currentColor; }
+}

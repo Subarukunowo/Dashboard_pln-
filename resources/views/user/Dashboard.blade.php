@@ -1,0 +1,90 @@
+@extends('layouts.app')
+
+@section('title', 'PLN Commercial Dashboard')
+
+@push('styles')
+    {{-- Favicon --}}
+    <link rel="icon"             type="image/png"     href="{{ asset('assets/favicons/favicon-96x96.png') }}?v={{ time() }}" sizes="96x96">
+    <link rel="icon"             type="image/svg+xml" href="{{ asset('assets/favicons/favicon.svg') }}?v={{ time() }}">
+    <link rel="shortcut icon"                         href="{{ asset('assets/favicons/favicon.ico') }}?v={{ time() }}">
+    <link rel="apple-touch-icon" sizes="180x180"      href="{{ asset('assets/favicons/apple-touch-icon.png') }}?v={{ time() }}">
+    <link rel="manifest"                              href="{{ asset('assets/favicons/site.webmanifest') }}?v={{ time() }}">
+
+    {{-- Dashboard CSS --}}
+    <link rel="stylesheet" href="{{ asset('css/components/dashboard-components.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/pages/dashboard.css') }}">
+
+    {{-- Non-critical (async) --}}
+    <link rel="stylesheet" href="{{ asset('css/components/chatbot.css') }}" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="{{ asset('css/layouts/sidebar.css') }}" media="print" onload="this.media='all'">
+    <noscript>
+        <link rel="stylesheet" href="{{ asset('css/components/chatbot.css') }}">
+        <link rel="stylesheet" href="{{ asset('css/layouts/sidebar.css') }}">
+    </noscript>
+@endpush
+
+@section('content')
+
+<header class="dash-header">
+    <div style="display:flex; align-items:center; gap:12px;">
+        <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">☰</button>
+        <div>
+            <div style="font-size:0.95rem; font-weight:700; color:#fff; letter-spacing:0.5px;">PLN COMMERCIAL DASHBOARD</div>
+            <div id="clock" style="color:var(--text-muted); font-size:0.72rem;"></div>
+        </div>
+    </div>
+    <div class="filters">
+        <select id="filterYear" aria-label="Filter tahun">
+            <option value="2025">2025</option>
+        </select>
+        <select id="filterMonth" aria-label="Filter bulan">
+            <option value="all">Januari - Desember</option>
+            @foreach(['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $i => $bulan)
+                <option value="{{ $i }}">{{ $bulan }}</option>
+            @endforeach
+        </select>
+    </div>
+</header>
+
+<div class="dashboard-layout" id="dashboardLayout">
+
+    @include('partials.layouts.Sidebar')
+
+    <main class="dash-content" id="mainContent">
+        <div class="dashboard-grid">
+
+            @include('partials.widgets.Stats')
+
+            @foreach([
+                'bpp'        => 'Bpp',
+                'penjualan'  => 'Penjualan',
+                'kwh'        => 'PenjualanKwh',
+                'goltarif'   => 'GolTarifBatam',
+                'pendapatan' => 'PendapatanBatam',
+                'rpkwh'      => 'Rpkwh',
+                'pelanggan'  => 'Pelanggan',
+                'kva'        => 'Kva',
+                'babin'      => 'Babin',
+                'jamnyala'   => 'JamNyala',
+                'losses'     => 'Losses',
+                'tunggakan'  => 'Tunggakan',
+                'p2tl'       => 'P2tl',
+            ] as $section => $partial)
+                <div class="dash-section {{ $loop->first || $loop->index === 1 ? 'active' : '' }}"
+                     data-section-content="{{ $section }}">
+                    @include("partials.dashboard.{$partial}")
+                </div>
+            @endforeach
+
+        </div>
+    </main>
+</div>
+
+@endsection
+
+@section('scripts')
+    <link rel="modulepreload" href="{{ asset('js/Dashboard/charts/BaseChart.js') }}">
+    <link rel="modulepreload" href="{{ asset('js/Dashboard/services/SheetsService.js') }}">
+    <script type="module" src="{{ asset('js/Dashboard/pages/dashboard.js') }}"></script>
+    <script src="{{ asset('js/sidebar.js') }}" defer></script>
+@endsection

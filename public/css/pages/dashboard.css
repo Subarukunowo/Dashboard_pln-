@@ -1,22 +1,22 @@
 /* ============================================================
-   dashboard-layout.css
-   Layout: dashboard wrapper, sidebar, header, main content,
-   section visibility, dan responsive sidebar toggle.
-   Dipanggil dari: dashboard.blade.php via @push('styles')
+   dashboard-page.css
+   Layout khusus halaman /dashboard:
+   wrapper, sidebar, dash-header, main content,
+   section visibility, dan sidebar toggle mobile.
+
+   Depends on: dashboard-components.css (untuk design tokens)
    ============================================================ */
 
-/* ===== DASHBOARD WRAPPER ===== */
+/* ===== WRAPPER ===== */
 .dashboard-layout {
     display: flex;
-    min-height: calc(100vh - 56px); /* 56px = tinggi dash-header */
+    min-height: calc(100vh - 104px); /* 56px dash-header + 48px navbar */
     opacity: 0;
     transition: opacity 0.2s ease-in;
     will-change: opacity;
 }
 
-.dashboard-layout.loaded {
-    opacity: 1;
-}
+.dashboard-layout.loaded { opacity: 1; }
 
 /* ===== SIDEBAR ===== */
 .dash-sidebar {
@@ -26,14 +26,14 @@
     border-right: 1px solid #2a2a2a;
     padding: 16px 0;
     position: sticky;
-    top: 56px;
-    height: calc(100vh - 56px);
+    top: 104px; /* navbar (48) + dash-header (56) */
+    height: calc(100vh - 104px);
     overflow-y: auto;
     scrollbar-width: thin;
     scrollbar-color: #333 transparent;
 }
 
-.dash-sidebar::-webkit-scrollbar { width: 4px; }
+.dash-sidebar::-webkit-scrollbar       { width: 4px; }
 .dash-sidebar::-webkit-scrollbar-thumb { background: #333; border-radius: 4px; }
 
 .sidebar-section-label {
@@ -58,21 +58,12 @@
     user-select: none;
 }
 
-.sidebar-item:hover {
-    background: #1e1e1e;
-    color: #ccc;
-}
+.sidebar-item:hover               { background: #1e1e1e; color: #ccc; }
+.sidebar-item.active              { background: rgba(255,152,0,0.08); color: var(--accent-orange); border-left-color: var(--accent-orange); }
+.sidebar-item svg                 { flex-shrink: 0; opacity: 0.7; }
+.sidebar-item.active svg          { opacity: 1; }
 
-.sidebar-item.active {
-    background: rgba(255, 152, 0, 0.08);
-    color: var(--accent-orange);
-    border-left-color: var(--accent-orange);
-}
-
-.sidebar-item svg { flex-shrink: 0; opacity: 0.7; }
-.sidebar-item.active svg { opacity: 1; }
-
-/* ===== HEADER ===== */
+/* ===== DASH HEADER ===== */
 .dash-header {
     display: flex;
     align-items: center;
@@ -82,7 +73,7 @@
     background: #161616;
     border-bottom: 1px solid #222;
     position: sticky;
-    top: 0;
+    top: 48px; /* tepat di bawah navbar */
     z-index: 100;
 }
 
@@ -96,7 +87,7 @@
     scrollbar-color: var(--accent-orange) #1a1a1a;
 }
 
-.dash-content::-webkit-scrollbar { width: 6px; }
+.dash-content::-webkit-scrollbar       { width: 6px; }
 .dash-content::-webkit-scrollbar-track { background: #1a1a1a; border-radius: 10px; }
 .dash-content::-webkit-scrollbar-thumb {
     background: linear-gradient(180deg, var(--accent-orange), var(--accent-green));
@@ -104,11 +95,10 @@
 }
 
 /* ===== SECTION VISIBILITY ===== */
-.dash-section { display: none; }
-.dash-section.active { display: contents; }
-.dash-section { min-height: 200px; } /* Prevent FOUC / layout shift */
+.dash-section         { display: none; min-height: 200px; }
+.dash-section.active  { display: contents; }
 
-/* ===== SIDEBAR TOGGLE (mobile only) ===== */
+/* ===== SIDEBAR TOGGLE (mobile) ===== */
 .sidebar-toggle {
     display: none;
     align-items: center;
@@ -129,21 +119,19 @@
     .dash-sidebar {
         position: fixed;
         left: -220px;
-        top: 56px;
+        top: 104px;
         z-index: 200;
+        height: calc(100vh - 104px);
         transition: left 0.2s;
-        height: calc(100vh - 56px);
     }
 
-    .dash-sidebar.open { left: 0; }
-
-    .sidebar-toggle { display: flex; }
-
-    .dash-content { padding: 16px; }
+    .dash-sidebar.open  { left: 0; }
+    .sidebar-toggle     { display: flex; }
+    .dash-content       { padding: 16px; }
 }
 
 /* ===== REDUCED MOTION ===== */
 @media (prefers-reduced-motion: reduce) {
     .dashboard-layout { transition: none; }
-    .dash-sidebar { transition: none; }
+    .dash-sidebar     { transition: none; }
 }

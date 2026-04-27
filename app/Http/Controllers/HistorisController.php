@@ -27,10 +27,11 @@ class HistorisController extends Controller
                                   ->orderBy('kategori')->orderBy('nama')->get();
         $golonganList  = DimGolongan::orderBy('urutan')->get();
 
-        return view('partials.historis', compact(
+        return view('partials.history.Historis', compact(
             'tahunTersedia',
             'tahunInputTersedia', 
             'currentYear',
+            
             'metrikList', 
             'golonganList'
         ));

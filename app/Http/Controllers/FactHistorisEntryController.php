@@ -40,7 +40,7 @@ class FactHistorisEntryController extends Controller
         $defaultTahun = $tahunTersedia->first() ?? 2026;
         $defaultBulan = $now->month;
 
-        return view('partials.fact-historis-entry', compact(
+        return view('partials.history.FactHistorisEntry', compact(
             'tahunTersedia',
             'metrikList',
             'golonganList',

@@ -11,7 +11,7 @@
 
     <title>@yield('title', 'PLN Commercial Dashboard')</title>
 
-    @include('partials.meta-config')
+    @include('partials.layouts.MetaConfig')
 
     {{-- Preconnect --}}
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
@@ -25,9 +25,9 @@
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css">
 
     {{-- 2. Komponen global --}}
-    <link rel="stylesheet" href="{{ asset('css/navbar.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/dashboard.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/fact-entry.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/layouts/navbar.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/pages/dashboard.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/pages/fact-entry.css') }}">
 
     {{-- ===== PAGE-LEVEL CSS: diisi tiap halaman via @push('styles') ===== --}}
     @stack('styles')
@@ -111,7 +111,7 @@
     </main>
 
     {{-- CHATBOT --}}
-    @include('partials.chatbot')
+    @include('partials.widgets.Chatbot')
 
     {{-- SCRIPTS: non-blocking --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>

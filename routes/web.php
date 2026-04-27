@@ -54,10 +54,10 @@ Route::middleware('auth')->group(function () {
 
 // ===== AUTH + 2FA — User Dashboard =====
 Route::middleware(['auth', '2fa'])->group(function () {
-    Route::get('/',                    fn() => view('dashboard'));
-    Route::get('/dashboard',           fn() => view('dashboard'))->name('dashboard');
-    Route::get('/realisasi-penjualan', fn() => view('realisasi-penjualan'));
-    Route::get('/penjualan-kwh',       fn() => view('penjualan-kwh'));
+    Route::get('/',                    fn() => view('user.dashboard'));
+    Route::get('/dashboard',           fn() => view('user.dashboard'))->name('dashboard');
+    Route::get('/realisasi-penjualan', fn() => view('user.realisasi-penjualan'));
+    Route::get('/penjualan-kwh',       fn() => view('user.penjualan-kwh'));
     Route::patch('/admin/devices/{id}/approve', [DeviceController::class, 'approve'])->name('devices.approve');
 });
 
@@ -73,6 +73,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', '2fa', 'admin'])->gr
     Route::delete('/devices/{device}/revoke', [AdminController::class, 'revokeDevice'])->name('devices.revoke');
     Route::get('/logs',                       [AdminController::class, 'logs'])->name('logs');
 });
+
 Route::get('/historis',        [HistorisController::class, 'index'])->name('historis.index');
 Route::get('/historis/chart',  [HistorisController::class, 'chart'])->name('historis.chart');
 Route::get('/historis/table',  [HistorisController::class, 'table'])->name('historis.table');

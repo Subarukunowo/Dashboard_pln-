@@ -1,0 +1,199 @@
+/* ============================================================
+   dashboard-components.css
+   Reusable UI pieces yang bisa dipakai di halaman manapun:
+   card, chart wrapper, table, grid columns, stats, scrollbar.
+   ============================================================ */
+
+/* ===== DESIGN TOKENS ===== */
+:root {
+    --bg-dark:       #121212;
+    --card-bg:       #1e1e1e;
+    --accent-orange: #ff9800;
+    --accent-green:  #00ff88;
+    --text-main:     #ffffff;
+    --text-muted:    #888888;
+    --gap:           20px;
+}
+
+/* ===== RESET MINIMAL ===== */
+*, *::before, *::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+/* ===== BASE ===== */
+body {
+    background: var(--bg-dark);
+    color: var(--text-main);
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    line-height: 1.5;
+}
+
+/* ===== GRID ===== */
+.dashboard-grid {
+    display: grid;
+    grid-template-columns: repeat(12, 1fr);
+    grid-auto-rows: minmax(180px, auto);
+    gap: var(--gap);
+    align-items: start;
+}
+
+.dashboard-grid > * { min-width: 0; }
+
+.col-3         { grid-column: span 3; }
+.col-4         { grid-column: span 4; }
+.col-6         { grid-column: span 6; }
+.col-8         { grid-column: span 8; }
+.col-9         { grid-column: span 9; }
+.col-12        { grid-column: span 12; }
+.double-column { grid-column: span 8; }
+.full-width    { grid-column: span 12; }
+
+@media (max-width: 1200px) {
+    .dashboard-grid { grid-template-columns: repeat(8, 1fr); }
+    .col-12, .full-width, .col-9, .col-8, .double-column { grid-column: span 8; }
+    .col-6 { grid-column: span 4; }
+    .col-4, .col-3 { grid-column: span 4; }
+}
+
+@media (max-width: 768px) {
+    .dashboard-grid { grid-template-columns: 1fr; }
+    [class*="col-"], .double-column, .full-width { grid-column: span 1; }
+}
+
+/* ===== CARD ===== */
+.card {
+    background: var(--card-bg);
+    border-radius: 12px;
+    padding: 20px;
+    border: 1px solid #333;
+    display: flex;
+    flex-direction: column;
+    height: 100%;
+}
+
+.card-title {
+    color: var(--text-muted);
+    font-size: 0.75rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    flex-shrink: 0;
+}
+
+.card:has(.stat-value) {
+    min-height: 140px;
+    contain: layout style;
+}
+
+/* ===== STATS ===== */
+.stat-value  { font-size: 2.5rem; font-weight: 800; color: var(--accent-orange); }
+.stat-change { font-size: 1.5rem; font-weight: 700; color: var(--accent-green); }
+
+/* ===== CHART ===== */
+.chart-wrapper,
+.chart-container {
+    position: relative;
+    height: 300px;
+    min-height: 300px;
+    width: 100%;
+    contain: layout style paint;
+    /* Skeleton shimmer saat chart belum selesai render */
+    background: linear-gradient(
+        90deg,
+        var(--card-bg) 25%,
+        #2a2a2a 50%,
+        var(--card-bg) 75%
+    );
+    background-size: 200% 100%;
+    animation: chart-shimmer 1.5s infinite;
+}
+
+/* Stop shimmer setelah chart.js inject canvas */
+.chart-wrapper.ready,
+.chart-container.ready {
+    background: var(--card-bg);
+    animation: none;
+}
+
+@keyframes chart-shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -200% 0; }
+}
+
+canvas {
+    display: block;
+    width: 100% !important;
+    height: 100% !important;
+    image-rendering: crisp-edges;
+    contain: layout style paint;
+}
+
+@media (max-width: 768px) {
+    .chart-wrapper,
+    .chart-container { height: 250px; min-height: 250px; }
+}
+
+/* ===== TABLE ===== */
+table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+
+th {
+    background: #2a2a2a;
+    color: var(--text-muted);
+    padding: 10px 6px;
+    text-align: center;
+    font-weight: 600;
+    text-transform: uppercase;
+    font-size: 0.72rem;
+    position: sticky;
+    top: 0;
+    z-index: 1;
+}
+
+td {
+    padding: 7px 6px;
+    text-align: right;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+td:first-child { text-align: left; color: var(--text-muted); }
+tr:hover { background: #252525; }
+
+/* ===== CUSTOM SCROLLBAR ===== */
+.custom-scroll {
+    scrollbar-width: thin;
+    scrollbar-color: var(--accent-orange) #1a1a1a;
+}
+
+.custom-scroll::-webkit-scrollbar        { width: 6px; height: 6px; }
+.custom-scroll::-webkit-scrollbar-track  { background: #1a1a1a; border-radius: 10px; }
+.custom-scroll::-webkit-scrollbar-thumb  {
+    background: linear-gradient(180deg, var(--accent-orange), var(--accent-green));
+    border-radius: 10px;
+    border: 1px solid #1a1a1a;
+}
+.custom-scroll::-webkit-scrollbar-thumb:hover {
+    background: linear-gradient(180deg, #ffb74d, #69ffb0);
+}
+.custom-scroll::-webkit-scrollbar-corner { background: #1a1a1a; }
+
+/* ===== FILTERS ===== */
+.filters { display: flex; gap: 10px; }
+
+select {
+    background: var(--card-bg);
+    color: #fff;
+    border: 1px solid #444;
+    padding: 8px 15px;
+    border-radius: 5px;
+    outline: none;
+    cursor: pointer;
+}
+
+/* ===== REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+    .chart-wrapper,
+    .chart-container { animation: none; }
+}
