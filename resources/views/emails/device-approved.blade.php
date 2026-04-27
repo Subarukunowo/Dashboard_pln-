@@ -1,12 +1,21 @@
 <x-mail::message>
-# Introduction
+# ✅ Perangkat Anda Disetujui
 
-The body of your message.
+Halo **{{ $user->name }}**,
 
-<x-mail::button :url="''">
-Button Text
+Admin telah **menyetujui** akses untuk perangkat Anda. Silakan login kembali.
+
+<x-mail::panel>
+**Perangkat** : {{ $device->device_name }}
+**Disetujui** : {{ $device->approved_at?->setTimezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB
+</x-mail::panel>
+
+<x-mail::button :url="$loginUrl" color="success">
+Login Sekarang
 </x-mail::button>
 
-Thanks,<br>
-{{ config('app.name') }}
+Jika Anda tidak merasa melakukan request ini, segera hubungi admin.
+
+---
+*Email otomatis dari sistem {{ config('app.name') }}. Jangan balas email ini.*
 </x-mail::message>

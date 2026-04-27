@@ -13,27 +13,25 @@ class DeviceApprovedMail extends Mailable
 {
     use Queueable, SerializesModels;
 
-    public $device;
-
-    public function __construct(UserDevice $device)
-    {
-        $this->device = $device;
-    }
+    public function __construct(
+        public UserDevice $device,
+    ) {}
 
     public function envelope(): Envelope
     {
         return new Envelope(
-            subject: 'Perangkat Anda Telah Disetujui',
+            subject: '[PLN Dashboard] Perangkat Anda Disetujui ✓',
         );
     }
 
     public function content(): Content
     {
         return new Content(
-            view: 'emails.device_approved',
+            markdown: 'emails.device-approved',
             with: [
-                'userName' => $this->device->user->name,
-                'deviceName' => $this->device->device_name,
+                'user'     => $this->device->user,
+                'device'   => $this->device,
+                'loginUrl' => route('login'),
             ],
         );
     }

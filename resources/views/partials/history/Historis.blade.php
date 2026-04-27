@@ -3,7 +3,7 @@
 @section('title', 'Data Historis PLN Batam')
 
 @push('styles')
-    @include('partials.Favicons')
+    @include('partials.layouts.Favicons')
     <link rel="stylesheet" href="{{ asset('css/pages/historis.css') }}?v={{ filemtime(public_path('css/pages/historis.css')) }}">
      <link rel="stylesheet" href="{{ asset('css/components/historis-components.css') }}?v={{ filemtime(public_path('css/components/historis-components.css')) }}">
     @endpush

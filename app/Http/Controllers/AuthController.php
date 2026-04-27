@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Mail\DeviceRequestMail;
 use App\Models\User;
 use App\Models\UserDevice;
 use App\Helpers\ActivityLogger;
@@ -18,125 +19,90 @@ class AuthController extends Controller
      */
     public function redirectToGoogle()
     {
-       return Socialite::driver('google')->stateless()->redirect();
+        return Socialite::driver('google')->stateless()->redirect();
     }
 
     /**
      * Handle Callback dari Google
      */
-public function handleGoogleCallback(Request $request)
-{
-    try {
-        $googleUser = Socialite::driver('google')->stateless()->user();
+    public function handleGoogleCallback(Request $request)
+    {
+        try {
+            $googleUser = Socialite::driver('google')->stateless()->user();
 
-        // MODIFIKASI: Cari berdasarkan email untuk cegah Duplicate Entry 1062
-        $user = User::where('email', $googleUser->getEmail())->first();
+            $user = User::where('email', $googleUser->getEmail())->first();
 
-        if ($user) {
-            // Jika user ada, update data Google-nya
-            $user->update([
-                'google_id' => $googleUser->getId(),
-                'avatar'    => $googleUser->avatar_original ?? $googleUser->getAvatar(),
-            ]);
-        } else {
-            // Jika benar-benar user baru, buat row baru
-            $user = User::create([
-                'google_id' => $googleUser->getId(),
-                'name'      => $googleUser->getName(),
-                'email'     => $googleUser->getEmail(),
-                'avatar'    => $googleUser->avatar_original ?? $googleUser->getAvatar(),
-                'password'  => bcrypt(str()->random(24)),
-                'is_active' => true, // Sesuaikan dengan default aplikasi kamu
-            ]);
-        }
-
-        // Cek apakah akun aktif
-        if (!$user->is_active) {
-            return $this->abortLogin('Akun Anda dinonaktifkan oleh admin.');
-        }
-
-        Auth::login($user, true);
-
-        // BUG FIX 1: Admin Bypass Device Check
-        if ($user->hasRole('admin')) {
-            ActivityLogger::log('login', 'Admin login via Google', ['email' => $user->email], $request);
-            return $this->redirectAfterLogin($user);
-        }
-
-        // 1. CEK DEVICE (Tetap gunakan logic perangkat kamu)
-        $token      = $this->getDeviceToken($request);
-        $deviceName = $this->getDeviceName($request);
-        $existing   = UserDevice::where('user_id', $user->id)->get();
-        $known      = $existing->firstWhere('device_token', $token);
-
-        if ($known) {
-            if ($known->status === 'approved') {
-                $known->update([
-                    'ip_address'   => $request->ip(),
-                    'last_seen_at' => now(),
+            if ($user) {
+                $user->update([
+                    'google_id' => $googleUser->getId(),
+                    'avatar'    => $googleUser->avatar_original ?? $googleUser->getAvatar(),
                 ]);
-                ActivityLogger::log('login', 'User login via Google', ['email' => $user->email], $request);
+            } else {
+                $user = User::create([
+                    'google_id' => $googleUser->getId(),
+                    'name'      => $googleUser->getName(),
+                    'email'     => $googleUser->getEmail(),
+                    'avatar'    => $googleUser->avatar_original ?? $googleUser->getAvatar(),
+                    'password'  => bcrypt(str()->random(24)),
+                    'is_active' => true,
+                ]);
+            }
+
+            if (!$user->is_active) {
+                return $this->abortLogin('Akun Anda dinonaktifkan oleh admin.');
+            }
+
+            Auth::login($user, true);
+
+            // Admin bypass device check
+            if ($user->hasRole('admin')) {
+                ActivityLogger::log('login', 'Admin login via Google', ['email' => $user->email], $request);
                 return $this->redirectAfterLogin($user);
             }
 
-            $message = $known->status === 'rejected'
-                ? "Perangkat ditolak: " . ($known->reject_reason ?? 'Akses tidak diizinkan.')
-                : "Perangkat ini masih menunggu persetujuan admin.";
+            $token      = $this->getDeviceToken($request);
+            $deviceName = $this->getDeviceName($request);
+            $existing   = UserDevice::where('user_id', $user->id)->get();
+            $known      = $existing->firstWhere('device_token', $token);
 
-            return $this->abortLogin($message, $known->status === 'pending' ? 'pending' : 'error');
-        }
+            if ($known) {
+                if ($known->status === 'approved') {
+                    $known->update([
+                        'ip_address'   => $request->ip(),
+                        'last_seen_at' => now(),
+                    ]);
+                    ActivityLogger::log('login', 'User login via Google', ['email' => $user->email], $request);
+                    return $this->redirectAfterLogin($user);
+                }
 
-        // 3. DEVICE BARU
-        return $this->handleNewDevice($request, $user, $existing, $token, $deviceName);
+                $message = $known->status === 'rejected'
+                    ? 'Perangkat ditolak: ' . ($known->reject_reason ?? 'Akses tidak diizinkan.')
+                    : 'Perangkat ini masih menunggu persetujuan admin.';
 
-    } catch (\Exception $e) {
-        Log::error('Google Auth Error', [
-            'message' => $e->getMessage(),
-            'line'    => $e->getLine(),
-        ]);
-        
-        return redirect()->route('login')->with('error', 'Terjadi kesalahan sistem saat login.');
-    }
-}
-    /**
-     * Logic untuk perangkat yang sudah pernah terdaftar
-     */
-    private function handleKnownDevice($request, $user, $known)
-    {
-        if ($known->status === 'approved') {
-            // Login user secara resmi
-            Auth::login($user, true);
+                return $this->abortLogin($message, $known->status === 'pending' ? 'pending' : 'error');
+            }
 
-            $known->update([
-                'ip_address'   => $request->ip(),
-                'last_seen_at' => now(),
+            return $this->handleNewDevice($request, $user, $existing, $token, $deviceName);
+
+        } catch (\Exception $e) {
+            Log::error('Google Auth Error', [
+                'message' => $e->getMessage(),
+                'line'    => $e->getLine(),
             ]);
-
-            ActivityLogger::log('login', 'User login via Google', ['email' => $user->email], $request);
-
-            return $this->redirectAfterLogin($user);
+            return redirect()->route('login')->with('error', 'Terjadi kesalahan sistem saat login.');
         }
-
-        // Jika rejected atau pending, tendang keluar
-        $message = ($known->status === 'rejected') 
-            ? "Perangkat ditolak: " . ($known->reject_reason ?? 'Akses tidak diizinkan.')
-            : "Perangkat ini masih menunggu persetujuan admin.";
-            
-        return $this->abortLogin($message, $known->status === 'pending' ? 'pending' : 'error');
     }
 
     /**
-     * Logic untuk registrasi perangkat baru
+     * Registrasi perangkat baru + kirim email ke semua admin
      */
-    private function handleNewDevice($request, $user, $existing, $token, $deviceName)
+    private function handleNewDevice(Request $request, User $user, $existing, string $token, string $deviceName)
     {
-        // Limit 2 perangkat approved
         if ($existing->where('status', 'approved')->count() >= 2) {
             return $this->abortLogin('Batas maksimal 2 perangkat aktif tercapai. Silahkan hubungi admin.');
         }
 
-        // Simpan data perangkat baru dengan status pending
-        UserDevice::updateOrCreate(
+        $device = UserDevice::updateOrCreate(
             ['user_id' => $user->id, 'device_token' => $token],
             [
                 'device_name'  => $deviceName,
@@ -147,8 +113,7 @@ public function handleGoogleCallback(Request $request)
             ]
         );
 
-        // Kirim Notifikasi Email ke Admin
-        //$this->notifyAdmins($user, $deviceName);
+        $this->notifyAdmins($user, $device);
 
         ActivityLogger::log('device_request', "Request perangkat baru: $deviceName", ['device' => $deviceName], $request);
 
@@ -156,46 +121,48 @@ public function handleGoogleCallback(Request $request)
     }
 
     /**
-     * Tentukan arah redirect setelah login sukses
+     * Kirim email notifikasi ke semua admin
      */
- private function redirectAfterLogin($user)
-{
-    if (!$user->two_factor_enabled) {
-        return redirect()->route('2fa.setup');
+    private function notifyAdmins(User $user, UserDevice $device): void
+    {
+        try {
+            $admins = User::role('admin')->get();
+
+            foreach ($admins as $admin) {
+                Mail::to($admin->email)->queue(new DeviceRequestMail($user, $device));
+            }
+        } catch (\Exception $e) {
+            Log::error('Gagal kirim email notifikasi ke admin', [
+                'error'  => $e->getMessage(),
+                'user'   => $user->email,
+                'device' => $device->device_name,
+            ]);
+        }
     }
 
-    // Hapus session 2fa_verified agar middleware memblokir
-    session()->forget('2fa_verified');
-    return redirect()->route('2fa.verify');
-}  /**
-     * Helper untuk membatalkan login & membersihkan session
+    /**
+     * Redirect setelah login sukses
      */
-    private function abortLogin($message, $sessionKey = 'error')
+    private function redirectAfterLogin(User $user)
+    {
+        if (!$user->two_factor_enabled) {
+            return redirect()->route('2fa.setup');
+        }
+
+        session()->forget('2fa_verified');
+        return redirect()->route('2fa.verify');
+    }
+
+    /**
+     * Batalkan login & bersihkan session
+     */
+    private function abortLogin(string $message, string $sessionKey = 'error')
     {
         Auth::logout();
         session()->invalidate();
         session()->regenerateToken();
-        
+
         return redirect()->route('login')->with($sessionKey, $message);
-    }
-
-    /**
-     * Kirim email ke semua admin
-     */
-    private function notifyAdmins($user, $deviceName)
-    {
-        try {
-            // Ambil admin menggunakan Spatie Role
-            $admins = User::role('admin')->get();
-
-            if ($admins->isNotEmpty()) {
-                foreach ($admins as $admin) {
-                    Mail::to($admin->email)->send(new \App\Mail\DeviceRequestMail($user, $deviceName));
-                }
-            }
-        } catch (\Exception $e) {
-            Log::error("Gagal kirim email notifikasi: " . $e->getMessage());
-        }
     }
 
     public function logout(Request $request)
@@ -207,38 +174,31 @@ public function handleGoogleCallback(Request $request)
         return redirect()->route('login');
     }
 
-private function getDeviceToken(Request $request): string
+    private function getDeviceToken(Request $request): string
     {
-        return hash('sha256', 
-            $request->userAgent() . 
+        return hash('sha256',
+            $request->userAgent() .
             $request->header('Accept-Language')
         );
     }
 
- private function getDeviceName(Request $request): string
-{
-    // Cek apakah ini perangkat mobile (HP/Tablet)
-    if (\Browser::isMobile() || \Browser::isTablet()) {
-        // Ambil Merek (Vendor) dan Model spesifik
-        $vendor = \Browser::deviceFamily(); 
-        $model  = \Browser::deviceModel();  
+    private function getDeviceName(Request $request): string
+    {
+        if (\Browser::isMobile() || \Browser::isTablet()) {
+            $vendor   = \Browser::deviceFamily();
+            $model    = \Browser::deviceModel();
+            $fullName = trim($vendor . ' ' . $model);
 
-        $fullName = trim($vendor . ' ' . $model);
+            if ($fullName && !str_contains(strtolower($fullName), 'unknown')) {
+                return $fullName;
+            }
 
-        // Jika berhasil menangkap nama spesifik, return itu
-        if ($fullName && !str_contains(strtolower($fullName), 'unknown')) {
-            return $fullName;
+            return \Browser::platformName() . ' Mobile Device';
         }
-        
-        // Fallback jika merek tidak terbaca jelas
-        return \Browser::platformName() . ' Mobile Device';
-    }
 
-    // Untuk Laptop/PC
-    // Gunakan platformName() bukan osPlatform()
-    $os      = \Browser::platformName() ?: 'Windows/macOS';
-    $browser = \Browser::browserName() ?: 'Browser';
-    
-    return "Laptop/PC ($os) — $browser";
-}
+        $os      = \Browser::platformName() ?: 'Windows/macOS';
+        $browser = \Browser::browserName() ?: 'Browser';
+
+        return "Laptop/PC ($os) — $browser";
+    }
 }

@@ -1,14 +1,28 @@
-@component('mail::message')
-# Request Perangkat Baru
+<x-mail::message>
+# 🔔 Request Perangkat Baru
 
-**{{ $user->name }}** ({{ $user->email }}) meminta akses dari perangkat baru:
+Halo Admin,
 
-**Perangkat:** {{ $deviceName }}
+Pengguna berikut mencoba login dari **perangkat baru** dan membutuhkan persetujuan Anda.
 
-Silakan login ke panel admin untuk menyetujui atau menolak request ini.
+<x-mail::panel>
+**Nama**&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {{ $user->name }}
+**Email**&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {{ $user->email }}
+**Perangkat** : {{ $device->device_name }}
+**IP Address** : {{ $device->ip_address }}
+**Waktu**&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;&nbsp;: {{ $device->requested_at?->setTimezone('Asia/Jakarta')->format('d M Y, H:i') }} WIB
+</x-mail::panel>
 
-@component('mail::button', ['url' => url('/admin/devices')])
-Buka Panel Admin
-@endcomponent
+<x-mail::button :url="$approveUrl" color="success">
+✓ Setujui Perangkat
+</x-mail::button>
 
-@endcomponent
+<x-mail::button :url="$rejectUrl" color="error">
+✗ Tolak Perangkat
+</x-mail::button>
+
+Atau kelola semua request di [Panel Admin]({{ $panelUrl }}).
+
+---
+*Email otomatis dari sistem {{ config('app.name') }}. Jangan balas email ini.*
+</x-mail::message>

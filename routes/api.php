@@ -1,8 +1,10 @@
 <?php
 
 use Illuminate\Support\Facades\Route;
+use App\Http\Controllers\Api\HistorisPelangganStatsController; // ← ADD THIS LINE
 
-// ✅ Health check - test dulu yang ini
+Route::get('/historis/pelanggan-stats', [HistorisPelangganStatsController::class, 'index']);
+
 Route::get('/sheets/health', function () {
     return response()->json([
         'status' => 'ok',

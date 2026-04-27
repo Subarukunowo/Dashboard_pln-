@@ -1,47 +1,47 @@
-import SheetsService        from '../services/SheetsService.js'
-import BppModule            from '../modules/BppModule.js'
-import PenjualanModule      from '../modules/PenjualanModule.js'
-import RealisasiKWHService  from '../services/RealisasiKWHService.js'
-import PendapatanBatamService from '../services/PendapatanBatamService.js'
-import GolTarifBatamService from '../services/GolTarifBatamService.js'
-import RpkwhService         from '../services/RpkwhService.js'
-import PelangganService     from '../services/PelangganService.js'
-import KvaService           from '../services/KvaService.js'
-import BabinService         from '../services/BabinService.js'
-import JamNyalaService      from '../services/JamNyalaService.js'
-import LossesService        from '../services/LossesService.js'
-import TunggakanService     from '../services/TunggakanService.js'
-import P2tlService          from '../services/P2tlService.js'
+import SheetsService          from '../services/SheetsService.js'
+import BppModule               from '../modules/BppModule.js'
+import PenjualanModule         from '../modules/PenjualanModule.js'
+import RealisasiKWHService     from '../services/RealisasiKWHService.js'
+import PendapatanBatamService  from '../services/PendapatanBatamService.js'
+import GolTarifBatamService    from '../services/GolTarifBatamService.js'
+import RpkwhService            from '../services/RpkwhService.js'
+import PelangganService        from '../services/PelangganService.js'
+import KvaService              from '../services/KvaService.js'
+import BabinService            from '../services/BabinService.js'
+import JamNyalaService         from '../services/JamNyalaService.js'
+import LossesService           from '../services/LossesService.js'
+import TunggakanService        from '../services/TunggakanService.js'
+import P2tlService             from '../services/P2tlService.js'
 
-import KwhModule            from '../modules/KwhModule.js'
-import PendapatanBatamModule from '../modules/PendapatanBatamModule.js'
-import GolTarifBatamModule  from '../modules/GolTarifBatamModule.js'
-import RpkwhModule          from '../modules/RpkwhModule.js'
-import PelangganModule      from '../modules/PelangganModule.js'
-import KvaModule            from '../modules/KvaModule.js'
-import BabinModule          from '../modules/BabinModule.js'
-import JamNyalaModule       from '../modules/JamNyalaModule.js'
-import LossesModule         from '../modules/LossesModule.js'
-import TunggakanModule      from '../modules/TunggakanModule.js'
-import P2tlModule           from '../modules/P2tlModule.js'
-import ChatbotModule        from '../modules/ChatbotModule.js'
+import KwhModule               from '../modules/KwhModule.js'
+import PendapatanBatamModule   from '../modules/PendapatanBatamModule.js'
+import GolTarifBatamModule     from '../modules/GolTarifBatamModule.js'
+import RpkwhModule             from '../modules/RpkwhModule.js'
+import PelangganModule         from '../modules/PelangganModule.js'
+import KvaModule               from '../modules/KvaModule.js'
+import BabinModule             from '../modules/BabinModule.js'
+import JamNyalaModule          from '../modules/JamNyalaModule.js'
+import LossesModule            from '../modules/LossesModule.js'
+import TunggakanModule         from '../modules/TunggakanModule.js'
+import P2tlModule              from '../modules/P2tlModule.js'
+import ChatbotModule           from '../modules/ChatbotModule.js'
 
-import PenjualanKwhChart    from '../charts/PenjualankwhChart.js'
-import PendapatanBatamChart from '../charts/PendapatanBatamChart.js'
-import GolTarifBatamChart   from '../charts/GolTarifBatamChart.js'
-import RpkwhChart           from '../charts/RpkwhChart.js'
-import PelangganChart       from '../charts/PelangganChart.js'
-import KvaChart             from '../charts/KvaChart.js'
-import BabinChart           from '../charts/BabinChart.js'
-import JamNyalaChart        from '../charts/JamNyalaChart.js'
-import LossesChart          from '../charts/LossesChart.js'
-import TunggakanChart       from '../charts/TunggakanChart.js'
-import P2tlChart            from '../charts/P2tlChart.js'
+import PenjualanKwhChart       from '../charts/PenjualankwhChart.js'
+import PendapatanBatamChart    from '../charts/PendapatanBatamChart.js'
+import GolTarifBatamChart      from '../charts/GolTarifBatamChart.js'
+import RpkwhChart              from '../charts/RpkwhChart.js'
+import PelangganChart          from '../charts/PelangganChart.js'
+import KvaChart                from '../charts/KvaChart.js'
+import BabinChart              from '../charts/BabinChart.js'
+import JamNyalaChart           from '../charts/JamNyalaChart.js'
+import LossesChart             from '../charts/LossesChart.js'
+import TunggakanChart          from '../charts/TunggakanChart.js'
+import P2tlChart               from '../charts/P2tlChart.js'
 
-// ✅ Baca SCRIPT_URL dari meta tag yang di-inject blade (dari .env via config())
-// Tidak hardcode URL di JS — aman untuk git dan deployment
-const SCRIPT_URL = document.querySelector('meta[name="gas-data-url"]')?.content
-    ?? ''
+import { initStats }           from '../layout/UpdateStats.js'
+
+// Baca SCRIPT_URL dari meta tag (dari .env via config())
+const SCRIPT_URL = document.querySelector('meta[name="gas-data-url"]')?.content ?? ''
 
 class Dashboard {
     constructor() {
@@ -51,17 +51,17 @@ class Dashboard {
         this.bppModule       = new BppModule(sheets, labels)
         this.penjualanModule = new PenjualanModule(sheets, labels)
 
-        this.kwhService       = new RealisasiKWHService(sheets)
+        this.kwhService        = new RealisasiKWHService(sheets)
         this.pendapatanService = new PendapatanBatamService(sheets)
-        this.golTarifService  = new GolTarifBatamService(sheets)
-        this.rpkwhService     = new RpkwhService(sheets)
-        this.pelangganService = new PelangganService(sheets)
-        this.kvaService       = new KvaService(sheets)
-        this.babinService     = new BabinService(sheets)
-        this.jamNyalaService  = new JamNyalaService(sheets)
-        this.lossesService    = new LossesService(sheets)
-        this.tunggakanService = new TunggakanService(sheets)
-        this.p2tlService      = new P2tlService(sheets)
+        this.golTarifService   = new GolTarifBatamService(sheets)
+        this.rpkwhService      = new RpkwhService(sheets)
+        this.pelangganService  = new PelangganService(sheets)
+        this.kvaService        = new KvaService(sheets)
+        this.babinService      = new BabinService(sheets)
+        this.jamNyalaService   = new JamNyalaService(sheets)
+        this.lossesService     = new LossesService(sheets)
+        this.tunggakanService  = new TunggakanService(sheets)
+        this.p2tlService       = new P2tlService(sheets)
 
         this.kwhModule        = new KwhModule(new PenjualanKwhChart())
         this.pendapatanModule = new PendapatanBatamModule(new PendapatanBatamChart())
@@ -162,17 +162,17 @@ class Dashboard {
 
     async _loadDashboardData() {
         const configs = [
-            { s: this.kwhService,       m: this.kwhModule,       st: this.state.kwh,       key: 'kwhData' },
-            { s: this.pendapatanService, m: this.pendapatanModule, st: this.state.pendapatan, key: 'pendapatanData' },
-            { s: this.golTarifService,  m: this.golTarifModule,  st: this.state.golTarif,  key: 'golTarifData' },
-            { s: this.rpkwhService,     m: this.rpkwhModule,     st: this.state.rpkwh,     key: 'rpkwhData' },
-            { s: this.pelangganService, m: this.pelangganModule, st: this.state.pelanggan, key: 'pelangganData' },
-            { s: this.kvaService,       m: this.kvaModule,       st: this.state.kva,       key: 'kvaData' },
-            { s: this.babinService,     m: this.babinModule,     st: this.state.babin,     key: 'babinData' },
-            { s: this.jamNyalaService,  m: this.jamNyalaModule,  st: this.state.jamNyala,  key: 'jamNyalaData' },
-            { s: this.lossesService,    m: this.lossesModule,    st: this.state.losses,    key: 'lossesData' },
-            { s: this.tunggakanService, m: this.tunggakanModule, st: this.state.tunggakan, key: 'tunggakanData' },
-            { s: this.p2tlService,      m: this.p2tlModule,      st: this.state.p2tl,      key: 'p2tlData' },
+            { s: this.kwhService,        m: this.kwhModule,        st: this.state.kwh,        key: 'kwhData' },
+            { s: this.pendapatanService,  m: this.pendapatanModule,  st: this.state.pendapatan, key: 'pendapatanData' },
+            { s: this.golTarifService,   m: this.golTarifModule,   st: this.state.golTarif,   key: 'golTarifData' },
+            { s: this.rpkwhService,      m: this.rpkwhModule,      st: this.state.rpkwh,      key: 'rpkwhData' },
+            { s: this.pelangganService,  m: this.pelangganModule,  st: this.state.pelanggan,  key: 'pelangganData' },
+            { s: this.kvaService,        m: this.kvaModule,        st: this.state.kva,        key: 'kvaData' },
+            { s: this.babinService,      m: this.babinModule,      st: this.state.babin,      key: 'babinData' },
+            { s: this.jamNyalaService,   m: this.jamNyalaModule,   st: this.state.jamNyala,   key: 'jamNyalaData' },
+            { s: this.lossesService,     m: this.lossesModule,     st: this.state.losses,     key: 'lossesData' },
+            { s: this.tunggakanService,  m: this.tunggakanModule,  st: this.state.tunggakan,  key: 'tunggakanData' },
+            { s: this.p2tlService,       m: this.p2tlModule,       st: this.state.p2tl,       key: 'p2tlData' },
         ]
 
         const results = await Promise.allSettled(configs.map(cfg => cfg.s.getData()))
@@ -186,6 +186,15 @@ class Dashboard {
             } else {
                 console.warn(`Gagal memuat: ${cfg.key}`, result.reason)
             }
+        })
+
+        // ── Stats Cards (Total Customer, MoM, YoY) ───────────────────────
+        // Dipanggil setelah semua data load — pelangganService sudah punya
+        // cache dari getData() di atas, jadi tidak ada request dobel ke Sheets.
+        const now = new Date()
+        initStats(this.pelangganService, {
+            year:  now.getFullYear(),
+            month: now.getMonth() + 1,  // 1-based
         })
     }
 
