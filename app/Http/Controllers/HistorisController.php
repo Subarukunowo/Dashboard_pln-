@@ -12,8 +12,6 @@ use Illuminate\Support\Facades\Log;
 
 class HistorisController extends Controller
 {
-    private const GOLONGAN_PELANGGAN = ['S', 'R', 'B', 'I', 'P', 'M'];
-
     public function __construct(private HistorisQueryService $svc) {}
 
     // ── Halaman utama ──────────────────────────────────────────────────────────
@@ -25,7 +23,8 @@ class HistorisController extends Controller
 
         $metrikList = DimMetrik::whereIn('kode', [
                           'kwh_jual', 'mwh_jual', 'rupiah',
-                          'pelanggan', 'daya_va', 'rpkwh', 'pertumbuhan_yoy'
+                          'pelanggan', 'daya_va', 'rpkwh',
+                          'pertumbuhan_yoy', 'growth',
                       ])
                       ->orderBy('kategori')->orderBy('nama')->get();
 
@@ -63,16 +62,15 @@ class HistorisController extends Controller
             $mode = 'triwulan';
         }
 
-        // ── Pertumbuhan YoY: hitung on-the-fly ────────────────────────────────
+        // ── YoY on-the-fly ────────────────────────────────────────────────────
         if ($metrik === 'pertumbuhan_yoy') {
-            $data = $this->buildYoyChart($dari, $sampai);
+            $data = $this->buildYoyChart($dari, $sampai, 'pelanggan', 'Pertumbuhan YoY Pelanggan (%)', '#00bcd4');
+            return response()->json(['chart' => $data, 'is_mixed' => false, 'mode' => 'tahunan', 'warning' => $data['warning'] ?? null]);
+        }
 
-            return response()->json([
-                'chart'    => $data,
-                'is_mixed' => $isMixed,
-                'mode'     => $data['mode'],
-                'warning'  => $data['warning'] ?? null,
-            ]);
+        if ($metrik === 'growth') {
+            $data = $this->buildYoyChart($dari, $sampai, 'kwh_jual', 'Growth KWH Jual (%)', '#ff9800');
+            return response()->json(['chart' => $data, 'is_mixed' => false, 'mode' => 'tahunan', 'warning' => $data['warning'] ?? null]);
         }
 
         // ── Metrik biasa ──────────────────────────────────────────────────────
@@ -98,13 +96,13 @@ class HistorisController extends Controller
             ->pluck('kode')
             ->toArray();
 
-        // Kalau pelanggan ada di range ini, YoY bisa dihitung
-        if (in_array('pelanggan', $kodes) && !in_array('pertumbuhan_yoy', $kodes)) {
-            $kodes[] = 'pertumbuhan_yoy';
-        }
+        // Tambahkan metrik YoY kalau data sumbernya tersedia di range ini
+        if (in_array('pelanggan', $kodes)) $kodes[] = 'pertumbuhan_yoy';
+        if (in_array('kwh_jual', $kodes))  $kodes[] = 'growth';
 
         return response()->json(
-            DimMetrik::whereIn('kode', $kodes)->orderBy('kategori')->orderBy('nama')->get()
+            DimMetrik::whereIn('kode', array_unique($kodes))
+                ->orderBy('kategori')->orderBy('nama')->get()
         );
     }
 
@@ -135,55 +133,73 @@ class HistorisController extends Controller
     }
 
     // =========================================================================
-    // PRIVATE — Kalkulasi YoY on-the-fly
+    // PRIVATE — Kalkulasi YoY / Growth on-the-fly
     // =========================================================================
 
     /**
-     * Hitung pertumbuhan YoY pelanggan per tahun.
+     * Hitung pertumbuhan YoY untuk metrik apapun.
      *
-     * Kunci: pakai is_jumlah_tahunan=1, bulan=0
-     * → nilai ini ada di semua era (1997-2004 triwulan & 2005+ bulanan)
-     * → tidak perlu sum per bulan, tidak kena masalah mixed granularitas
+     * Strategi:
+     * 1. Pakai is_jumlah_tahunan=1, bulan=0, golongan_kode='TOTAL'
+     *    → nilai ini konsisten & tidak perlu sum per golongan
+     * 2. Fallback: sum semua golongan (S+R+B+I+P+M) kalau TOTAL tidak ada
      *
-     * YoY(T) = (total_T - total_(T-1)) / total_(T-1) × 100
+     * YoY(T) = (nilai_T - nilai_(T-1)) / nilai_(T-1) × 100
      */
-    private function buildYoyChart(int $dari, int $sampai): array
+    private function buildYoyChart(int $dari, int $sampai, string $metrikKode, string $label, string $color): array
     {
         // Ambil dari (dari-1) supaya bisa hitung YoY tahun pertama
-        $rows = FactHistoris::whereBetween('tahun', [$dari - 1, $sampai])
-            ->whereRaw('LOWER(metrik_kode) = ?', ['pelanggan'])
-            ->whereIn('golongan_kode', self::GOLONGAN_PELANGGAN)
+        $tahunDari = $dari - 1;
+
+        // ── Strategi 1: pakai TOTAL langsung ─────────────────────────────────
+        $rows = FactHistoris::whereBetween('tahun', [$tahunDari, $sampai])
+            ->whereRaw('LOWER(metrik_kode) = ?', [strtolower($metrikKode)])
+            ->where('golongan_kode', 'TOTAL')
             ->where('is_jumlah_tahunan', 1)
             ->where('bulan', 0)
             ->where('is_akumulasi', 0)
             ->orderBy('tahun')
-            ->get(['tahun', 'golongan_kode', 'nilai']);
+            ->get(['tahun', 'nilai']);
 
-        Log::info('buildYoyChart', [
-            'dari'   => $dari,
-            'sampai' => $sampai,
-            'rows'   => $rows->count(),
-        ]);
-
-        // Jumlahkan semua golongan (S+R+B+I+P+M) per tahun
         $totalPerTahun = [];
         foreach ($rows as $row) {
-            $totalPerTahun[$row->tahun] = ($totalPerTahun[$row->tahun] ?? 0) + (float) $row->nilai;
+            $totalPerTahun[$row->tahun] = (float) $row->nilai;
         }
+
+        // ── Strategi 2 fallback: sum S+R+B+I+P+M ─────────────────────────────
+        if (empty($totalPerTahun)) {
+            $rowsFallback = FactHistoris::whereBetween('tahun', [$tahunDari, $sampai])
+                ->whereRaw('LOWER(metrik_kode) = ?', [strtolower($metrikKode)])
+                ->whereIn('golongan_kode', ['S', 'R', 'B', 'I', 'P', 'M'])
+                ->where('is_jumlah_tahunan', 1)
+                ->where('bulan', 0)
+                ->where('is_akumulasi', 0)
+                ->orderBy('tahun')
+                ->get(['tahun', 'golongan_kode', 'nilai']);
+
+            foreach ($rowsFallback as $row) {
+                $totalPerTahun[$row->tahun] = ($totalPerTahun[$row->tahun] ?? 0) + (float) $row->nilai;
+            }
+        }
+
         ksort($totalPerTahun);
 
-        Log::info('totalPerTahun', $totalPerTahun);
+        Log::info("buildYoyChart [{$metrikKode}]", [
+            'dari'   => $dari,
+            'sampai' => $sampai,
+            'tahun'  => array_keys($totalPerTahun),
+        ]);
 
         if (empty($totalPerTahun)) {
             return [
                 'labels'   => [],
                 'datasets' => [],
                 'mode'     => 'tahunan',
-                'warning'  => 'Tidak ada data pelanggan (is_jumlah_tahunan=1) untuk range ini.',
+                'warning'  => "Tidak ada data {$metrikKode} (is_jumlah_tahunan=1) untuk range {$dari}–{$sampai}.",
             ];
         }
 
-        // Hitung YoY per tahun, skip tahun base (dari-1)
+        // Hitung YoY — skip tahun base (dari-1)
         $labels    = [];
         $yoyValues = [];
 
@@ -204,11 +220,11 @@ class HistorisController extends Controller
         return [
             'labels'   => $labels,
             'datasets' => [[
-                'label'           => 'Pertumbuhan YoY Pelanggan (%)',
+                'label'           => $label,
                 'golongan'        => 'YOY',
                 'data'            => $yoyValues,
-                'borderColor'     => '#00bcd4',
-                'backgroundColor' => '#00bcd4',
+                'borderColor'     => $color,
+                'backgroundColor' => $color,
             ]],
             'mode'     => 'tahunan',
             'warning'  => null,
