@@ -23,22 +23,24 @@
             </select>
         </div>
     </div>
-    <div style="display:flex; gap:var(--gap); flex:1; min-height:300px;">
-        <div class="chart-wrapper" style="flex:2; height:300px;">
-            <canvas id="chartBabinBar"></canvas>
-        </div>
-        <div class="custom-scroll" style="flex:1; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-y:auto; max-height:300px;">
-            <div style="display:flex; gap:6px; padding:8px 10px; background:#252525; border-radius:6px 6px 0 0; font-size:0.72rem; position:sticky; top:0; z-index:1;">
-                <span style="color:#888;">Bulan</span>
-                <span style="color:#2196f3; margin-left:auto;">R'24</span>
-                <span style="color:#ff9800;">T'25</span>
-                <span style="color:var(--accent-green);">R'25</span>
-                <span style="color:#aaa;">Δ</span>
-            </div>
-            <table style="width:100%; border-collapse:collapse;">
-                <tbody id="babinSideTable"></tbody>
-            </table>
-        </div>
+
+    <div class="chart-wrapper" style="width:100%; height:300px; margin-bottom:20px;">
+        <canvas id="chartBabinBar"></canvas>
+    </div>
+
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+                    <th style="padding:10px; text-align:center; color:#2196f3;">Real '24</th>
+                    <th style="padding:10px; text-align:center; color:#ff9800;">Target '25</th>
+                    <th style="padding:10px; text-align:center; color:var(--accent-green);">Real '25</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Selisih</th>
+                </tr>
+            </thead>
+            <tbody id="babinSideTable"></tbody>
+        </table>
     </div>
 </div>
 
@@ -54,19 +56,21 @@
 
 <div class="card col-12">
     <div class="card-title">KWH Penjualan PLN Batam Gabungan</div>
-    <div style="display:flex; gap:var(--gap); flex:1; min-height:300px;">
-        <div class="chart-wrapper" style="flex:2; height:300px;">
-            <canvas id="chartAllJualBar"></canvas>
-        </div>
-        <div class="custom-scroll" style="flex:1; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-y:auto; max-height:300px;">
-            <div style="display:flex; gap:8px; padding:8px 10px; background:#252525; border-radius:6px 6px 0 0; font-size:0.72rem; position:sticky; top:0; z-index:1;">
-                <span style="color:#888;">Bulan</span>
-                <span style="color:#2196f3; margin-left:auto;">KWH Batam</span>
-                <span style="color:#ff9800;">Batam-Bintan</span>
-            </div>
-            <table style="width:100%; border-collapse:collapse;">
-                <tbody id="allJualSideTable"></tbody>
-            </table>
-        </div>
+    
+    <div class="chart-wrapper" style="width:100%; height:300px; margin-bottom:20px;">
+        <canvas id="chartAllJualBar"></canvas>
+    </div>
+
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+                    <th style="padding:10px; text-align:center; color:#2196f3;">KWH Batam</th>
+                    <th style="padding:10px; text-align:center; color:#ff9800;">Batam-Bintan</th>
+                </tr>
+            </thead>
+            <tbody id="allJualSideTable"></tbody>
+        </table>
     </div>
 </div>

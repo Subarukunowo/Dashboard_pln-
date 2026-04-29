@@ -1,5 +1,4 @@
 const LABELS = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"]
-const COLORS = ["#ff9800","#00ff88","#2196f3","#e91e63","#9c27b0","#00bcd4"]
 
 export default class BabinModule {
     constructor(chart) { this.chart = chart }
@@ -58,8 +57,9 @@ export default class BabinModule {
             { label: "Batam-Bintan 2025", data: allJualSliced.map(d => d.batamBintan2025),   backgroundColor: "#ff9800" },
         ], v => (v / 1_000_000).toFixed(1) + " jt kWh")
 
-        this._renderSideTable(labels, rows, real2024)
-        this._renderAllJualSideTable(allJualSliced, is2024)
+        // [UPDATED] Panggil fungsi dengan nama baru
+        this.renderTable(labels, rows, real2024)
+        this.renderAllJualTable(allJualSliced, is2024)
     }
 
     initFilters(state, onChange) {
@@ -69,34 +69,40 @@ export default class BabinModule {
         document.getElementById("filterBulanBabin")?.addEventListener("change",   e => { state.bulan   = e.target.value; onChange() })
     }
 
-    _renderSideTable(labels, rows, real2024) {
+    // [RENAMED] _renderSideTable -> renderTable
+    // Tambahan: text-align:center untuk isi tabel
+    renderTable(labels, rows, real2024) {
         const tbody = document.getElementById("babinSideTable")
         if (!tbody) return
         const fmt = v => (v / 1_000_000).toFixed(2)
+        
         tbody.innerHTML = labels.map((bln, i) => {
             const delta = (rows[i]?.realisasi || 0) - (rows[i]?.target || 0)
             const color = delta >= 0 ? 'var(--accent-green)' : '#f44336'
             return `<tr>
-                <td style="color:#888; font-size:0.75rem;">${bln}</td>
-                <td style="text-align:right; color:#2196f3;">${fmt(real2024[i]?.realisasi || 0)}</td>
-                <td style="text-align:right; color:#ff9800;">${fmt(rows[i]?.target || 0)}</td>
-                <td style="text-align:right; color:var(--accent-green);">${fmt(rows[i]?.realisasi || 0)}</td>
-                <td style="text-align:right; color:${color}; font-weight:600;">${delta >= 0 ? '+' : ''}${fmt(delta)}</td>
+                <td style="color:#888; font-size:0.75rem; text-align:center;">${bln}</td>
+                <td style="text-align:center; color:#2196f3;">${fmt(real2024[i]?.realisasi || 0)}</td>
+                <td style="text-align:center; color:#ff9800;">${fmt(rows[i]?.target || 0)}</td>
+                <td style="text-align:center; color:var(--accent-green);">${fmt(rows[i]?.realisasi || 0)}</td>
+                <td style="text-align:center; color:${color}; font-weight:600;">${delta >= 0 ? '+' : ''}${fmt(delta)}</td>
             </tr>`
         }).join("")
     }
 
-    _renderAllJualSideTable(d, is2024) {
+    // [RENAMED] _renderAllJualSideTable -> renderAllJualTable
+    // Tambahan: text-align:center untuk isi tabel
+    renderAllJualTable(d, is2024) {
         const tbody = document.getElementById("allJualSideTable")
         if (!tbody) return
         const fmt = v => (v / 1_000_000).toFixed(2)
+        
         tbody.innerHTML = d.map(r => {
             const kwh  = is2024 ? r.kwhBatam2024      : r.kwhBatam2025
             const bb   = is2024 ? r.batamBintan2024    : r.batamBintan2025
             return `<tr>
-                <td style="color:#888; font-size:0.75rem;">${r.bulan}</td>
-                <td style="text-align:right; color:#2196f3;">${fmt(is2024 ? r.kwhBatam2024 : r.kwhBatam2025)}</td>
-                <td style="text-align:right; color:#ff9800;">${fmt(is2024 ? r.batamBintan2024 : r.batamBintan2025)}</td>
+                <td style="color:#888; font-size:0.75rem; text-align:center;">${r.bulan}</td>
+                <td style="text-align:center; color:#2196f3;">${fmt(kwh)}</td>
+                <td style="text-align:center; color:#ff9800;">${fmt(bb)}</td>
             </tr>`
         }).join("")
     }
