@@ -4,230 +4,215 @@
  */
 'use strict';
 
-(function() {
-    // ─────────────────────────────────────────────────────────────────
-    // 📦 STATE & CONFIG
-    // ─────────────────────────────────────────────────────────────────
+(function () {
 
+    // ── STATE ────────────────────────────────────────────────────────
     const State = {
-        chart: null,
-        type: 'bar',
-        lastData: null,
+        chart:       null,
+        type:        'bar',
+        lastData:    null,
         tableVisible: false,
         initialized: false,
     };
 
-    // Metrik yang satuannya % dan dihitung on-the-fly
     const GROWTH_METRICS = ['pertumbuhan_yoy', 'growth'];
 
-    const Config = {
-        colors: {
-            S: '#ff9800', R: '#00ff88', B: '#2196f3',
-            I: '#e91e63', P: '#9c27b0', M: '#00bcd4',
-            TOTAL: '#ffffff', JUMLAH: '#aaaaaa', YOY: '#00bcd4',
-        },
-        selectors: {
-            chart: 'histChart', chartCard: 'histCardChart', tableCard: 'histCardTable',
-            thead: 'histThead', tbody: 'histTbody', warning: 'histWarning',
-            title: 'histChartTitle', subtitle: 'histChartSubtitle',
-            btnGenerate: 'histBtnGenerate', btnBar: 'histBtnBar', btnLine: 'histBtnLine',
-            btnTable: 'histBtnTable', btnHideTable: 'histBtnHideTable',
-            metrik: 'histMetrik', dari: 'histDari', sampai: 'histSampai', mode: 'histMode',
-        },
+    // Warna per kode golongan — dipakai chart DAN chip indicator
+    const GOL_COLORS = {
+        S:     '#00bcd4',
+        R:     '#00c853',
+        B:     '#ff9800',
+        I:     '#f44336',
+        P:     '#ce93d8',
+        M:     '#f06292',
+        TOTAL: '#ffc107',
     };
 
-    // ─────────────────────────────────────────────────────────────────
-    // 🎯 DOM CACHE
-    // ─────────────────────────────────────────────────────────────────
+    // ── DOM REFS ─────────────────────────────────────────────────────
+    // Dibaca lazy (saat dibutuhkan) agar aman dengan defer
+    function el(id) { return document.getElementById(id); }
 
-    const DOM = {};
-    function cacheElements() {
-        Object.entries(Config.selectors).forEach(([key, id]) => {
-            DOM[key] = document.getElementById(id);
-            if (!DOM[key] && key !== 'warning') console.warn(`⚠️ Element #${id} not found`);
-        });
+    // ── HELPERS ──────────────────────────────────────────────────────
+
+    function isGrowth() {
+        return GROWTH_METRICS.includes(el('histMetrik')?.value?.toLowerCase() ?? '');
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    // 🔧 UTILITIES
-    // ─────────────────────────────────────────────────────────────────
+    function getSatuan() {
+        if (isGrowth()) return '%';
+        return el('histMetrik')?.selectedOptions?.[0]?.dataset?.satuan ?? '';
+    }
 
-    const Utils = {
-        isGrowthMetrik: () => GROWTH_METRICS.includes(DOM.metrik?.value?.toLowerCase() ?? ''),
+    function getMetrikNama() {
+        return el('histMetrik')?.selectedOptions?.[0]?.text?.split('(')[0]?.trim() || 'Metrik';
+    }
 
-        getEffectiveSatuan: () => {
-            if (Utils.isGrowthMetrik()) return '%';
-            return DOM.metrik?.selectedOptions?.[0]?.dataset?.satuan ?? '';
-        },
+    // ── KUNCI: Baca langsung dari checkbox state di DOM ──────────────
+    function getSelectedGolongan() {
+        const checked = [...document.querySelectorAll('.cb-golongan:checked')].map(c => c.value);
+        console.log('📋 Selected golongan:', checked);
+        return checked;
+    }
 
-        formatNilai: (v, satuan) => {
-            if (v === null || v === undefined || isNaN(v)) return '—';
-            if (satuan === '%') return v.toFixed(2) + '%';
-            if (satuan === 'Rp' || satuan === 'Rp/KWh') return 'Rp ' + Math.abs(v).toLocaleString('id-ID');
-            const abs = Math.abs(v);
-            if (abs >= 1e9) return (v / 1e9).toFixed(2) + ' M';
-            if (abs >= 1e6) return (v / 1e6).toFixed(2) + ' Jt';
-            if (abs >= 1e3) return (v / 1e3).toFixed(1) + ' rb';
-            return v.toLocaleString('id-ID', { maximumFractionDigits: 2 });
-        },
+    function formatNilai(v, satuan) {
+        if (v === null || v === undefined || isNaN(v)) return '—';
+        if (satuan === '%') return v.toFixed(2) + '%';
+        if (satuan === 'Rp' || satuan === 'Rp/KWh') return 'Rp ' + Math.abs(v).toLocaleString('id-ID');
+        const abs = Math.abs(v);
+        if (abs >= 1e9) return (v / 1e9).toFixed(2) + ' M';
+        if (abs >= 1e6) return (v / 1e6).toFixed(2) + ' Jt';
+        if (abs >= 1e3) return (v / 1e3).toFixed(1) + ' rb';
+        return v.toLocaleString('id-ID', { maximumFractionDigits: 2 });
+    }
 
-        hexToRgba: (hex, alpha = 0.7) => {
-            if (!hex || typeof hex !== 'string') return `rgba(255,255,255,${alpha})`;
-            const c = hex.replace('#', '');
-            const r = parseInt(c.substring(0,2), 16) || 255;
-            const g = parseInt(c.substring(2,4), 16) || 255;
-            const b = parseInt(c.substring(4,6), 16) || 255;
-            return `rgba(${r},${g},${b},${alpha})`;
-        },
+    function hexToRgba(hex, alpha = 0.75) {
+        if (!hex) return `rgba(255,255,255,${alpha})`;
+        const c = hex.replace('#', '');
+        const r = parseInt(c.substring(0, 2), 16);
+        const g = parseInt(c.substring(2, 4), 16);
+        const b = parseInt(c.substring(4, 6), 16);
+        return `rgba(${r},${g},${b},${alpha})`;
+    }
 
-        getSelectedMetrik: () => ({
-            nama:   DOM.metrik?.selectedOptions?.[0]?.text?.split('(')[0]?.trim() || 'Metrik',
-            satuan: Utils.getEffectiveSatuan(),
-        }),
+    // ── UI ────────────────────────────────────────────────────────────
 
-        getSelectedGolongan: () =>
-            [...document.querySelectorAll('.cb-golongan:checked')].map(c => c.value),
-    };
+    function setWarning(msg, type = 'warning') {
+        const box = el('histWarning');
+        if (!box) return;
+        if (!msg) { box.style.display = 'none'; return; }
+        const styles = {
+            warning: 'background:rgba(255,152,0,0.08);border:1px solid rgba(255,152,0,0.3);color:#ff9800;',
+            error:   'background:rgba(244,67,54,0.08);border:1px solid rgba(244,67,54,0.3);color:#f44336;',
+            info:    'background:rgba(0,255,136,0.08);border:1px solid rgba(0,255,136,0.3);color:#00ff88;',
+        };
+        box.style.cssText = `display:block;border-radius:7px;padding:8px 14px;font-size:0.78rem;${styles[type] || styles.warning}`;
+        box.textContent = msg;
+        if (type !== 'error') setTimeout(() => { if (box.textContent === msg) box.style.display = 'none'; }, 5000);
+    }
 
-    // ─────────────────────────────────────────────────────────────────
-    // 🎨 UI HANDLERS
-    // ─────────────────────────────────────────────────────────────────
+    function setLoading(loading) {
+        const btn = el('histBtnGenerate');
+        if (!btn) return;
+        btn.disabled = loading;
+        btn.innerHTML = loading
+            ? '<i class="fa-solid fa-spinner fa-spin"></i> Loading...'
+            : '<i class="fa-solid fa-chart-line"></i> Generate';
+    }
 
-    const UI = {
-        setWarning: (msg, type = 'warning') => {
-            if (!DOM.warning) return;
-            DOM.warning.textContent = msg || '';
-            DOM.warning.style.display = msg ? 'block' : 'none';
-            if (msg) {
-                const styles = {
-                    warning: 'background:rgba(255,152,0,0.08);border-color:rgba(255,152,0,0.25);color:#ff9800;',
-                    error:   'background:rgba(244,67,54,0.08);border-color:rgba(244,67,54,0.25);color:#f44336;',
-                    info:    'background:rgba(0,255,136,0.08);border-color:rgba(0,255,136,0.25);color:#00ff88;',
-                };
-                DOM.warning.style.cssText = `border:1px solid;border-radius:6px;padding:8px 14px;font-size:0.78rem;${styles[type] || styles.warning}`;
-                if (type !== 'error') {
-                    setTimeout(() => {
-                        if (DOM.warning.textContent === msg) DOM.warning.style.display = 'none';
-                    }, 5000);
-                }
+    function updateGrowthHint() {
+        const mode = el('histMode');
+        if (!mode) return;
+        const g = isGrowth();
+        mode.disabled = g;
+        mode.title = g ? 'Growth/YoY selalu mode tahunan' : '';
+        if (g) mode.value = 'tahunan';
+    }
+
+    // ── CHIP SETUP ────────────────────────────────────────────────────
+    // Dipanggil ulang setiap saat aman karena pakai { once: false }
+    // Strategi: event delegation pada container, bukan per-chip
+
+    function setupChips() {
+        const container = document.querySelector('.golongan-chips');
+        if (!container || container._chipsBound) return;
+        container._chipsBound = true;
+
+        container.addEventListener('click', function (e) {
+            const chip = e.target.closest('.hist-gol-chip');
+            if (!chip) return;
+
+            const cb = chip.querySelector('.cb-golongan');
+            if (!cb) return;
+
+            // Toggle
+            cb.checked = !cb.checked;
+            chip.classList.toggle('checked', cb.checked);
+
+            console.log(`🏷️ ${cb.value}: ${cb.checked ? '✓ ON' : '✗ OFF'} | Total checked:`, getSelectedGolongan().length);
+        });
+
+        // Pilih Semua / Hapus Semua — pakai event delegation pada document
+        el('histSelectAll')?.addEventListener('click', e => {
+            e.preventDefault();
+            document.querySelectorAll('.cb-golongan').forEach(cb => {
+                cb.checked = true;
+                cb.closest('.hist-gol-chip')?.classList.add('checked');
+            });
+        });
+
+        el('histClearAll')?.addEventListener('click', e => {
+            e.preventDefault();
+            document.querySelectorAll('.cb-golongan').forEach(cb => {
+                cb.checked = false;
+                cb.closest('.hist-gol-chip')?.classList.remove('checked');
+            });
+            // Kembalikan TOTAL sebagai default
+            const totalCb = document.querySelector('.cb-golongan[value="TOTAL"]');
+            if (totalCb) {
+                totalCb.checked = true;
+                totalCb.closest('.hist-gol-chip')?.classList.add('checked');
             }
-        },
+        });
 
-        setLoading: (loading) => {
-            if (!DOM.btnGenerate) return;
-            DOM.btnGenerate.disabled = loading;
-            DOM.btnGenerate.innerHTML = loading
-                ? '<i class="fas fa-spinner fa-spin"></i> Loading...'
-                : '<i class="fas fa-chart-line"></i> Generate';
-        },
+        console.log('✅ Chips bound via delegation');
+    }
 
-        updateChartInfo: (mode, dari, sampai, satuan) => {
-            const { nama } = Utils.getSelectedMetrik();
-            if (DOM.title)    DOM.title.textContent    = `${nama} — ${(mode || 'DATA').toUpperCase()}`;
-            if (DOM.subtitle) DOM.subtitle.textContent = `${dari || '?'} – ${sampai || '?'} | Satuan: ${satuan || '-'}`;
-        },
-
-        showChartCard: () => {
-            if (DOM.chartCard) {
-                DOM.chartCard.style.display = 'block';
-                setTimeout(() => State.chart?.resize?.(), 100);
-            }
-        },
-
-        toggleView: () => {
-            if (!DOM.chartCard || !DOM.tableCard) return;
-            State.tableVisible = !State.tableVisible;
-            DOM.chartCard.style.display = State.tableVisible ? 'none' : 'block';
-            DOM.tableCard.style.display = State.tableVisible ? 'block' : 'none';
-            if (!State.tableVisible && State.chart) setTimeout(() => State.chart.resize(), 50);
-            console.log(`🔀 View: ${State.tableVisible ? 'TABLE' : 'CHART'}`);
-        },
-
-        // Disable mode selector saat growth metric — controller selalu return tahunan
-        updateGrowthHint: () => {
-            if (!DOM.mode) return;
-            const isGrowth = Utils.isGrowthMetrik();
-            DOM.mode.disabled = isGrowth;
-            DOM.mode.title    = isGrowth ? 'Growth/YoY selalu ditampilkan dalam mode tahunan' : '';
-            if (isGrowth) DOM.mode.value = 'tahunan';
-        },
-    };
-
-    // ─────────────────────────────────────────────────────────────────
-    // 📊 CHART RENDERER
-    // ─────────────────────────────────────────────────────────────────
+    // ── CHART RENDERER ────────────────────────────────────────────────
 
     function renderChart(data) {
-        console.log('🎨 renderChart:', { type: State.type, labels: data.labels?.length, datasets: data.datasets?.length });
+        const canvas = el('histChart');
+        if (!canvas) { setWarning('Canvas tidak ditemukan', 'error'); return false; }
 
-        const ctx = document.getElementById(Config.selectors.chart);
-        if (!ctx) {
-            console.error('❌ Canvas #histChart not found');
-            UI.setWarning('❌ Canvas chart tidak ditemukan', 'error');
-            return;
-        }
+        const satuan   = getSatuan();
+        const growth   = isGrowth();
+        const nLabels  = data.labels?.length || 0;
+        const step     = nLabels > 80 ? Math.ceil(nLabels / 60) : 1;
 
-        const satuan   = Utils.getEffectiveSatuan();
-        const isGrowth = Utils.isGrowthMetrik();
-        const dari     = DOM.dari?.value;
-        const sampai   = DOM.sampai?.value;
+        // Update judul
+        if (el('chart-title'))       el('chart-title').textContent       = getMetrikNama();
+        if (el('histChartSubtitle')) el('histChartSubtitle').textContent =
+            `${el('histDari')?.value || '?'} – ${el('histSampai')?.value || '?'} | Satuan: ${satuan || '-'}`;
 
-        UI.updateChartInfo(data.mode, dari, sampai, satuan);
-
-        if (State.chart) {
-            State.chart.destroy();
-            State.chart = null;
-            console.log('🗑️ Previous chart destroyed');
-        }
-
-        const totalLabels = data.labels?.length || 0;
-        const step        = totalLabels > 80 ? Math.ceil(totalLabels / 60) : 1;
+        // Destroy lama
+        if (State.chart) { State.chart.destroy(); State.chart = null; }
 
         try {
-            State.chart = new Chart(ctx, {
+            State.chart = new Chart(canvas, {
                 type: State.type,
                 data: {
                     labels: data.labels || [],
                     datasets: (data.datasets || []).map(d => ({
-                        label:            d.label,
-                        data:             d.data || [],
-                        borderColor:      d.borderColor || Config.colors.TOTAL,
-                        backgroundColor:  State.type === 'bar'
-                            ? Utils.hexToRgba(d.backgroundColor || d.borderColor || Config.colors.TOTAL, 0.7)
+                        label:           d.label,
+                        data:            d.data || [],
+                        borderColor:     d.borderColor || '#fff',
+                        backgroundColor: State.type === 'bar'
+                            ? hexToRgba(d.backgroundColor || d.borderColor || '#fff', 0.75)
                             : 'transparent',
                         tension:          0.35,
                         fill:             false,
-                        pointRadius:      totalLabels > 60 ? 0 : 3,
+                        pointRadius:      nLabels > 60 ? 0 : 3,
                         pointHoverRadius: 5,
                         spanGaps:         true,
                         borderWidth:      State.type === 'bar' ? 0 : 2,
                     })),
                 },
                 options: {
-                    responsive:          true,
-                    maintainAspectRatio: false,
-                    interaction:         { mode: 'index', intersect: false },
-                    animation:           { duration: 400 },
+                    responsive: true, maintainAspectRatio: false,
+                    interaction: { mode: 'index', intersect: false },
+                    animation: { duration: 400 },
                     plugins: {
                         legend: {
-                            labels: { color: '#ccc', font: { size: 11 }, padding: 16, usePointStyle: true }
+                            labels: { color: '#bbb', font: { size: 11 }, padding: 16, usePointStyle: true }
                         },
                         tooltip: {
-                            backgroundColor: '#1e1e1e',
-                            borderColor:     '#333',
-                            borderWidth:     1,
-                            titleColor:      '#ccc',
-                            bodyColor:       '#aaa',
-                            displayColors:   true,
+                            backgroundColor: '#1a1a1a', borderColor: '#333', borderWidth: 1,
+                            titleColor: '#ccc', bodyColor: '#aaa', padding: 10,
                             callbacks: {
-                                label: (ctx) => {
-                                    const v = ctx.raw, label = ctx.dataset.label;
-                                    if (v === null || v === undefined) return `${label}: —`;
-                                    if (isGrowth) {
-                                        const sign = v >= 0 ? '+' : '';
-                                        return `${label}: ${sign}${v.toFixed(2)}%`;
-                                    }
-                                    return `${label}: ${Utils.formatNilai(v, satuan)}${satuan ? ' ' + satuan : ''}`;
+                                label: ctx => {
+                                    const v = ctx.raw, lbl = ctx.dataset.label;
+                                    if (v == null) return `${lbl}: —`;
+                                    if (growth) return `${lbl}: ${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
+                                    return `${lbl}: ${formatNilai(v, satuan)}${satuan ? ' ' + satuan : ''}`;
                                 }
                             }
                         },
@@ -235,304 +220,223 @@
                     scales: {
                         y: {
                             grid: {
-                                // Garis Y=0 lebih terang untuk growth chart
-                                color: isGrowth
-                                    ? (ctx) => ctx.tick.value === 0 ? 'rgba(255,255,255,0.25)' : '#2a2a2a'
-                                    : '#2a2a2a',
-                                lineWidth: isGrowth
-                                    ? (ctx) => ctx.tick.value === 0 ? 2 : 1
-                                    : 1,
+                                color: growth
+                                    ? ctx => ctx.tick.value === 0 ? 'rgba(255,255,255,0.2)' : '#252525'
+                                    : '#252525',
                             },
                             ticks: {
-                                color:    '#666',
-                                font:     { size: 10 },
-                                callback: (v) => isGrowth ? v.toFixed(1) + '%' : Utils.formatNilai(v, satuan),
+                                color: '#555', font: { size: 10 },
+                                callback: v => growth ? v.toFixed(1) + '%' : formatNilai(v, satuan),
                             },
-                            beginAtZero: !isGrowth,
+                            beginAtZero: !growth,
                         },
                         x: {
                             grid: { display: false },
                             ticks: {
-                                color:       '#666',
-                                font:        { size: 9 },
-                                maxRotation: 45,
-                                minRotation: 45,
-                                callback: function(val, idx) {
+                                color: '#555', font: { size: 9 }, maxRotation: 45, minRotation: 45,
+                                callback: function (val, idx) {
                                     return idx % step === 0 ? this.getLabelForValue(val) : '';
-                                }
-                            }
-                        }
-                    }
-                }
+                                },
+                            },
+                        },
+                    },
+                },
             });
-            console.log('✅ Chart rendered successfully');
             return true;
         } catch (e) {
-            console.error('❌ Chart render error:', e);
-            UI.setWarning(`Render chart gagal: ${e.message}`, 'error');
+            console.error('❌ Chart error:', e);
+            setWarning(`Render chart gagal: ${e.message}`, 'error');
             return false;
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    // 📋 TABLE RENDERER
-    // ─────────────────────────────────────────────────────────────────
+    // ── TABLE RENDERER ────────────────────────────────────────────────
 
     function renderTable(data) {
-        console.log('📋 renderTable:', { labels: data.labels?.length, datasets: data.datasets?.length });
+        const satuan = getSatuan();
+        const growth = isGrowth();
+        const thead  = el('histThead');
+        const tbody  = el('histTbody');
 
-        const satuan   = Utils.getEffectiveSatuan();
-        const isGrowth = Utils.isGrowthMetrik();
-
-        if (DOM.thead) {
-            DOM.thead.innerHTML = `
-                <tr>
-                    <th style="text-align:left;padding:8px 10px;position:sticky;left:0;background:#1a1a1a;z-index:2;min-width:120px;">Periode</th>
-                    ${(data.datasets || []).map(d => `<th style="color:${d.borderColor || '#fff'};min-width:100px;">${d.label}</th>`).join('')}
-                </tr>
-            `;
+        if (thead) {
+            thead.innerHTML = `<tr>
+                <th style="text-align:left;padding:9px 12px;position:sticky;left:0;background:#1a1a1a;z-index:2;min-width:90px;">Periode</th>
+                ${(data.datasets || []).map(d =>
+                    `<th style="color:${d.borderColor||'#fff'};min-width:100px;padding:9px 8px;">${d.label}</th>`
+                ).join('')}
+            </tr>`;
         }
 
-        if (DOM.tbody) {
+        if (tbody) {
             if (!data.labels?.length) {
-                DOM.tbody.innerHTML = '<tr><td colspan="100%" style="text-align:center;padding:20px;color:#666;">Tidak ada data untuk ditampilkan</td></tr>';
+                tbody.innerHTML = '<tr><td colspan="99" style="text-align:center;padding:24px;color:#444;">Tidak ada data</td></tr>';
                 return;
             }
-
-            DOM.tbody.innerHTML = (data.labels || []).map((lbl, i) => `
+            tbody.innerHTML = (data.labels || []).map((lbl, i) => `
                 <tr>
-                    <td style="padding:8px 10px;color:#ccc;position:sticky;left:0;background:#1a1a1a;z-index:1;font-weight:500;">${lbl}</td>
+                    <td style="padding:7px 12px;color:#bbb;position:sticky;left:0;background:#1a1a1a;z-index:1;font-weight:500;">${lbl}</td>
                     ${(data.datasets || []).map(d => {
                         const v = d.data?.[i];
-                        let cell = '—';
-                        if (v !== null && v !== undefined && !isNaN(v)) {
-                            if (isGrowth) {
-                                const sign  = v >= 0 ? '+' : '';
-                                const color = v >= 0 ? '#00ff88' : '#f44336';
-                                cell = `<span style="color:${color};font-weight:600;">${sign}${v.toFixed(2)}%</span>`;
+                        let cell = '<span style="color:#333">—</span>';
+                        if (v != null && !isNaN(v)) {
+                            if (growth) {
+                                const c = v >= 0 ? '#00c853' : '#f44336';
+                                cell = `<span style="color:${c};font-weight:600;">${v >= 0 ? '+' : ''}${v.toFixed(2)}%</span>`;
                             } else {
-                                cell = `${Utils.formatNilai(v, satuan)}${satuan ? ` <small style="color:#555">${satuan}</small>` : ''}`;
+                                cell = formatNilai(v, satuan);
                             }
                         }
-                        return `<td style="text-align:right;padding:8px 6px;color:#aaa;font-variant-numeric:tabular-nums;">${cell}</td>`;
+                        return `<td style="text-align:right;padding:7px 8px;color:#888;font-variant-numeric:tabular-nums;font-size:0.82rem;">${cell}</td>`;
                     }).join('')}
                 </tr>
             `).join('');
         }
-
-        console.log('✅ Table rendered');
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    // 📥 LOAD CHART DATA
-    // ─────────────────────────────────────────────────────────────────
+    // ── TABLE VISIBILITY ─────────────────────────────────────────────
+
+    function showTable() {
+        State.tableVisible = true;
+        const card = el('histCardTable');
+        if (card) card.style.display = 'block';
+        const btn = el('histBtnTable');
+        if (btn) { btn.classList.add('active'); btn.innerHTML = '<i class="fa-solid fa-table"></i> Tabel ✓'; }
+        setTimeout(() => card?.scrollIntoView({ behavior: 'smooth', block: 'nearest' }), 60);
+    }
+
+    function hideTable() {
+        State.tableVisible = false;
+        const card = el('histCardTable');
+        if (card) card.style.display = 'none';
+        const btn = el('histBtnTable');
+        if (btn) { btn.classList.remove('active'); btn.innerHTML = '<i class="fa-solid fa-table"></i> Tabel'; }
+    }
+
+    // ── LOAD DATA ─────────────────────────────────────────────────────
 
     async function loadChart() {
-        console.log('🔄 loadChart called');
+        const dari     = el('histDari')?.value;
+        const sampai   = el('histSampai')?.value;
+        const metrik   = el('histMetrik')?.value;
+        const mode     = el('histMode')?.value;
+        const golongan = getSelectedGolongan();
 
-        const dari     = DOM.dari?.value;
-        const sampai   = DOM.sampai?.value;
-        const metrik   = DOM.metrik?.value;
-        const mode     = DOM.mode?.value;
-        const golongan = Utils.getSelectedGolongan();
+        console.log('🚀 loadChart:', { dari, sampai, metrik, mode, golongan });
 
         if (!dari || !sampai || !metrik) {
-            UI.setWarning('⚠️ Lengkapi filter: Metrik, Dari, dan Sampai', 'warning');
-            return;
+            setWarning('⚠️ Lengkapi filter: Metrik, Dari, dan Sampai'); return;
         }
         if (!golongan.length) {
-            UI.setWarning('⚠️ Pilih minimal satu golongan tarif', 'warning');
-            return;
+            setWarning('⚠️ Pilih minimal satu golongan tarif'); return;
         }
 
-        UI.setLoading(true);
-        UI.setWarning('');
+        setLoading(true);
+        setWarning('');
 
         try {
             const params = new URLSearchParams({ tahun_dari: dari, tahun_sampai: sampai, metrik, mode });
             golongan.forEach(g => params.append('golongan[]', g));
 
-            console.log('🌐 Fetching:', `/historis/chart?${params}`);
             const res = await fetch(`/historis/chart?${params}`, {
-                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' }
+                headers: { 'Accept': 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
             });
 
-            if (!res.ok) {
-                const errorText = await res.text().then(t => t.substring(0, 200));
-                throw new Error(`HTTP ${res.status}: ${errorText}`);
-            }
+            if (!res.ok) throw new Error(`HTTP ${res.status}`);
 
             const json = await res.json();
+            if (!json?.chart?.labels || !json?.chart?.datasets) throw new Error('Format response tidak valid');
 
-            if (!json?.chart?.labels || !json?.chart?.datasets) {
-                throw new Error('Format response tidak valid: missing chart data');
-            }
-
-            if (json.warning) UI.setWarning(json.warning, 'warning');
+            if (json.warning) setWarning(json.warning, 'warning');
 
             State.lastData = json.chart;
-
-            const rendered = renderChart(json.chart);
             renderTable(json.chart);
+            const ok = renderChart(json.chart);
 
-            if (rendered) {
-                UI.showChartCard();
-                console.log('✅ Chart loaded & displayed');
+            if (ok) {
+                const chartCard = el('histCardChart');
+                if (chartCard) {
+                    chartCard.style.display = 'block';
+                    setTimeout(() => State.chart?.resize?.(), 100);
+                }
+                if (State.tableVisible) showTable();
             }
 
         } catch (e) {
             console.error('❌ loadChart error:', e);
-            UI.setWarning(`Gagal memuat data: ${e.message}`, 'error');
-            if (DOM.chartCard) DOM.chartCard.style.display = 'none';
-            if (typeof Swal !== 'undefined') {
-                Swal.fire({
-                    icon: 'error', title: 'Error Memuat Data', text: e.message,
-                    confirmButtonColor: '#ff4444', customClass: { popup: 'dark-theme-popup' }
-                });
-            }
+            setWarning(`Gagal memuat data: ${e.message}`, 'error');
         } finally {
-            UI.setLoading(false);
+            setLoading(false);
         }
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    // 🔘 CHART TYPE TOGGLE
-    // ─────────────────────────────────────────────────────────────────
+    // ── CHART TYPE ────────────────────────────────────────────────────
 
     function setChartType(type) {
         State.type = type;
-        if (DOM.btnBar)  DOM.btnBar.classList.toggle('active',  type === 'bar');
-        if (DOM.btnLine) DOM.btnLine.classList.toggle('active', type === 'line');
-        console.log(`📊 Chart type changed to: ${type}`);
+        el('histBtnBar')?.classList.toggle('active',  type === 'bar');
+        el('histBtnLine')?.classList.toggle('active', type === 'line');
         if (State.lastData) renderChart(State.lastData);
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    // 🔗 EVENT BINDING (Called ONCE)
-    // ─────────────────────────────────────────────────────────────────
+    // ── METRIK LIST UPDATE ────────────────────────────────────────────
 
-    function bindEvents() {
-        if (State.initialized) {
-            console.log('⚠️ Events already bound, skipping');
-            return;
-        }
-
-        console.log('🔗 Binding events...');
-
-        DOM.btnGenerate?.addEventListener('click',    (e) => { e.preventDefault(); loadChart(); });
-        DOM.btnBar?.addEventListener('click',         (e) => { e.preventDefault(); setChartType('bar'); });
-        DOM.btnLine?.addEventListener('click',        (e) => { e.preventDefault(); setChartType('line'); });
-        DOM.btnTable?.addEventListener('click',       (e) => { e.preventDefault(); UI.toggleView(); });
-        DOM.btnHideTable?.addEventListener('click',   (e) => { e.preventDefault(); UI.toggleView(); });
-
-        // Update mode hint saat metrik berubah
-        DOM.metrik?.addEventListener('change', () => UI.updateGrowthHint());
-
-        // Update metrik list saat range tahun berubah
-        const updateMetrik = async () => {
-            const dari = DOM.dari?.value, sampai = DOM.sampai?.value;
-            if (!dari || !sampai) return;
-            try {
-                const res = await fetch(`/historis/metrik?dari=${dari}&sampai=${sampai}`);
-                if (!res.ok) return;
-                const list = await res.json();
-                const sel  = DOM.metrik, cur = sel?.value;
-                if (sel && list?.length) {
-                    sel.innerHTML = list.map(m =>
-                        `<option value="${m.kode}" data-satuan="${m.satuan}" ${m.kode === cur ? 'selected' : ''}>
-                            ${m.nama} (${m.satuan})
-                        </option>`
-                    ).join('');
-                    if (!list.find(m => m.kode === cur) && list[0]) sel.value = list[0].kode;
-                }
-                UI.updateGrowthHint();
-            } catch (e) {
-                console.warn('⚠️ Gagal update metrik:', e);
+    async function updateMetrikList() {
+        const dari = el('histDari')?.value, sampai = el('histSampai')?.value;
+        if (!dari || !sampai) return;
+        try {
+            const res = await fetch(`/historis/metrik?dari=${dari}&sampai=${sampai}`);
+            if (!res.ok) return;
+            const list = await res.json();
+            const sel = el('histMetrik');
+            const cur = sel?.value;
+            if (sel && list?.length) {
+                sel.innerHTML = list.map(m =>
+                    `<option value="${m.kode}" data-satuan="${m.satuan}" ${m.kode === cur ? 'selected' : ''}>
+                        ${m.nama} (${m.satuan})
+                    </option>`
+                ).join('');
             }
-        };
-        DOM.dari?.addEventListener('change',   updateMetrik);
-        DOM.sampai?.addEventListener('change', updateMetrik);
-
-// Golongan chips — setup click handler
-document.querySelectorAll('.hist-gol-chip').forEach(chip => {
-    chip.addEventListener('click', function(e) {
-        // Jangan interfer jika checkbox yang diklik langsung
-        if (e.target.classList.contains('cb-golongan')) {
-            return;
-        }
-        
-        const cb = this.querySelector('input[type=checkbox]');
-        if (!cb) return;
-        
-        cb.checked = !cb.checked;
-        this.classList.toggle('checked', cb.checked);
-        
-        // Trigger change event
-        cb.dispatchEvent(new Event('change', { bubbles: true }));
-        
-        console.log(`🏷️ Golongan "${cb.value}": ${cb.checked ? '✓' : '✗'}`);
-    });
-    // ✅ HAPUS { passive: true } — tidak perlu karena tidak ada preventDefault
-});
-
-        document.getElementById('histSelectAll')?.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.querySelectorAll('.cb-golongan').forEach(cb => {
-                cb.checked = true;
-                cb.closest('.hist-gol-chip')?.classList.add('checked');
-            });
-            console.log('✓ All golongan selected');
-        });
-
-        document.getElementById('histClearAll')?.addEventListener('click', (e) => {
-            e.preventDefault();
-            document.querySelectorAll('.cb-golongan').forEach(cb => {
-                cb.checked = false;
-                cb.closest('.hist-gol-chip')?.classList.remove('checked');
-            });
-            const totalCb = document.querySelector('.cb-golongan[value="TOTAL"]');
-            if (totalCb) {
-                totalCb.checked = true;
-                totalCb.closest('.hist-gol-chip')?.classList.add('checked');
-            }
-            console.log('✗ All golongan cleared (TOTAL kept)');
-        });
-
-        State.initialized = true;
-        console.log('✅ Events bound successfully');
+            updateGrowthHint();
+        } catch (e) { console.warn('⚠️ updateMetrikList error:', e); }
     }
 
-    // ─────────────────────────────────────────────────────────────────
-    // 🚀 PUBLIC API
-    // ─────────────────────────────────────────────────────────────────
+    // ── EVENT BINDING ─────────────────────────────────────────────────
 
-    window.toggleHistTable = UI.toggleView;
-    window.HistorisChart   = {
-        load:        loadChart,
-        render:      renderChart,
-        renderTable,
-        setChartType,
-        toggleTable: UI.toggleView,
-        getState:    () => ({ ...State }),
-        isReady:     () => State.initialized && !!State.chart,
+    function bindEvents() {
+        if (State.initialized) return;
+
+        el('histBtnGenerate')?.addEventListener('click', e => { e.preventDefault(); loadChart(); });
+        el('histBtnBar')?.addEventListener('click',      e => { e.preventDefault(); setChartType('bar'); });
+        el('histBtnLine')?.addEventListener('click',     e => { e.preventDefault(); setChartType('line'); });
+        el('histBtnTable')?.addEventListener('click',    e => { e.preventDefault(); State.tableVisible ? hideTable() : showTable(); });
+        el('histBtnHideTable')?.addEventListener('click',e => { e.preventDefault(); hideTable(); });
+
+        el('histMetrik')?.addEventListener('change', updateGrowthHint);
+        el('histDari')?.addEventListener('change',   updateMetrikList);
+        el('histSampai')?.addEventListener('change', updateMetrikList);
+
+        setupChips();
+
+        State.initialized = true;
+        console.log('✅ HistorisChart events bound');
+    }
+
+    // ── PUBLIC API ────────────────────────────────────────────────────
+
+    window.HistorisChart = {
+        load: loadChart, render: renderChart, renderTable,
+        setChartType, showTable, hideTable,
+        getState: () => ({ ...State }),
     };
 
-    // ─────────────────────────────────────────────────────────────────
-    // 🎬 INIT
-    // ─────────────────────────────────────────────────────────────────
+    // ── INIT ──────────────────────────────────────────────────────────
 
     function init() {
         if (State.initialized) return;
-        console.log('🔌 HistorisChart.js initializing...');
-        if (typeof Chart === 'undefined') {
-            console.warn('⚠️ Chart.js not loaded, retrying in 500ms...');
-            setTimeout(init, 500);
-            return;
-        }
-        cacheElements();
+        if (typeof Chart === 'undefined') { setTimeout(init, 300); return; }
         bindEvents();
-        UI.updateGrowthHint(); // set initial state
-        console.log('✅ HistorisChart.js ready!');
+        updateGrowthHint();
+        console.log('✅ HistorisChart.js ready');
     }
 
     if (document.readyState === 'loading') {

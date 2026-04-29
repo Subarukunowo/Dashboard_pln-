@@ -13,10 +13,6 @@
 
 @section('content')
 
-{{-- ═══════════════════════════════════════════════════════
-     DASH-HEADER — persis seperti di halaman Dashboard
-     Sticky di bawah navbar, judul rata kiri
-     ═══════════════════════════════════════════════════════ --}}
 <div class="dash-header">
     <div class="dash-header__left">
         <p class="dash-header__title">DATA HISTORIS PLN BATAM</p>
@@ -24,16 +20,13 @@
     </div>
 </div>
 
-{{-- ═══════════════════════════════════════════════════════
-     MAIN CONTENT
-     ═══════════════════════════════════════════════════════ --}}
 <main class="historis-container">
 
     {{-- SECTION 1: LIHAT DATA HISTORIS --}}
     <section class="card section-historis" aria-labelledby="section-historis-title">
 
         <div class="section-header">
-            <i class="fas fa-chart-area icon-accent" aria-hidden="true"></i>
+            <i class="fa-solid fa-chart-area icon-accent" aria-hidden="true"></i>
             <div class="section-info">
                 <h2 id="section-historis-title" class="card-title">Lihat Data Historis</h2>
                 <span class="text-muted">Periode 1997 — 2025 (Read-Only)</span>
@@ -83,58 +76,54 @@
             </div>
 
             <button id="histBtnGenerate" class="hist-btn-primary" type="button">
-                <i class="fas fa-chart-line" aria-hidden="true"></i> Generate
+                <i class="fa-solid fa-chart-line"></i> Generate
             </button>
         </div>
 
         <div id="histWarning" class="hist-warning-box" role="alert" style="display:none;"></div>
     </section>
 
-{{-- ═══════════════════════════════════════════════════════
-     SECTION 2: GOLONGAN TARIF — MULTI-SELECT + WARNA UNIK
-     ═══════════════════════════════════════════════════════ --}}
-<section class="card section-golongan" aria-labelledby="section-golongan-title">
-    <div class="section-actions">
-        <span id="section-golongan-title" class="hist-label">Golongan Tarif</span>
-        <span class="text-muted" style="font-size:0.85rem; margin-left:auto;">
-            (Bisa pilih lebih dari satu)
-        </span>
-    </div>
-    <div class="golongan-chips" role="group" aria-label="Pilihan golongan tarif">
-        @php
-            $golonganColors = [
-                'S' => 'gol-sosial',
-                'R' => 'gol-rumah',
-                'B' => 'gol-bisnis',
-                'I' => 'gol-industri',
-                'P' => 'gol-publik',
-                'M' => 'gol-multiguna',
-                'TOTAL' => 'gol-total',
-            ];
-        @endphp
-        
-        @foreach($golonganList as $g)
+    {{-- SECTION 2: GOLONGAN TARIF — multi-select, warna per golongan --}}
+    <section class="card section-golongan" aria-labelledby="section-golongan-title">
+        <div class="section-actions">
+            <span id="section-golongan-title" class="hist-label">Golongan Tarif</span>
+            <span class="text-muted" style="font-size:0.72rem; margin-left:auto; color:#444;">
+                Bisa pilih lebih dari satu
+            </span>
+        </div>
+
+        <div class="golongan-chips" role="group" aria-label="Pilihan golongan tarif">
             @php
-                $colorClass = $golonganColors[$g->kode] ?? 'gol-default';
-                $isChecked = $g->kode === 'TOTAL';
+                $golonganColors = [
+                    'S'     => 'gol-sosial',
+                    'R'     => 'gol-rumah',
+                    'B'     => 'gol-bisnis',
+                    'I'     => 'gol-industri',
+                    'P'     => 'gol-publik',
+                    'M'     => 'gol-multiguna',
+                    'TOTAL' => 'gol-total',
+                ];
             @endphp
-            <label class="hist-gol-chip {{ $colorClass }} {{ $isChecked ? 'checked' : '' }}" 
-                   data-golongan="{{ $g->kode }}"
-                   style="cursor: pointer; border-radius: 50px;">
-                <input type="checkbox"
-                       class="cb-golongan"
-                       name="golongan_tarif[]"
-                       value="{{ $g->kode }}"
-                       data-kode="{{ $g->kode }}"
-                       data-nama="{{ $g->nama }}"
-                       @checked($isChecked)
-                       style="display: none;">
-                <span class="chip-text" style="pointer-events: none;">{{ $g->nama }}</span>
-                <span class="chip-indicator" style="pointer-events: none;"></span>
-            </label>
-        @endforeach
-    </div>
-</section>
+
+            @foreach($golonganList as $g)
+                @php
+                    $colorClass = $golonganColors[$g->kode] ?? 'gol-default';
+                    $isChecked  = $g->kode === 'TOTAL';
+                @endphp
+                <label class="hist-gol-chip {{ $colorClass }} {{ $isChecked ? 'checked' : '' }}"
+                       data-golongan="{{ $g->kode }}">
+                    <input type="checkbox"
+                           class="cb-golongan"
+                           name="golongan_tarif[]"
+                           value="{{ $g->kode }}"
+                           @checked($isChecked)>
+                    <span class="chip-text">{{ $g->nama }}</span>
+                    <span class="chip-indicator"></span>
+                </label>
+            @endforeach
+        </div>
+    </section>
+
     {{-- SECTION 3: CHART --}}
     <section class="card section-chart" id="histCardChart" style="display:none;" aria-labelledby="chart-title">
         <div class="chart-header">
@@ -143,10 +132,10 @@
                 <span class="text-muted" id="histChartSubtitle"></span>
             </div>
             <div class="chart-controls" role="group" aria-label="Tipe visualisasi">
-                <button class="hist-btn-sm active" data-chart-type="bar" id="histBtnBar" type="button" aria-pressed="true">Bar</button>
-                <button class="hist-btn-sm" data-chart-type="line" id="histBtnLine" type="button" aria-pressed="false">Line</button>
+                <button class="hist-btn-sm active" data-chart-type="bar"  id="histBtnBar"  type="button">Bar</button>
+                <button class="hist-btn-sm"         data-chart-type="line" id="histBtnLine" type="button">Line</button>
                 <button class="hist-btn-sm" id="histBtnTable" type="button">
-                    <i class="fas fa-table" aria-hidden="true"></i> Tabel
+                    <i class="fa-solid fa-table"></i> Tabel
                 </button>
             </div>
         </div>
@@ -155,12 +144,12 @@
         </div>
     </section>
 
-    {{-- SECTION 4: TABLE --}}
+    {{-- SECTION 4: TABLE — muncul di bawah chart --}}
     <section class="card section-table" id="histCardTable" style="display:none;" aria-labelledby="table-title">
         <div class="table-header">
             <h3 id="table-title" class="card-title">Tabel Data</h3>
             <button class="hist-btn-sm" id="histBtnHideTable" type="button">
-                <i class="fas fa-times" aria-hidden="true"></i> Sembunyikan
+                <i class="fa-solid fa-xmark"></i> Sembunyikan
             </button>
         </div>
         <div class="table-wrapper custom-scroll">
@@ -173,7 +162,7 @@
 
     {{-- SECTION 5: INPUT DATA BARU --}}
     <section class="card section-entry"
-             style="border-left: 3px solid var(--accent-green);"
+             style="border-left: 3px solid var(--accent-green, #00ff88);"
              aria-labelledby="entry-title">
 
         <button type="button"
@@ -182,19 +171,19 @@
                 aria-expanded="false"
                 aria-controls="entryPanel">
             <div class="toggle-content">
-                <i class="fas fa-pen-to-square icon-accent" aria-hidden="true"></i>
+                <i class="fa-solid fa-pen-to-square icon-accent" aria-hidden="true"></i>
                 <div class="toggle-info">
                     <h3 id="entry-title">Input Data Baru ({{ $currentYear }} — {{ $currentYear + 2 }})</h3>
                     <span class="text-muted">Tambah atau update data untuk periode berjalan dan masa depan</span>
                 </div>
             </div>
-            <i class="fas fa-chevron-down toggle-icon" id="entryChevron" aria-hidden="true"></i>
+            <i class="fa-solid fa-chevron-down toggle-icon" id="entryChevron" aria-hidden="true"></i>
         </button>
 
         <div id="entryPanel" class="entry-panel" hidden>
 
             <div class="hist-info-box" role="note">
-                <i class="fas fa-circle-info" aria-hidden="true"></i>
+                <i class="fa-solid fa-circle-info"></i>
                 <strong>Aturan Input:</strong> Data hanya dapat diedit hingga
                 <strong>tanggal 7 bulan berikutnya</strong>. Setelah itu dikunci untuk kalkulasi total.
             </div>
@@ -241,17 +230,17 @@
                 </div>
 
                 <button id="btnLoadData" class="hist-btn-primary" type="button">
-                    <i class="fas fa-download" aria-hidden="true"></i> Muat Data
+                    <i class="fa-solid fa-download"></i> Muat Data
                 </button>
                 <button id="entrySaveBtn" class="hist-btn-primary green" type="button" style="display:none;">
-                    <i class="fas fa-save" aria-hidden="true"></i> Simpan
+                    <i class="fa-solid fa-floppy-disk"></i> Simpan
                 </button>
             </div>
 
             <div id="entryStatus" class="entry-status" style="display:none;" role="status" aria-live="polite"></div>
 
             <div id="entryLocked" class="hist-error-box" style="display:none;" role="alert">
-                <i class="fas fa-lock" aria-hidden="true"></i>
+                <i class="fa-solid fa-lock"></i>
                 <strong>Periode Terkunci</strong><br>
                 Data untuk periode ini sudah tidak dapat diedit karena sudah melewati batas waktu input.
             </div>
@@ -265,10 +254,10 @@
                 </div>
                 <div class="entry-actions" role="group" aria-label="Aksi form input">
                     <button class="hist-btn-sm" id="btnFillAll" type="button">
-                        <i class="fas fa-zero" aria-hidden="true"></i> Isi Nol
+                        Isi Nol
                     </button>
                     <button class="hist-btn-sm" id="btnClearAll" type="button">
-                        <i class="fas fa-eraser" aria-hidden="true"></i> Reset
+                        <i class="fa-solid fa-eraser"></i> Reset
                     </button>
                 </div>
             </div>
@@ -280,90 +269,32 @@
 @endsection
 
 @push('scripts')
+    {{-- Chart.js sudah di-load di app.blade.php, tapi load lagi dengan versi spesifik untuk historis --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
     <script src="{{ asset('js/Dashboard/charts/HistorisChart.js') }}?v={{ filemtime(public_path('js/Dashboard/charts/HistorisChart.js')) }}" defer></script>
     <script src="{{ asset('js/Dashboard/pages/HistorisEntry.js') }}?v={{ filemtime(public_path('js/Dashboard/pages/HistorisEntry.js')) }}" defer></script>
 
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        const HistorisPage = {
-            elements: {
-                entryToggle:  document.getElementById('entryToggleBtn'),
-                entryPanel:   document.getElementById('entryPanel'),
-                entryChevron: document.getElementById('entryChevron'),
-            },
-            init() {
-                this.bindToggle();
-                this.initChips();
-            },
-            bindToggle() {
-                const { entryToggle, entryPanel, entryChevron } = this.elements;
-                entryToggle?.addEventListener('click', () => {
-                    const isOpen = !entryPanel.hidden;
-                    entryPanel.hidden = isOpen;
-                    entryToggle.setAttribute('aria-expanded', String(!isOpen));
-                    entryChevron?.classList.toggle('open', !isOpen);
-                    if (typeof toggleEntryPanel === 'function') toggleEntryPanel();
-                });
-            },
-          initChips() {
-    // Setup chips agar kompatibel dengan HistorisChart.js
-    document.querySelectorAll('.hist-gol-chip').forEach(chip => {
-        const checkbox = chip.querySelector('.cb-golongan');
-        
-        // Set initial state
-        if (checkbox && checkbox.checked) {
-            chip.classList.add('checked');
-        }
-        
-        // Click handler — TANPA preventDefault yang konflik
-        chip.addEventListener('click', function(e) {
-            // Jangan toggle jika yang diklik adalah checkbox langsung
-            if (e.target === checkbox) {
-                return;
-            }
-            
-            // Toggle checkbox
-            if (checkbox) {
-                checkbox.checked = !checkbox.checked;
-                chip.classList.toggle('checked', checkbox.checked);
-                
-                // Dispatch change event untuk trigger listener lain
-                checkbox.dispatchEvent(new Event('change', { bubbles: true }));
-                
-                console.log(`🏷️ Golongan "${checkbox.value}": ${checkbox.checked ? '✓' : '✗'}`);
-            }
+        // ── Entry panel toggle ──────────────────────────────────────
+        const entryToggle  = document.getElementById('entryToggleBtn');
+        const entryPanel   = document.getElementById('entryPanel');
+        const entryChevron = document.getElementById('entryChevron');
+
+        entryToggle?.addEventListener('click', () => {
+            const isOpen = !entryPanel.hidden;
+            entryPanel.hidden = isOpen;
+            entryToggle.setAttribute('aria-expanded', String(!isOpen));
+            entryChevron?.classList.toggle('open', !isOpen);
+            if (typeof toggleEntryPanel === 'function') toggleEntryPanel();
         });
-    });
-    
-    // Change handler untuk semua checkbox
-    document.querySelectorAll('.cb-golongan').forEach(checkbox => {
-        checkbox.addEventListener('change', function() {
-            const chip = this.closest('.hist-gol-chip');
-            if (chip) {
-                chip.classList.toggle('checked', this.checked);
-            }
-            
-            // Log selected golongan
-            const selected = [...document.querySelectorAll('.cb-golongan:checked')]
-                .map(cb => cb.value);
-            
-            console.log('✅ Golongan terpilih:', selected);
-            
-            // Dispatch custom event untuk listener lain
-            window.dispatchEvent(new CustomEvent('golonganChanged', {
-                detail: { 
-                    selected: selected,
-                    count: selected.length
-                }
-            }));
+
+        // ── Chip initial state sync ─────────────────────────────────
+        // Hanya sinkronisasi state awal. Click handler dikelola oleh HistorisChart.js.
+        document.querySelectorAll('.cb-golongan').forEach(cb => {
+            const chip = cb.closest('.hist-gol-chip');
+            if (chip) chip.classList.toggle('checked', cb.checked);
         });
-    });
-    
-    console.log('✅ Chips initialized:', document.querySelectorAll('.cb-golongan').length, 'golongan');
-},
-        };
-        HistorisPage.init();
     });
     </script>
 @endpush
