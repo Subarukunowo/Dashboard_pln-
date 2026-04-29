@@ -26,8 +26,6 @@ export default class RpkwhModule {
         const akum = state.view === "akumulasi"
         const r  = data.rencanaData[state.tarif]   || new Array(12).fill(0)
         const rl = data.realisasiData[state.tarif] || new Array(12).fill(0)
-
-        // hitung akumulasi kalau dipilih
         const toAkum = arr => arr.map((_, i) => arr.slice(0, i + 1).reduce((a, b) => a + b, 0))
         const displayR  = akum ? toAkum(r)  : r
         const displayRl = akum ? toAkum(rl) : rl
@@ -42,7 +40,8 @@ export default class RpkwhModule {
             { label: "Delta", data: delta, backgroundColor: delta.map(v => v >= 0 ? "#00ff88" : "#f44336") }
         ], v => v.toFixed(0) + " Rp/kWh")
 
-        this._renderSideTable(displayR, displayRl)
+        this.renderRencanaTable(displayR, displayRl)
+        this.renderDeltaRencanaTable(LABELS, delta)
     }
 
     _renderGolongan(data, state) {
@@ -65,7 +64,7 @@ export default class RpkwhModule {
             data.golongan.map(g => g.replace(/ \(.\) ?/, '')),
             nilaiGol
         )
-        this._renderPieTable(data.golongan.map(g => g.replace(/ \(.\) ?/, '')), nilaiGol)
+        this.renderPieTable(data.golongan.map(g => g.replace(/ \(.\) ?/, '')), nilaiGol)
     }
 
     _renderGrowth(data, state) {
@@ -76,76 +75,35 @@ export default class RpkwhModule {
             borderColor: COLORS[i], tension: 0.4, fill: false, pointRadius: 3
         }))
 
-        this.chart.make("chartGrowthRpkwh", "line", LABELS, datasets,
-            v => (v * 100).toFixed(1) + "%"
-        )
+        this.chart.make("chartGrowthRpkwh", "line", LABELS, datasets, v => (v * 100).toFixed(1) + "%")
+        this.renderGrowthTable(data.golongan, akum ? data.growthAkum : data.growthBul)
+    }
 
-        // tabel growth
-        const tbody = document.getElementById("tabelGrowthRpkwh")
-        if (tbody) {
-            const fmtPct = v => (v * 100).toFixed(2) + "%"
-            tbody.innerHTML = LABELS.map((bln, i) => `<tr>
-                <td>${bln}</td>
-                ${data.golongan.map(g => {
-                    const val = akum ? data.growthAkum[g][i] : data.growthBul[g][i]
-                    return `<td style="color:${val >= 0 ? '#00ff88' : '#f44336'}">${fmtPct(val)}</td>`
-                }).join("")}
-            </tr>`).join("")
+    _renderBppHjr(data, state) {
+        const bppData = data.bppData || {}
+        const hjrData = data.hjrData || {}
+        const listTarif = Object.keys(hjrData)
+
+        if (!state.selectedTarif && listTarif.length > 0) {
+            state.selectedTarif = listTarif[0]
+            const filter = document.getElementById("filterTarifRpkwh")
+            if (filter && filter.options.length === 0) {
+                filter.innerHTML = listTarif.map(t => `<option value="${t}">${t}</option>`).join("")
+            }
         }
-    }
 
- _renderBppHjr(data, state) {
-    const bppData = data.bppData || {};
-    const hjrData = data.hjrData || {};
-    const listTarif = Object.keys(hjrData);
-
-    // 1. Pastikan selectedTarif ada nilainya
-    if (!state.selectedTarif && listTarif.length > 0) {
-        state.selectedTarif = listTarif[0];
-        // Isi dropdown filter secara otomatis jika belum ada
-        const filter = document.getElementById("filterTarifRpkwh");
-        if (filter && filter.options.length === 0) {
-            filter.innerHTML = listTarif.map(t => `<option value="${t}">${t}</option>`).join("");
+        const selectedTarif = state.selectedTarif
+        if (selectedTarif && this.chart.bppVsHjr) {
+            const hjrSeries = hjrData[selectedTarif] || new Array(12).fill(0)
+            const bppSeries = bppData[selectedTarif] || new Array(12).fill(0)
+            const labelsBulan = LABELS
+            this.chart.bppVsHjr("chartBppHjr", bppSeries, hjrSeries, labelsBulan)
         }
+
+        this.renderBppHjrTable(hjrData[selectedTarif] || [], bppData[selectedTarif] || [])
     }
 
-    const selectedTarif = state.selectedTarif;
-
-    // 2. RENDER CHART (Sumbu X: Bulan, Sumbu Y: kWh)
-    if (selectedTarif && this.chart.bppVsHjr) {
-        const hjrSeries = hjrData[selectedTarif] || new Array(12).fill(0);
-        const bppSeries = bppData[selectedTarif] || new Array(12).fill(0);
-        const labelsBulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-
-        // Panggil method chart dengan data 12 bulan
-        this.chart.bppVsHjr("chartBppHjr", bppSeries, hjrSeries, labelsBulan);
-    }
-
-    // 3. UPDATE TABEL BAWAH (Detail Tahunan)
-    const tbody = document.getElementById("tabelBppHjr");
-    if (tbody && selectedTarif) {
-        const labelsBulan = ['Jan', 'Feb', 'Mar', 'Apr', 'Mei', 'Jun', 'Jul', 'Agu', 'Sep', 'Okt', 'Nov', 'Des'];
-        const hjrArray = hjrData[selectedTarif] || [];
-        const bppArray = bppData[selectedTarif] || [];
-
-        tbody.innerHTML = labelsBulan.map((bulan, idx) => {
-            const hjr     = hjrArray[idx] || 0;
-            const bpp     = bppArray[idx] || 0;
-            const selisih = hjr - bpp;
-            const color   = selisih >= 0 ? '#4caf50' : '#f44336';
-
-            return `<tr>
-                <td style="text-align:left; padding:8px; color:#ccc;">${bulan}</td>
-                <td style="text-align:right; padding:8px; color:#2196f3;">${hjr.toLocaleString(undefined, {minimumFractionDigits: 0})}</td>
-                <td style="text-align:right; padding:8px; color:#ff9800;">${bpp.toLocaleString(undefined, {minimumFractionDigits: 0})}</td>
-                <td style="text-align:right; padding:8px; color:${color}; font-weight:600;">
-                    ${selisih >= 0 ? '+' : ''}${selisih.toLocaleString(undefined, {minimumFractionDigits: 0})}
-                </td>
-            </tr>`;
-        }).join("");
-    }
-}
-  _renderAnalisa(data, state) {
+    _renderAnalisa(data, state) {
         const akum = state.view === "akumulasi"
         const a = data.analisaData
 
@@ -161,27 +119,9 @@ export default class RpkwhModule {
             { label: "Delta", data: delta, backgroundColor: delta.map(v => v >= 0 ? "#00ff88" : "#f44336") }
         ], v => v.toFixed(0) + " Rp/kWh")
 
-        this._renderAnalisaSideTable(a, akum)
-
-        const tbody = document.getElementById("tabelAnalisa")
-        if (tbody) {
-            const fmtPct = v => (v * 100).toFixed(2) + "%"
-            tbody.innerHTML = a.map(d => {
-                const dlt = akum ? d.deltaAkum : d.deltaRpkwh
-                const dPct = akum ? d.deltaAkumPct : d.deltaPct
-                return `<tr>
-                    <td>${d.bulan}</td>
-                    <td>${(akum ? d.akum2024          : d.target2024).toFixed(2)}</td>
-                    <td>${(akum ? d.realisasiAkum2024 : d.realisasi2024).toFixed(2)}</td>
-                    <td>${(akum ? d.akum2025          : d.target2025).toFixed(2)}</td>
-                    <td>${(akum ? d.realisasiAkum2025 : d.realisasi2025).toFixed(2)}</td>
-                    <td style="color:${dlt >= 0 ? '#00ff88' : '#f44336'}">${dlt.toFixed(2)}</td>
-                    <td style="color:${dlt >= 0 ? '#00ff88' : '#f44336'}">${fmtPct(dPct - 1)}</td>
-                    <td>${fmtPct(d.pencapaianTarget)}</td>
-                    <td>${fmtPct(d.pencapaianRealisasi)}</td>
-                </tr>`
-            }).join("")
-        }
+        this.renderAnalisaTable(a, akum)
+        this.renderAnalisaDeltaTable(a.map(d => d.bulan), delta)
+        this.renderAnalisaDetailTable(a, akum)
     }
 
     _renderPersen(data) {
@@ -190,62 +130,7 @@ export default class RpkwhModule {
             { label: "Target",    data: p.map(d => d.target),    backgroundColor: "#ff9800" },
             { label: "Realisasi", data: p.map(d => d.realisasi), backgroundColor: "#00ff88" },
         ], v => v.toFixed(0) + " Rp/kWh")
-
-        const tbody = document.getElementById("tabelPersen")
-        if (tbody) {
-            tbody.innerHTML = p.map(d => `<tr>
-                <td>${d.bulan}</td>
-                <td>${d.target.toFixed(2)}</td>
-                <td>${d.realisasi.toFixed(2)}</td>
-                <td style="color:${d.delta >= 0 ? '#00ff88' : '#f44336'}">${d.delta.toFixed(2)}</td>
-            </tr>`).join("")
-        }
-    }
-
-    _renderSideTable(r, rl) {
-        const tbody = document.getElementById("rpkwhSideTable")
-        if (!tbody) return
-        tbody.innerHTML = LABELS.map((bln, i) => {
-            const d     = (rl[i] || 0) - (r[i] || 0)
-            const color = d >= 0 ? 'var(--accent-green)' : '#f44336'
-            return `<tr>
-                <td style="color:#888; font-size:0.75rem;">${bln}</td>
-                <td style="text-align:right; color:#ff9800;">${(r[i] || 0).toFixed(0)}</td>
-                <td style="text-align:right; color:var(--accent-green);">${(rl[i] || 0).toFixed(0)}</td>
-                <td style="text-align:right; color:${color}; font-weight:600;">${d >= 0 ? '+' : ''}${d.toFixed(0)}</td>
-            </tr>`
-        }).join("")
-    }
-
-    _renderPieTable(labels, data) {
-        const tbody = document.getElementById("rpkwhPieTable")
-        if (!tbody) return
-        const total = data.reduce((a, b) => a + b, 0)
-        tbody.innerHTML = labels.map((lbl, i) => {
-            const pct = total ? ((data[i] / total) * 100).toFixed(1) : "0.0"
-            return `<tr>
-                <td style="color:#888; font-size:0.72rem;">${lbl}</td>
-                <td style="text-align:right; color:var(--accent-green);">${(data[i] || 0).toFixed(0)}</td>
-                <td style="text-align:right; color:#aaa;">${pct}%</td>
-            </tr>`
-        }).join("")
-    }
-
-    _renderAnalisaSideTable(a, akum) {
-        const tbody = document.getElementById("rpkwhAnalisaSideTable")
-        if (!tbody) return
-        tbody.innerHTML = a.map(d => {
-            const delta = akum ? d.deltaAkum : d.deltaRpkwh
-            const color = delta >= 0 ? 'var(--accent-green)' : '#f44336'
-            return `<tr>
-                <td style="color:#888; font-size:0.75rem;">${d.bulan}</td>
-                <td style="text-align:right; color:#555;">${(akum ? d.akum2024          : d.target2024).toFixed(0)}</td>
-                <td style="text-align:right; color:#2196f3;">${(akum ? d.realisasiAkum2024 : d.realisasi2024).toFixed(0)}</td>
-                <td style="text-align:right; color:#ff9800;">${(akum ? d.akum2025          : d.target2025).toFixed(0)}</td>
-                <td style="text-align:right; color:var(--accent-green);">${(akum ? d.realisasiAkum2025 : d.realisasi2025).toFixed(0)}</td>
-                <td style="text-align:right; color:${color}; font-weight:600;">${delta >= 0 ? '+' : ''}${delta.toFixed(0)}</td>
-            </tr>`
-        }).join("")
+        this.renderPersenTable(p)
     }
 
     _populateTarif(data, currentTarif) {
@@ -258,5 +143,139 @@ export default class RpkwhModule {
             })
             sel.value = currentTarif
         }
+    }
+
+    // ===== RENDER TABLE METHODS =====
+
+    renderRencanaTable(r, rl) {
+        const tbody = document.getElementById("rpkwhSideTable")
+        if (!tbody) return
+        tbody.innerHTML = LABELS.map((bln, i) => {
+            const d = (rl[i] || 0) - (r[i] || 0)
+            const color = d >= 0 ? 'var(--accent-green)' : '#f44336'
+            return `<tr>
+                <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${bln}</td>
+                <td style="padding:8px 10px; text-align:center; color:#ff9800;">${(r[i] || 0).toFixed(0)}</td>
+                <td style="padding:8px 10px; text-align:center; color:var(--accent-green);">${(rl[i] || 0).toFixed(0)}</td>
+                <td style="padding:8px 10px; text-align:center; color:${color}; font-weight:600;">${d >= 0 ? '+' : ''}${d.toFixed(0)}</td>
+            </tr>`
+        }).join("")
+    }
+
+    renderDeltaRencanaTable(labels, delta) {
+        const tbody = document.getElementById("tabelRpkwhDelta")
+        if (!tbody) return
+        tbody.innerHTML = labels.map((bln, i) => `<tr>
+            <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${bln}</td>
+            <td style="padding:8px 10px; text-align:center; color:${delta[i] >= 0 ? '#00ff88' : '#f44336'}; font-weight:600;">
+                ${delta[i] >= 0 ? '+' : ''}${delta[i].toFixed(0)}
+            </td>
+        </tr>`).join("")
+    }
+
+    renderPieTable(labels, data) {
+        const tbody = document.getElementById("rpkwhPieTable")
+        if (!tbody) return
+        const total = data.reduce((a, b) => a + b, 0)
+        tbody.innerHTML = labels.map((lbl, i) => {
+            const pct = total ? ((data[i] / total) * 100).toFixed(1) : "0.0"
+            return `<tr>
+                <td style="padding:8px 10px; color:#888; font-size:0.72rem; text-align:center;">${lbl}</td>
+                <td style="padding:8px 10px; text-align:center; color:var(--accent-green);">${(data[i] || 0).toFixed(0)}</td>
+                <td style="padding:8px 10px; text-align:center; color:#aaa;">${pct}%</td>
+            </tr>`
+        }).join("")
+    }
+
+    renderGrowthTable(golongan, growthData) {
+        const tbody = document.getElementById("tabelGrowthRpkwh")
+        if (!tbody) return
+        const fmtPct = v => (v * 100).toFixed(2) + "%"
+        tbody.innerHTML = LABELS.map((bln, i) => `<tr>
+            <td style="padding:8px 10px; color:#888; font-size:0.72rem; text-align:center;">${bln}</td>
+            ${golongan.map(g => {
+                const val = growthData[g]?.[i] || 0
+                return `<td style="padding:8px 10px; text-align:center; color:${val >= 0 ? '#00ff88' : '#f44336'}">${fmtPct(val)}</td>`
+            }).join("")}
+        </tr>`).join("")
+    }
+
+    renderBppHjrTable(hjr, bpp) {
+        const tbody = document.getElementById("tabelBppHjr")
+        if (!tbody) return
+        tbody.innerHTML = LABELS.map((bulan, idx) => {
+            const hjrVal = hjr[idx] || 0
+            const bppVal = bpp[idx] || 0
+            const selisih = hjrVal - bppVal
+            const color = selisih >= 0 ? '#4caf50' : '#f44336'
+            return `<tr>
+                <td style="padding:8px 10px; text-align:center; color:#ccc;">${bulan}</td>
+                <td style="padding:8px 10px; text-align:center; color:#2196f3;">${hjrVal.toLocaleString(undefined, {minimumFractionDigits: 0})}</td>
+                <td style="padding:8px 10px; text-align:center; color:#ff9800;">${bppVal.toLocaleString(undefined, {minimumFractionDigits: 0})}</td>
+                <td style="padding:8px 10px; text-align:center; color:${color}; font-weight:600;">
+                    ${selisih >= 0 ? '+' : ''}${selisih.toLocaleString(undefined, {minimumFractionDigits: 0})}
+                </td>
+            </tr>`
+        }).join("")
+    }
+
+    renderAnalisaTable(a, akum) {
+        const tbody = document.getElementById("rpkwhAnalisaSideTable")
+        if (!tbody) return
+        tbody.innerHTML = a.map(d => {
+            const delta = akum ? d.deltaAkum : d.deltaRpkwh
+            const color = delta >= 0 ? 'var(--accent-green)' : '#f44336'
+            return `<tr>
+                <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${d.bulan}</td>
+                <td style="padding:8px 10px; text-align:center; color:#555;">${(akum ? d.akum2024 : d.target2024).toFixed(0)}</td>
+                <td style="padding:8px 10px; text-align:center; color:#2196f3;">${(akum ? d.realisasiAkum2024 : d.realisasi2024).toFixed(0)}</td>
+                <td style="padding:8px 10px; text-align:center; color:#ff9800;">${(akum ? d.akum2025 : d.target2025).toFixed(0)}</td>
+                <td style="padding:8px 10px; text-align:center; color:var(--accent-green);">${(akum ? d.realisasiAkum2025 : d.realisasi2025).toFixed(0)}</td>
+                <td style="padding:8px 10px; text-align:center; color:${color}; font-weight:600;">${delta >= 0 ? '+' : ''}${delta.toFixed(0)}</td>
+            </tr>`
+        }).join("")
+    }
+
+    renderAnalisaDeltaTable(labels, delta) {
+        const tbody = document.getElementById("tabelRpkwhAnalisaDelta")
+        if (!tbody) return
+        tbody.innerHTML = labels.map((bln, i) => `<tr>
+            <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${bln}</td>
+            <td style="padding:8px 10px; text-align:center; color:${delta[i] >= 0 ? '#00ff88' : '#f44336'}; font-weight:600;">
+                ${delta[i] >= 0 ? '+' : ''}${delta[i].toFixed(0)}
+            </td>
+        </tr>`).join("")
+    }
+
+    renderPersenTable(p) {
+        const tbody = document.getElementById("tabelPersen")
+        if (!tbody) return
+        tbody.innerHTML = p.map(d => `<tr>
+            <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${d.bulan}</td>
+            <td style="padding:8px 10px; text-align:center; color:#ff9800;">${d.target.toFixed(2)}</td>
+            <td style="padding:8px 10px; text-align:center; color:var(--accent-green);">${d.realisasi.toFixed(2)}</td>
+            <td style="padding:8px 10px; text-align:center; color:${d.delta >= 0 ? '#00ff88' : '#f44336'}">${d.delta.toFixed(2)}</td>
+        </tr>`).join("")
+    }
+
+    renderAnalisaDetailTable(a, akum) {
+        const tbody = document.getElementById("tabelAnalisa")
+        if (!tbody) return
+        const fmtPct = v => (v * 100).toFixed(2) + "%"
+        tbody.innerHTML = a.map(d => {
+            const dlt = akum ? d.deltaAkum : d.deltaRpkwh
+            const dPct = akum ? d.deltaAkumPct : d.deltaPct
+            return `<tr>
+                <td style="padding:8px 10px; text-align:center;">${d.bulan}</td>
+                <td style="padding:8px 10px; text-align:center; color:#555;">${(akum ? d.akum2024 : d.target2024).toFixed(2)}</td>
+                <td style="padding:8px 10px; text-align:center; color:#2196f3;">${(akum ? d.realisasiAkum2024 : d.realisasi2024).toFixed(2)}</td>
+                <td style="padding:8px 10px; text-align:center; color:#ff9800;">${(akum ? d.akum2025 : d.target2025).toFixed(2)}</td>
+                <td style="padding:8px 10px; text-align:center; color:var(--accent-green);">${(akum ? d.realisasiAkum2025 : d.realisasi2025).toFixed(2)}</td>
+                <td style="padding:8px 10px; text-align:center; color:${dlt >= 0 ? '#00ff88' : '#f44336'}">${dlt.toFixed(2)}</td>
+                <td style="padding:8px 10px; text-align:center; color:${dlt >= 0 ? '#00ff88' : '#f44336'}">${fmtPct(dPct - 1)}</td>
+                <td style="padding:8px 10px; text-align:center;">${fmtPct(d.pencapaianTarget)}</td>
+                <td style="padding:8px 10px; text-align:center;">${fmtPct(d.pencapaianRealisasi)}</td>
+            </tr>`
+        }).join("")
     }
 }

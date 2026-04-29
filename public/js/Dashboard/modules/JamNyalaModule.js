@@ -24,13 +24,21 @@ export default class JamNyalaModule {
             }))
         )
 
+        // Render table for line chart (NEW)
+        const lineData = selected.map((t, i) => ({
+            label: t,
+            data: (data.data[t] || new Array(12).fill(0)).slice(0, sliceIdx)
+        }))
+        this.renderLineTable(labels, lineData)
+
         const tarifBar = state.tarif === "ALL" ? (selected[0] || data.tarif[0]) : state.tarif
         const d = (data.data[tarifBar] || new Array(12).fill(0)).slice(0, sliceIdx)
         this.chart.make("chartJamNyalaBar", "bar", labels, [
             { label: tarifBar, data: d, backgroundColor: "#00ff88" }
         ], v => v.toFixed(0) + " jam")
 
-        this._renderSideTable(labels, d)
+        // Render table for bar chart
+        this.renderTable(labels, d, tarifBar)
         this._populateTarif(data, state.tarif)
     }
 
@@ -43,12 +51,47 @@ export default class JamNyalaModule {
         })
     }
 
-    _renderSideTable(labels, d) {
+    // Table for Line Chart (NEW)
+    renderLineTable(labels, datasets) {
+        const tbody = document.getElementById("tabelJamNyalaLine")
+        if (!tbody) return
+        
+        // Update header based on selected tarif
+        const header = document.getElementById("headerJamNyalaLine")
+        if (header && datasets.length === 1) {
+            header.textContent = datasets[0].label
+        } else if (header && datasets.length > 1) {
+            header.textContent = "Jam Nyala"
+        }
+
+        tbody.innerHTML = labels.map((bln, i) => {
+            const cells = datasets.map((ds, j) => {
+                const val = ds.data[i] || 0
+                const color = COLORS[j % COLORS.length]
+                return `<td style="padding:8px 10px; text-align:center; color:${color}">${val.toFixed(0)}</td>`
+            }).join("")
+            
+            return `<tr>
+                <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${bln}</td>
+                ${cells}
+            </tr>`
+        }).join("")
+    }
+
+    // Table for Bar Chart
+    renderTable(labels, d, tarifName) {
         const tbody = document.getElementById("jamNyalaSideTable")
         if (!tbody) return
+        
+        // Update header to show tarif name
+        const header = document.querySelector("#jamNyalaSideTable").previousElementSibling?.querySelector("th:last-child")
+        if (header) {
+            header.textContent = tarifName
+        }
+        
         tbody.innerHTML = labels.map((bln, i) => `<tr>
-            <td style="color:#888; font-size:0.75rem;">${bln}</td>
-            <td style="text-align:right; color:var(--accent-green);">${(d[i] || 0).toFixed(0)} jam</td>
+            <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${bln}</td>
+            <td style="padding:8px 10px; text-align:center; color:var(--accent-green);">${(d[i] || 0).toFixed(0)} jam</td>
         </tr>`).join("")
     }
 

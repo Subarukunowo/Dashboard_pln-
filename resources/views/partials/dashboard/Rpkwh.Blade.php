@@ -2,35 +2,51 @@
 <div class="card col-12">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div class="card-title">Rencana vs Realisasi RPKWH</div>
-        <select id="filterTarifRpkwh" style="font-size:0.7rem; padding:4px;">{{-- diisi dinamis JS --}}</select>
+        <select id="filterTarifRpkwh" style="font-size:0.7rem; padding:4px;"></select>
     </div>
-    <div style="display:flex; gap:var(--gap); flex:1; min-height:300px;">
-        <div class="chart-wrapper" style="flex:2; height:300px;">
-            <canvas id="chartRencanaRealisasi"></canvas>
-        </div>
-        <div class="custom-scroll" style="flex:1; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-y:auto; max-height:300px;">
-            <div style="display:flex; gap:8px; padding:8px 10px; background:#252525; border-radius:6px 6px 0 0; font-size:0.72rem; position:sticky; top:0; z-index:1;">
-                <span style="color:#888;">Bulan</span>
-                <span style="color:#ff9800; margin-left:auto;">Rencana</span>
-                <span style="color:var(--accent-green);">Realisasi</span>
-                <span style="color:#aaa;">Δ</span>
-            </div>
-            <table style="width:100%; border-collapse:collapse;">
-                <tbody id="rpkwhSideTable"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
 
-<div class="card col-12">
-    <div class="card-title">Delta RPKWH (Rp/kWh)</div>
-    <div class="chart-wrapper" style="height:280px;">
+    {{-- Chart Rencana vs Realisasi --}}
+    <div class="chart-wrapper" style="width:100%; height:300px; margin-bottom:20px;">
+        <canvas id="chartRencanaRealisasi"></canvas>
+    </div>
+
+    {{-- Tabel Rencana vs Realisasi --}}
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+                    <th style="padding:10px; text-align:center; color:#ff9800;">Rencana</th>
+                    <th style="padding:10px; text-align:center; color:var(--accent-green);">Realisasi</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Δ</th>
+                </tr>
+            </thead>
+            <tbody id="rpkwhSideTable"></tbody>
+        </table>
+    </div>
+
+    {{-- Chart Delta --}}
+    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">Delta RPKWH (Rp/kWh)</div>
+    <div class="chart-wrapper" style="width:100%; height:280px; margin-bottom:20px;">
         <canvas id="chartDeltaRpkwh"></canvas>
+    </div>
+
+    {{-- Tabel Delta (NEW) --}}
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Delta (Rp/kWh)</th>
+                </tr>
+            </thead>
+            <tbody id="tabelRpkwhDelta"></tbody>
+        </table>
     </div>
 </div>
 
 {{-- SECTION 2: PIE GOLONGAN --}}
-<div class="card col-6">
+<div class="card col-12">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div class="card-title" id="judulPieRpkwh">RPKWH Per Golongan</div>
         <div style="display:flex; gap:5px; flex-wrap:wrap; justify-content:flex-end;">
@@ -50,40 +66,44 @@
             </select>
         </div>
     </div>
-    <div style="display:flex; gap:var(--gap); flex:1; min-height:320px;">
-        <div class="chart-wrapper" style="flex:1; height:320px;">
-            <canvas id="chartPieRpkwh"></canvas>
-        </div>
-        <div class="custom-scroll" style="flex:1; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-y:auto; max-height:320px;">
-            <div style="display:flex; gap:8px; padding:8px 10px; background:#252525; border-radius:6px 6px 0 0; font-size:0.72rem; position:sticky; top:0; z-index:1;">
-                <span style="color:#888;">Gol</span>
-                <span style="color:var(--accent-green); margin-left:auto;">Nilai</span>
-                <span style="color:#aaa;">%</span>
-            </div>
-            <table style="width:100%; border-collapse:collapse;">
-                <tbody id="rpkwhPieTable"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
 
-{{-- SECTION 3: GROWTH --}}
-<div class="card col-6">
-    <div class="card-title">Realisasi Growth RPKWH Per Golongan (%)</div>
-    <div class="chart-wrapper" style="height:320px;">
+    {{-- Chart Pie --}}
+    <div class="chart-wrapper" style="width:100%; height:320px; margin-bottom:20px;">
+        <canvas id="chartPieRpkwh"></canvas>
+    </div>
+
+    {{-- Tabel Pie --}}
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Golongan</th>
+                    <th style="padding:10px; text-align:center; color:var(--accent-green);">Nilai</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">%</th>
+                </tr>
+            </thead>
+            <tbody id="rpkwhPieTable"></tbody>
+        </table>
+    </div>
+
+    {{-- Chart Growth --}}
+    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">Realisasi Growth RPKWH Per Golongan (%)</div>
+    <div class="chart-wrapper" style="width:100%; height:320px; margin-bottom:20px;">
         <canvas id="chartGrowthRpkwh"></canvas>
     </div>
-</div>
 
-<div class="card col-12">
-    <div class="card-title">Tabel Growth RPKWH (%)</div>
-    <div class="custom-scroll" style="overflow-x:auto; border:1px solid #333; border-radius:8px;">
+    {{-- Tabel Growth --}}
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px;">
         <table style="width:100%; border-collapse:collapse; white-space:nowrap;">
-            <thead>
-                <tr>
-                    <th>Bulan</th>
-                    <th>Sosial</th><th>R. Tangga</th><th>Bisnis</th>
-                    <th>Industri</th><th>Publik</th><th>Multiguna</th>
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+                    <th style="padding:10px; text-align:center; color:#ff9800;">Sosial</th>
+                    <th style="padding:10px; text-align:center; color:#00ff88;">R. Tangga</th>
+                    <th style="padding:10px; text-align:center; color:#2196f3;">Bisnis</th>
+                    <th style="padding:10px; text-align:center; color:#e91e63;">Industri</th>
+                    <th style="padding:10px; text-align:center; color:#9c27b0;">Publik</th>
+                    <th style="padding:10px; text-align:center; color:#00bcd4;">Multiguna</th>
                 </tr>
             </thead>
             <tbody id="tabelGrowthRpkwh"></tbody>
@@ -91,25 +111,24 @@
     </div>
 </div>
 
-{{-- SECTION 4: BPP HJR --}}
-<div class="card col-8">
+{{-- SECTION 3: BPP vs HJR --}}
+<div class="card col-12">
     <div class="card-title">Realisasi BPP HJR RPKWH (Rp/kWh)</div>
-    <div class="chart-wrapper" style="height:300px;">
+    
+    {{-- Chart BPP vs HJR --}}
+    <div class="chart-wrapper" style="width:100%; height:300px; margin-bottom:20px;">
         <canvas id="chartBppHjr"></canvas>
     </div>
-</div>
 
-{{-- SECTION 4: BPP vs HJR --}}
-<div class="card col-12">
-    <div class="card-title">Tabel Detail HJR vs BPP (Tahunan)</div>
-    <div class="custom-scroll" style="overflow-x:auto; overflow-y:auto; max-height:300px; border:1px solid #333; border-radius:8px;">
+    {{-- Tabel BPP vs HJR --}}
+    <div class="custom-scroll" style="overflow-x:auto; overflow-y:auto; max-height:340px; border:1px solid #333; border-radius:8px;">
         <table style="width:100%; border-collapse:collapse; white-space:nowrap;">
-            <thead>
-                <tr style="background:#222; text-align:left;">
-                    <th style="padding:10px; border-bottom:1px solid #444;">BULAN</th>
-                    <th style="padding:10px; border-bottom:1px solid #444; color:#36a2eb;">HJR (Rp/kWh)</th>
-                    <th style="padding:10px; border-bottom:1px solid #444; color:#ff9f40;">BPP (Rp/kWh)</th>
-                    <th style="padding:10px; border-bottom:1px solid #444;">SELISIH</th>
+            <thead style="position:sticky; top:0; background:#222; text-align:center; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; border-bottom:1px solid #444; text-align:center; color:#888;">BULAN</th>
+                    <th style="padding:10px; border-bottom:1px solid #444; text-align:center; color:#36a2eb;">HJR (Rp/kWh)</th>
+                    <th style="padding:10px; border-bottom:1px solid #444; text-align:center; color:#ff9f40;">BPP (Rp/kWh)</th>
+                    <th style="padding:10px; border-bottom:1px solid #444; text-align:center; color:#aaa;">SELISIH</th>
                 </tr>
             </thead>
             <tbody id="tabelBppHjr"></tbody>
@@ -117,68 +136,92 @@
     </div>
 </div>
 
-{{-- SECTION 5: ANALISA --}}
+{{-- SECTION 4: ANALISA --}}
 <div class="card col-12">
     <div class="card-title">Analisa RPKWH 2024 vs 2025 (Rp/kWh)</div>
-    <div style="display:flex; gap:var(--gap); flex:1; min-height:320px;">
-        <div class="chart-wrapper" style="flex:2; height:320px;">
-            <canvas id="chartAnalisa2024vs2025"></canvas>
-        </div>
-        <div class="custom-scroll" style="flex:1; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-y:auto; max-height:320px;">
-            <div style="display:flex; gap:6px; padding:8px 10px; background:#252525; border-radius:6px 6px 0 0; font-size:0.72rem; position:sticky; top:0; z-index:1;">
-                <span style="color:#888;">Bulan</span>
-                <span style="color:#555; margin-left:auto;">T'24</span>
-                <span style="color:#2196f3;">R'24</span>
-                <span style="color:#ff9800;">T'25</span>
-                <span style="color:var(--accent-green);">R'25</span>
-                <span style="color:#aaa;">Δ</span>
-            </div>
-            <table style="width:100%; border-collapse:collapse;">
-                <tbody id="rpkwhAnalisaSideTable"></tbody>
-            </table>
-        </div>
-    </div>
-</div>
 
-<div class="card col-6">
-    <div class="card-title">Delta Analisa RPKWH (Rp/kWh)</div>
-    <div class="chart-wrapper" style="height:280px;">
+    {{-- Chart Analisa --}}
+    <div class="chart-wrapper" style="width:100%; height:320px; margin-bottom:20px;">
+        <canvas id="chartAnalisa2024vs2025"></canvas>
+    </div>
+
+    {{-- Tabel Analisa --}}
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+                    <th style="padding:10px; text-align:center; color:#555;">T'24</th>
+                    <th style="padding:10px; text-align:center; color:#2196f3;">R'24</th>
+                    <th style="padding:10px; text-align:center; color:#ff9800;">T'25</th>
+                    <th style="padding:10px; text-align:center; color:var(--accent-green);">R'25</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Δ</th>
+                </tr>
+            </thead>
+            <tbody id="rpkwhAnalisaSideTable"></tbody>
+        </table>
+    </div>
+
+    {{-- Chart Delta Analisa --}}
+    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">Delta Analisa RPKWH (Rp/kWh)</div>
+    <div class="chart-wrapper" style="width:100%; height:280px; margin-bottom:20px;">
         <canvas id="chartAnalisaDelta"></canvas>
     </div>
-</div>
 
-<div class="card col-6">
-    <div class="card-title">% Realisasi RPKWH</div>
-    <div class="chart-wrapper" style="height:280px;">
+    {{-- Tabel Delta Analisa (NEW) --}}
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Delta (Rp/kWh)</th>
+                </tr>
+            </thead>
+            <tbody id="tabelRpkwhAnalisaDelta"></tbody>
+        </table>
+    </div>
+
+    {{-- Chart % Realisasi --}}
+    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">% Realisasi RPKWH</div>
+    <div class="chart-wrapper" style="width:100%; height:280px; margin-bottom:20px;">
         <canvas id="chartPersenRpkwh"></canvas>
+    </div>
+
+    {{-- Tabel % Realisasi --}}
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+                    <th style="padding:10px; text-align:center; color:#ff9800;">Target</th>
+                    <th style="padding:10px; text-align:center; color:var(--accent-green);">Realisasi</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Delta</th>
+                </tr>
+            </thead>
+            <tbody id="tabelPersen"></tbody>
+        </table>
     </div>
 </div>
 
+{{-- Tabel Analisa Detail --}}
 <div class="card col-12">
     <div class="card-title">Tabel Analisa RPKWH</div>
-    <div class="custom-scroll" style="overflow-x:auto;">
-        <table>
-            <thead>
-                <tr>
-                    <th>Bulan</th><th>Target 2024</th><th>Realisasi 2024</th>
-                    <th>Target 2025</th><th>Realisasi 2025</th>
-                    <th>Delta</th><th>Delta %</th>
-                    <th>% Pencapaian Target</th><th>% Pencapaian Real</th>
+    <div class="custom-scroll" style="overflow-x:auto; border:1px solid #333; border-radius:8px;">
+        <table style="width:100%; border-collapse:collapse; white-space:nowrap;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+                    <th style="padding:10px; text-align:center; color:#555;">Target 2024</th>
+                    <th style="padding:10px; text-align:center; color:#2196f3;">Realisasi 2024</th>
+                    <th style="padding:10px; text-align:center; color:#ff9800;">Target 2025</th>
+                    <th style="padding:10px; text-align:center; color:var(--accent-green);">Realisasi 2025</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Delta</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Delta %</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">% Capai Target</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">% Capai Real</th>
                 </tr>
             </thead>
             <tbody id="tabelAnalisa"></tbody>
         </table>
     </div>
-</div>
-
-<div class="card col-12">
-    <div class="card-title">Tabel % Realisasi RPKWH</div>
-    <table>
-        <thead>
-            <tr>
-                <th>Bulan</th><th>Target</th><th>Realisasi</th><th>Delta</th>
-            </tr>
-        </thead>
-        <tbody id="tabelPersen"></tbody>
-    </table>
 </div>

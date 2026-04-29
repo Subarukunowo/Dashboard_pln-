@@ -20,8 +20,10 @@ export default class TunggakanModule {
             { label: "Target Ratio",    data: filtered.map(r => r.ratioTarget * 100),    borderColor: "#ff9800", tension: 0.4, fill: false, pointRadius: 4, borderDash: [5,5] },
         ], v => v.toFixed(4) + "%")
 
-        this._renderSideTable(filtered)
-        this._renderTable(filtered)
+        // Render all tables
+        this.renderPendapatanTable(filtered)
+        this.renderRatioTable(filtered)
+        this.renderDetailTable(filtered)
     }
 
     initFilters(state, onChange) {
@@ -30,34 +32,61 @@ export default class TunggakanModule {
         })
     }
 
-    _renderSideTable(d) {
+    // Table for Pendapatan Chart
+    renderPendapatanTable(d) {
         const tbody = document.getElementById("tunggakanSideTable")
         if (!tbody) return
         const fmt = v => "Rp " + (v / 1_000_000_000).toFixed(2) + "M"
         tbody.innerHTML = d.map(r => {
             const ok = r.ratioTunggakan <= r.ratioTarget
             return `<tr>
-                <td style="color:#888; font-size:0.75rem;">${r.bulan}</td>
-                <td style="text-align:right; color:var(--accent-green);">${fmt(r.pendapatan)}</td>
-                <td style="text-align:right; color:${ok ? 'var(--accent-green)' : '#f44336'};">${(r.ratioTunggakan * 100).toFixed(4)}%</td>
+                <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${r.bulan}</td>
+                <td style="padding:8px 10px; text-align:center; color:var(--accent-green);">${fmt(r.pendapatan)}</td>
+                <td style="padding:8px 10px; text-align:center; color:${ok ? 'var(--accent-green)' : '#f44336'};">${(r.ratioTunggakan * 100).toFixed(4)}%</td>
             </tr>`
         }).join("")
     }
 
-    _renderTable(d) {
+    // Table for Ratio Chart (NEW)
+    renderRatioTable(d) {
+        const tbody = document.getElementById("tabelTunggakanRatio")
+        if (!tbody) return
+        tbody.innerHTML = d.map(r => {
+            const ok = r.ratioTunggakan <= r.ratioTarget
+            return `<tr>
+                <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${r.bulan}</td>
+                <td style="padding:8px 10px; text-align:center; color:${ok ? '#00ff88' : '#f44336'}; font-weight:600;">
+                    ${(r.ratioTunggakan * 100).toFixed(4)}%
+                </td>
+                <td style="padding:8px 10px; text-align:center; color:#ff9800;">
+                    ${(r.ratioTarget * 100).toFixed(4)}%
+                </td>
+            </tr>`
+        }).join("")
+    }
+
+    // Table for Detail Kinerja
+    renderDetailTable(d) {
         const tbody = document.getElementById("tabelTunggakan")
         if (!tbody) return
         const fmt = v => "Rp " + (v / 1_000_000_000).toFixed(2) + "M"
-        tbody.innerHTML = d.map(r => `<tr>
-            <td>${r.bulan}</td>
-            <td>${r.palBerjalan  || "-"}</td>
-            <td>${r.palTunggakan || "-"}</td>
-            <td>${r.tsBerjalan   || "-"}</td>
-            <td>${r.tsTunggakan  || "-"}</td>
-            <td>${r.jumlahTunggakan || "-"}</td>
-            <td>${fmt(r.pendapatan)}</td>
-            <td style="color:${r.ratioTunggakan <= r.ratioTarget ? '#00ff88' : '#f44336'}">${(r.ratioTunggakan * 100).toFixed(4)}%</td>
-            <td>${(r.ratioTarget * 100).toFixed(4)}%</td>
-        </tr>`).join("")
+        tbody.innerHTML = d.map(r => {
+            const ok = r.ratioTunggakan <= r.ratioTarget
+            return `<tr>
+                <td style="padding:8px 10px; text-align:center;">${r.bulan}</td>
+                <td style="padding:8px 10px; text-align:center;">${r.palBerjalan  || "-"}</td>
+                <td style="padding:8px 10px; text-align:center;">${r.palTunggakan || "-"}</td>
+                <td style="padding:8px 10px; text-align:center;">${r.tsBerjalan   || "-"}</td>
+                <td style="padding:8px 10px; text-align:center;">${r.tsTunggakan  || "-"}</td>
+                <td style="padding:8px 10px; text-align:center;">${r.jumlahTunggakan || "-"}</td>
+                <td style="padding:8px 10px; text-align:center; color:var(--accent-green);">${fmt(r.pendapatan)}</td>
+                <td style="padding:8px 10px; text-align:center; color:${ok ? '#00ff88' : '#f44336'}; font-weight:600;">
+                    ${(r.ratioTunggakan * 100).toFixed(4)}%
+                </td>
+                <td style="padding:8px 10px; text-align:center; color:#ff9800;">
+                    ${(r.ratioTarget * 100).toFixed(4)}%
+                </td>
+            </tr>`
+        }).join("")
     }
 }

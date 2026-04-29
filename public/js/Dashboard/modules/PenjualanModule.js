@@ -16,7 +16,7 @@ export default class PenjualanModule {
     render(state) {
         if (!this.data) return
         const { view, tarif, month } = state
-        let target, realisasi
+        let target, realisasi, labels
 
         if (tarif === "JUMLAH") {
             const d = this.data[view]
@@ -24,22 +24,27 @@ export default class PenjualanModule {
             const isPercent = view.includes('persen')
             target    = isPercent ? [] : (d.target || [])
             realisasi = isPercent ? (d.realisasi || d) : (d.realisasi || [])
+            labels    = [...this.labels]
         } else {
             const d = this.data.perTarif?.[tarif]
             if (!d) return
             target    = d.target
             realisasi = d.realisasi
+            labels    = [...this.labels]
         }
 
+        // Handle single month filter
         if (month !== "all") {
             const idx = parseInt(month)
-            this.chart.render(
-                target.length ? [target[idx]] : [],
-                [realisasi[idx]],
-                [this.labels[idx]], view
-            )
+            const slicedTarget    = target.length ? [target[idx]] : []
+            const slicedRealisasi = [realisasi[idx]]
+            const slicedLabels    = [this.labels[idx]]
+            
+            this.chart.render(slicedTarget, slicedRealisasi, slicedLabels, view)
+            this.renderTable(slicedLabels, slicedTarget, slicedRealisasi)
         } else {
-            this.chart.render(target, realisasi, [...this.labels], view)
+            this.chart.render(target, realisasi, labels, view)
+            this.renderTable(labels, target, realisasi)
         }
     }
 
@@ -53,5 +58,37 @@ export default class PenjualanModule {
         document.getElementById("filterBulanPenjualan")?.addEventListener("change", e => {
             state.month = e.target.value; onChange()
         })
+    }
+
+    // Render table for Penjualan Chart (centered)
+    renderTable(labels, target, realisasi) {
+        const tbody = document.getElementById("penjualanTableBody")
+        if (!tbody) return
+        
+        // Determine format based on view type (persen vs numeric)
+        const isPercent = labels.length > 0 && 
+            (typeof realisasi[0] === 'number' && realisasi[0] <= 100 && realisasi[0] >= 0)
+        
+        const fmt = v => {
+            if (v === null || v === undefined) return '—'
+            if (isPercent) return (v * 100).toFixed(2) + '%'
+            return (v / 1_000_000).toFixed(2) + ' jt'
+        }
+        
+        tbody.innerHTML = labels.map((bln, i) => {
+            const t = target[i] ?? 0
+            const r = realisasi[i] ?? 0
+            const d = r - t
+            const color = d >= 0 ? 'var(--accent-green)' : '#f44336'
+            
+            return `<tr>
+                <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${bln}</td>
+                <td style="padding:8px 10px; text-align:center; color:var(--accent-orange);">${fmt(t)}</td>
+                <td style="padding:8px 10px; text-align:center; color:var(--accent-green);">${fmt(r)}</td>
+                <td style="padding:8px 10px; text-align:center; color:${color}; font-weight:600;">
+                    ${d !== 0 ? (d >= 0 ? '+' : '') + fmt(d) : '—'}
+                </td>
+            </tr>`
+        }).join("")
     }
 }

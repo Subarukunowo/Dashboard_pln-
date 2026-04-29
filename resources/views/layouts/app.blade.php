@@ -18,7 +18,7 @@
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
 
     {{-- Preload: font-awesome (above the fold icon) --}}
-    <link rel="preload" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0/css/all.min.css" as="style">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 
     {{-- ===== GLOBAL CSS ===== --}}
     {{-- 1. Font Awesome --}}

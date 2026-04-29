@@ -26,7 +26,7 @@
     <section class="card section-historis" aria-labelledby="section-historis-title">
 
         <div class="section-header">
-            <i class="fa-solid fa-chart-area icon-accent" aria-hidden="true"></i>
+            <i class="fas fa-chart-area icon-accent" aria-hidden="true"></i>
             <div class="section-info">
                 <h2 id="section-historis-title" class="card-title">Lihat Data Historis</h2>
                 <span class="text-muted">Periode 1997 — 2025 (Read-Only)</span>
@@ -76,7 +76,7 @@
             </div>
 
             <button id="histBtnGenerate" class="hist-btn-primary" type="button">
-                <i class="fa-solid fa-chart-line"></i> Generate
+                <i class="fas fa-chart-line"></i> Generate
             </button>
         </div>
 
@@ -135,7 +135,7 @@
                 <button class="hist-btn-sm active" data-chart-type="bar"  id="histBtnBar"  type="button">Bar</button>
                 <button class="hist-btn-sm"         data-chart-type="line" id="histBtnLine" type="button">Line</button>
                 <button class="hist-btn-sm" id="histBtnTable" type="button">
-                    <i class="fa-solid fa-table"></i> Tabel
+                    <i class="fas fa-table"></i> Tabel
                 </button>
             </div>
         </div>
@@ -149,7 +149,7 @@
         <div class="table-header">
             <h3 id="table-title" class="card-title">Tabel Data</h3>
             <button class="hist-btn-sm" id="histBtnHideTable" type="button">
-                <i class="fa-solid fa-xmark"></i> Sembunyikan
+                <i class="fas fa-xmark"></i> Sembunyikan
             </button>
         </div>
         <div class="table-wrapper custom-scroll">
@@ -171,19 +171,19 @@
                 aria-expanded="false"
                 aria-controls="entryPanel">
             <div class="toggle-content">
-                <i class="fa-solid fa-pen-to-square icon-accent" aria-hidden="true"></i>
+                <i class="fas fa-edit icon-accent" aria-hidden="true"></i>
                 <div class="toggle-info">
                     <h3 id="entry-title">Input Data Baru ({{ $currentYear }} — {{ $currentYear + 2 }})</h3>
                     <span class="text-muted">Tambah atau update data untuk periode berjalan dan masa depan</span>
                 </div>
             </div>
-            <i class="fa-solid fa-chevron-down toggle-icon" id="entryChevron" aria-hidden="true"></i>
+            <i class="fas fa-chevron-down toggle-icon" id="entryChevron" aria-hidden="true"></i>
         </button>
 
         <div id="entryPanel" class="entry-panel" hidden>
 
             <div class="hist-info-box" role="note">
-                <i class="fa-solid fa-circle-info"></i>
+                <i class="fas fa-circle-info"></i>
                 <strong>Aturan Input:</strong> Data hanya dapat diedit hingga
                 <strong>tanggal 7 bulan berikutnya</strong>. Setelah itu dikunci untuk kalkulasi total.
             </div>
@@ -230,17 +230,17 @@
                 </div>
 
                 <button id="btnLoadData" class="hist-btn-primary" type="button">
-                    <i class="fa-solid fa-download"></i> Muat Data
+                    <i class="fas fa-download"></i> Muat Data
                 </button>
                 <button id="entrySaveBtn" class="hist-btn-primary green" type="button" style="display:none;">
-                    <i class="fa-solid fa-floppy-disk"></i> Simpan
+                    <i class="fas fa-save"></i> Simpan
                 </button>
             </div>
 
             <div id="entryStatus" class="entry-status" style="display:none;" role="status" aria-live="polite"></div>
 
             <div id="entryLocked" class="hist-error-box" style="display:none;" role="alert">
-                <i class="fa-solid fa-lock"></i>
+                <i class="fas fa-lock"></i>
                 <strong>Periode Terkunci</strong><br>
                 Data untuk periode ini sudah tidak dapat diedit karena sudah melewati batas waktu input.
             </div>
@@ -257,7 +257,7 @@
                         Isi Nol
                     </button>
                     <button class="hist-btn-sm" id="btnClearAll" type="button">
-                        <i class="fa-solid fa-eraser"></i> Reset
+                        <i class="fas fa-eraser"></i> Reset
                     </button>
                 </div>
             </div>

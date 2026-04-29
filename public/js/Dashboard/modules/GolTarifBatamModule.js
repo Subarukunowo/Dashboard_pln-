@@ -10,8 +10,7 @@ export default class GolTarifBatamModule {
         const idx    = parseInt(state.bulan)
         const is2024 = state.tahun === "2024"
         const sliceIdx = (state.bulanRealisasi && state.bulanRealisasi !== "all")
-            ? parseInt(state.bulanRealisasi) + 1
-            : 12
+            ? parseInt(state.bulanRealisasi) + 1 : 12
 
         // Section 1 — pie
         const nilaiGol = data.golongan.map(g =>
@@ -28,7 +27,7 @@ export default class GolTarifBatamModule {
             data.golongan.map(g => g.replace(/ \(.\) ?/, '')),
             nilaiGol, COLORS
         )
-        this._tablePie(data.golongan, nilaiGol)
+        this.renderPieTable(data.golongan, nilaiGol)
 
         // Section 2 — realisasi 2025 (sliced)
         const slicedLabels     = LABELS.slice(0, sliceIdx)
@@ -44,6 +43,10 @@ export default class GolTarifBatamModule {
             { label: "Delta", data: slicedDelta, backgroundColor: slicedDelta.map(v => v >= 0 ? "#00ff88" : "#f44336") }
         ])
 
+        // Render tables for Section 2
+        this.renderRealisasiTable(data.realisasiBulanan.slice(0, sliceIdx))
+        this.renderDeltaTable(slicedLabels, slicedDelta)
+
         // Section 3 — total 2024 vs 2025
         const t = data.total
         this.chart.bar("chartTotal2024vs2025", t.map(d => d.bulan), [
@@ -56,12 +59,17 @@ export default class GolTarifBatamModule {
         this.chart.bar("chartTotalDelta", t.map(d => d.bulan), [
             { label: "Delta", data: deltaTotal, backgroundColor: deltaTotal.map(v => v >= 0 ? "#00ff88" : "#f44336") }
         ])
+        const growthTarget = t.map(d => ((d.target2025/d.target2024)-1)*100)
+        const growthReal = t.map(d => ((d.realisasi2025/d.realisasi2024)-1)*100)
         this.chart.line("chartTotalPertumbuhan", t.map(d => d.bulan), [
-            { label: "% Target",    data: t.map(d => ((d.target2025/d.target2024)-1)*100),       borderColor: "#ff9800", tension: 0.4, fill: false, pointRadius: 3 },
-            { label: "% Realisasi", data: t.map(d => ((d.realisasi2025/d.realisasi2024)-1)*100), borderColor: "#00ff88", tension: 0.4, fill: false, pointRadius: 3 },
+            { label: "% Target",    data: growthTarget, borderColor: "#ff9800", tension: 0.4, fill: false, pointRadius: 3 },
+            { label: "% Realisasi", data: growthReal,   borderColor: "#00ff88", tension: 0.4, fill: false, pointRadius: 3 },
         ])
 
-        this._tables(data.realisasiBulanan, sliceIdx, t)
+        // Render tables for Section 3
+        this.renderTotalTable(t)
+        this.renderDeltaTotalTable(t.map(d => d.bulan), deltaTotal)
+        this.renderGrowthTable(t.map(d => d.bulan), growthTarget, growthReal)
     }
 
     initFilters(state, onChange) {
@@ -71,7 +79,8 @@ export default class GolTarifBatamModule {
         document.getElementById("filterBulanRealisasiGol")?.addEventListener("change", e => { state.bulanRealisasi = e.target.value; onChange() })
     }
 
-    _tablePie(golongan, nilaiGol) {
+    // Table for Pie Chart
+    renderPieTable(golongan, nilaiGol) {
         const tbody = document.getElementById("tabelPieTarif")
         if (!tbody) return
         const total = nilaiGol.reduce((a, b) => a + b, 0)
@@ -79,40 +88,76 @@ export default class GolTarifBatamModule {
         tbody.innerHTML = golongan.map((g, i) => {
             const pct = total ? ((nilaiGol[i] / total) * 100).toFixed(1) : "0.0"
             return `<tr>
-                <td style="color:#888; font-size:0.72rem;">${g.replace(/ \(.\) ?/, '')}</td>
-                <td style="text-align:right; color:var(--accent-green);">${fmt(nilaiGol[i])}</td>
-                <td style="text-align:right; color:#aaa;">${pct}%</td>
+                <td style="padding:8px 10px; color:#888; font-size:0.72rem; text-align:center;">${g.replace(/ \(.\) ?/, '')}</td>
+                <td style="padding:8px 10px; text-align:center; color:var(--accent-green);">${fmt(nilaiGol[i])}</td>
+                <td style="padding:8px 10px; text-align:center; color:#aaa;">${pct}%</td>
             </tr>`
         }).join("")
     }
 
-    _tables(realisasiBulanan, sliceIdx, t) {
-        const tbodyR = document.getElementById("tabelRealisasi")
-        if (tbodyR) {
-            const fmt    = v => "Rp " + (v/1000).toFixed(2) + " Jt"
-            const fmtPct = v => (v * 100).toFixed(2) + "%"
-            tbodyR.innerHTML = realisasiBulanan.slice(0, sliceIdx).map(d => `<tr>
-                <td>${d.bulan}</td>
-                <td>${fmt(d.target)}</td>
-                <td>${fmt(d.realisasi)}</td>
-                <td style="color:${d.delta >= 0 ? '#00ff88' : '#f44336'}">${fmt(d.delta)}</td>
-                <td style="color:${d.delta >= 0 ? '#00ff88' : '#f44336'}">${fmtPct(d.pencapaian)}</td>
-            </tr>`).join("")
-        }
+    // Table for Realisasi Bulanan
+    renderRealisasiTable(data) {
+        const tbody = document.getElementById("tabelRealisasi")
+        if (!tbody) return
+        const fmt    = v => "Rp " + (v/1000).toFixed(2) + " Jt"
+        const fmtPct = v => (v * 100).toFixed(2) + "%"
+        tbody.innerHTML = data.map(d => `<tr>
+            <td style="padding:8px 10px; text-align:center;">${d.bulan}</td>
+            <td style="padding:8px 10px; text-align:center; color:#ff9800;">${fmt(d.target)}</td>
+            <td style="padding:8px 10px; text-align:center; color:#00ff88;">${fmt(d.realisasi)}</td>
+            <td style="padding:8px 10px; text-align:center; color:${d.delta >= 0 ? '#00ff88' : '#f44336'}">${fmt(d.delta)}</td>
+            <td style="padding:8px 10px; text-align:center; color:${d.delta >= 0 ? '#00ff88' : '#f44336'}">${fmtPct(d.pencapaian)}</td>
+        </tr>`).join("")
+    }
 
-        const tbodyT = document.getElementById("tabelTotal")
-        if (tbodyT) {
-            const fmtT   = v => "Rp " + (v/1_000_000_000).toFixed(2) + "T"
-            const fmtPct = v => (v * 100).toFixed(2) + "%"
-            tbodyT.innerHTML = t.map(d => `<tr>
-                <td>${d.bulan}</td>
-                <td>${fmtT(d.target2024)}</td>
-                <td>${fmtT(d.realisasi2024)}</td>
-                <td>${fmtT(d.target2025)}</td>
-                <td>${fmtT(d.realisasi2025)}</td>
-                <td style="color:${d.deltaKwh >= 0 ? '#00ff88' : '#f44336'}">${fmtT(d.deltaKwh)}</td>
-                <td style="color:${d.deltaKwh >= 0 ? '#00ff88' : '#f44336'}">${fmtPct(d.deltaPct - 1)}</td>
-            </tr>`).join("")
-        }
+    // Table for Delta Realisasi (NEW)
+    renderDeltaTable(labels, delta) {
+        const tbody = document.getElementById("tabelDeltaRealisasi")
+        if (!tbody) return
+        const fmt = v => "Rp " + (v/1000).toFixed(2) + " Jt"
+        tbody.innerHTML = labels.map((bln, i) => `<tr>
+            <td style="padding:8px 10px; text-align:center; color:#888;">${bln}</td>
+            <td style="padding:8px 10px; text-align:center; color:${delta[i] >= 0 ? '#00ff88' : '#f44336'}">${fmt(delta[i])}</td>
+        </tr>`).join("")
+    }
+
+    // Table for Total 2024 vs 2025
+    renderTotalTable(t) {
+        const tbody = document.getElementById("tabelTotal")
+        if (!tbody) return
+        const fmtT   = v => "Rp " + (v/1_000_000_000).toFixed(2) + "T"
+        const fmtPct = v => (v * 100).toFixed(2) + "%"
+        tbody.innerHTML = t.map(d => `<tr>
+            <td style="padding:8px 10px; text-align:center;">${d.bulan}</td>
+            <td style="padding:8px 10px; text-align:center; color:#555;">${fmtT(d.target2024)}</td>
+            <td style="padding:8px 10px; text-align:center; color:#2196f3;">${fmtT(d.realisasi2024)}</td>
+            <td style="padding:8px 10px; text-align:center; color:#ff9800;">${fmtT(d.target2025)}</td>
+            <td style="padding:8px 10px; text-align:center; color:#00ff88;">${fmtT(d.realisasi2025)}</td>
+            <td style="padding:8px 10px; text-align:center; color:${d.deltaKwh >= 0 ? '#00ff88' : '#f44336'}">${fmtT(d.deltaKwh)}</td>
+            <td style="padding:8px 10px; text-align:center; color:${d.deltaKwh >= 0 ? '#00ff88' : '#f44336'}">${fmtPct(d.deltaPct - 1)}</td>
+        </tr>`).join("")
+    }
+
+    // Table for Delta Total (NEW)
+    renderDeltaTotalTable(labels, delta) {
+        const tbody = document.getElementById("tabelDeltaTotal")
+        if (!tbody) return
+        const fmt = v => "Rp " + (v/1_000_000_000).toFixed(2) + "T"
+        tbody.innerHTML = labels.map((bln, i) => `<tr>
+            <td style="padding:8px 10px; text-align:center; color:#888;">${bln}</td>
+            <td style="padding:8px 10px; text-align:center; color:${delta[i] >= 0 ? '#00ff88' : '#f44336'}">${fmt(delta[i])}</td>
+        </tr>`).join("")
+    }
+
+    // Table for Growth Percentage (NEW)
+    renderGrowthTable(labels, growthTarget, growthReal) {
+        const tbody = document.getElementById("tabelPertumbuhan")
+        if (!tbody) return
+        const fmt = v => v.toFixed(2) + "%"
+        tbody.innerHTML = labels.map((bln, i) => `<tr>
+            <td style="padding:8px 10px; text-align:center; color:#888;">${bln}</td>
+            <td style="padding:8px 10px; text-align:center; color:#ff9800;">${fmt(growthTarget[i])}</td>
+            <td style="padding:8px 10px; text-align:center; color:#00ff88;">${fmt(growthReal[i])}</td>
+        </tr>`).join("")
     }
 }

@@ -9,39 +9,59 @@
             <option value="9">Okt</option><option value="10">Nov</option><option value="11">Des</option>
         </select>
     </div>
-    <div style="display:flex; gap:var(--gap); flex:1; min-height:280px;">
-        <div class="chart-wrapper" style="flex:2; height:280px;">
-            <canvas id="chartTunggakanPendapatan"></canvas>
-        </div>
-        <div class="custom-scroll" style="flex:1; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-y:auto; max-height:280px;">
-            <div style="display:flex; gap:8px; padding:8px 10px; background:#252525; border-radius:6px 6px 0 0; font-size:0.72rem; position:sticky; top:0; z-index:1;">
-                <span style="color:#888;">Bulan</span>
-                <span style="color:var(--accent-green); margin-left:auto;">Pendapatan</span>
-                <span style="color:#aaa;">Ratio</span>
-            </div>
-            <table style="width:100%; border-collapse:collapse;">
-                <tbody id="tunggakanSideTable"></tbody>
-            </table>
-        </div>
+    <div class="chart-wrapper" style="width:100%; height:280px; margin-bottom:20px;">
+        <canvas id="chartTunggakanPendapatan"></canvas>
+    </div>
+
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+                    <th style="padding:10px; text-align:center; color:var(--accent-green);">Pendapatan</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Ratio</th>
+                </tr>
+            </thead>
+            <tbody id="tunggakanSideTable"></tbody>
+        </table>
     </div>
 </div>
 
 <div class="card col-12">
     <div class="card-title">Ratio Tunggakan vs Target</div>
-    <div class="chart-wrapper" style="height:250px;">
+    
+
+    <div class="chart-wrapper" style="width:100%; height:250px; margin-bottom:20px;">
         <canvas id="chartTunggakanRatio"></canvas>
     </div>
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+                    <th style="padding:10px; text-align:center; color:#f44336;">Ratio Tunggakan</th>
+                    <th style="padding:10px; text-align:center; color:#ff9800;">Target Ratio</th>
+                </tr>
+            </thead>
+            <tbody id="tabelTunggakanRatio"></tbody>
+        </table>
+    </div>
 </div>
-
 <div class="card col-12">
     <div class="card-title">Tabel Kinerja Tunggakan</div>
-    <div class="custom-scroll" style="overflow-x:auto;">
-        <table>
-            <thead>
-                <tr>
-                    <th>Bulan</th><th>PAL Berjalan</th><th>PAL Tunggakan</th>
-                    <th>TS Berjalan</th><th>TS Tunggakan</th><th>Jml Tunggakan</th>
-                    <th>Pendapatan</th><th>Ratio Tunggakan</th><th>Target Ratio</th>
+    <div class="custom-scroll" style="overflow-x:auto; border:1px solid #333; border-radius:8px;">
+        <table style="width:100%; border-collapse:collapse; white-space:nowrap;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">PAL Berjalan</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">PAL Tunggakan</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">TS Berjalan</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">TS Tunggakan</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Jml Tunggakan</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Pendapatan</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Ratio Tunggakan</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Target Ratio</th>
                 </tr>
             </thead>
             <tbody id="tabelTunggakan"></tbody>

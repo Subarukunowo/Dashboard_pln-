@@ -1,3 +1,5 @@
+const LABELS = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"]
+
 export default class PendapatanBatamModule {
     constructor(chart) { this.chart = chart }
 
@@ -19,12 +21,9 @@ export default class PendapatanBatamModule {
         const selected = data.data?.[tarif]
         if (!selected) return
 
-        const labels = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"]
         const bulan  = state.bulan
-
-        // slice kalau filter bulan aktif
         const sliceIdx = (bulan && bulan !== "all") ? parseInt(bulan) + 1 : 12
-        const slicedLabels    = labels.slice(0, sliceIdx)
+        const slicedLabels    = LABELS.slice(0, sliceIdx)
         const slicedRencana   = selected.rencana.slice(0, sliceIdx)
         const slicedRealisasi = selected.realisasi.slice(0, sliceIdx)
 
@@ -40,8 +39,10 @@ export default class PendapatanBatamModule {
             backgroundColor: delta.map(v => v >= 0 ? "#00ff88" : "#f44336"),
         }], v => "Rp " + (v / 1_000_000_000).toFixed(2) + "M")
 
-        this._renderSideTable(slicedLabels, slicedRencana, slicedRealisasi)
-        this._renderTable(data.realisasiBulanan, sliceIdx)
+        // Render all tables
+        this.renderRencanaTable(slicedLabels, slicedRencana, slicedRealisasi)
+        this.renderDeltaTable(slicedLabels, delta)
+        this.renderDetailTable(data.realisasiBulanan, sliceIdx)
     }
 
     initFilters(state, onChange) {
@@ -56,7 +57,8 @@ export default class PendapatanBatamModule {
         })
     }
 
-    _renderSideTable(labels, rencana, realisasi) {
+    // Table for Rencana vs Realisasi Chart
+    renderRencanaTable(labels, rencana, realisasi) {
         const tbody = document.getElementById("pendapatanSideTable")
         if (!tbody) return
         const fmt = v => "Rp " + (v / 1_000_000_000).toFixed(2) + "M"
@@ -66,25 +68,41 @@ export default class PendapatanBatamModule {
             const d  = rl - r
             const color = d >= 0 ? 'var(--accent-green)' : '#f44336'
             return `<tr>
-                <td style="color:#888; font-size:0.75rem;">${bln}</td>
-                <td style="text-align:right; color:#ff9800;">${fmt(r)}</td>
-                <td style="text-align:right; color:var(--accent-green);">${fmt(rl)}</td>
-                <td style="text-align:right; color:${color}; font-weight:600;">${d >= 0 ? '+' : ''}${fmt(d)}</td>
+                <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${bln}</td>
+                <td style="padding:8px 10px; text-align:center; color:var(--accent-orange);">${fmt(r)}</td>
+                <td style="padding:8px 10px; text-align:center; color:var(--accent-green);">${fmt(rl)}</td>
+                <td style="padding:8px 10px; text-align:center; color:${color}; font-weight:600;">${d >= 0 ? '+' : ''}${fmt(d)}</td>
             </tr>`
         }).join("")
     }
 
-    _renderTable(realisasiBulanan, sliceIdx) {
+    // Table for Delta Chart (NEW)
+    renderDeltaTable(labels, delta) {
+        const tbody = document.getElementById("tabelPendapatanDelta")
+        if (!tbody) return
+        const fmt = v => "Rp " + (v / 1_000_000_000).toFixed(2) + "M"
+        tbody.innerHTML = labels.map((bln, i) => {
+            const d = delta[i] || 0
+            const color = d >= 0 ? '#00ff88' : '#f44336'
+            return `<tr>
+                <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${bln}</td>
+                <td style="padding:8px 10px; text-align:center; color:${color}; font-weight:600;">${d >= 0 ? '+' : ''}${fmt(d)}</td>
+            </tr>`
+        }).join("")
+    }
+
+    // Table for Detail Pendapatan
+    renderDetailTable(realisasiBulanan, sliceIdx) {
         const tbody = document.getElementById("tabelPendapatan")
         if (!tbody || !realisasiBulanan) return
         const fmt = v => "Rp " + (v / 1_000_000_000).toFixed(2) + " M"
         tbody.innerHTML = realisasiBulanan.slice(0, sliceIdx).map(row => `
             <tr>
-                <td>${row.bulan}</td>
-                <td>${fmt(row.target * 1_000_000)}</td>
-                <td>${fmt(row.realisasi * 1_000_000)}</td>
-                <td style="color:${row.delta >= 0 ? '#00ff88' : '#f44336'}">${fmt(row.delta * 1_000_000)}</td>
-                <td style="color:${row.delta >= 0 ? '#00ff88' : '#f44336'}">${(row.pencapaian * 100).toFixed(2)}%</td>
+                <td style="padding:8px 10px; text-align:center;">${row.bulan}</td>
+                <td style="padding:8px 10px; text-align:center; color:var(--accent-orange);">${fmt(row.target * 1_000_000)}</td>
+                <td style="padding:8px 10px; text-align:center; color:var(--accent-green);">${fmt(row.realisasi * 1_000_000)}</td>
+                <td style="padding:8px 10px; text-align:center; color:${row.delta >= 0 ? '#00ff88' : '#f44336'}">${fmt(row.delta * 1_000_000)}</td>
+                <td style="padding:8px 10px; text-align:center; color:var(--accent-orange); font-weight:600;">${(row.pencapaian * 100).toFixed(2)}%</td>
             </tr>
         `).join("")
     }

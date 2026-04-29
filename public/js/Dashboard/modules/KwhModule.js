@@ -12,8 +12,13 @@ export default class KwhModule {
         this.chart.renderDelta(filtered, akum)
         this.chart.renderPencapaian(filtered)
         this.chart.renderPertumbuhan(filtered)
-        this._renderSideTable(filtered, akum)
-        this._renderTable(filtered, akum)
+
+        // Render all tables
+        this.renderTable(filtered, akum)
+        this.renderDeltaTable(filtered, akum)
+        this.renderPencapaianTable(filtered)
+        this.renderPertumbuhanTable(filtered)
+        this.renderRingkasanTable(filtered, akum)
     }
 
     initFilters(state, onChange) {
@@ -25,7 +30,8 @@ export default class KwhModule {
         })
     }
 
-    _renderSideTable(data, akum) {
+    // Table for Target vs Realisasi Chart
+    renderTable(data, akum) {
         const tbody = document.getElementById("kwhTableBody")
         if (!tbody) return
         const fmt = v => (v / 1_000_000).toFixed(2)
@@ -33,17 +39,55 @@ export default class KwhModule {
             const delta = akum ? d.deltaAkumKwh : d.deltaKwh
             const color = delta >= 0 ? 'var(--accent-green)' : '#f44336'
             return `<tr>
-                <td style="color:#888; font-size:0.75rem;">${d.bulan}</td>
-                <td style="text-align:right; color:#555;">${fmt(akum ? d.targetAkum2024 : d.target2024)}</td>
-                <td style="text-align:right; color:#2196f3;">${fmt(akum ? d.realisasiAkum2024 : d.realisasi2024)}</td>
-                <td style="text-align:right; color:#ff9800;">${fmt(akum ? d.targetAkum2025 : d.target2025)}</td>
-                <td style="text-align:right; color:var(--accent-green);">${fmt(akum ? d.realisasiAkum2025 : d.realisasi2025)}</td>
-                <td style="text-align:right; color:${color}; font-weight:600;">${delta >= 0 ? '+' : ''}${fmt(delta)}</td>
+                <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${d.bulan}</td>
+                <td style="padding:8px 10px; text-align:center; color:#555;">${fmt(akum ? d.targetAkum2024 : d.target2024)}</td>
+                <td style="padding:8px 10px; text-align:center; color:#2196f3;">${fmt(akum ? d.realisasiAkum2024 : d.realisasi2024)}</td>
+                <td style="padding:8px 10px; text-align:center; color:#ff9800;">${fmt(akum ? d.targetAkum2025 : d.target2025)}</td>
+                <td style="padding:8px 10px; text-align:center; color:var(--accent-green);">${fmt(akum ? d.realisasiAkum2025 : d.realisasi2025)}</td>
+                <td style="padding:8px 10px; text-align:center; color:${color}; font-weight:600;">${delta >= 0 ? '+' : ''}${fmt(delta)}</td>
             </tr>`
         }).join("")
     }
 
-    _renderTable(data, akum) {
+    // Table for Delta Chart (NEW)
+    renderDeltaTable(data, akum) {
+        const tbody = document.getElementById("tabelKwhDelta")
+        if (!tbody) return
+        const fmt = v => (v / 1_000_000).toFixed(2)
+        tbody.innerHTML = data.map(d => {
+            const delta = akum ? d.deltaAkumKwh : d.deltaKwh
+            const color = delta >= 0 ? '#00ff88' : '#f44336'
+            return `<tr>
+                <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${d.bulan}</td>
+                <td style="padding:8px 10px; text-align:center; color:${color}; font-weight:600;">${delta >= 0 ? '+' : ''}${fmt(delta)}</td>
+            </tr>`
+        }).join("")
+    }
+
+    // Table for Pencapaian Chart (NEW)
+    renderPencapaianTable(data) {
+        const tbody = document.getElementById("tabelKwhPencapaian")
+        if (!tbody) return
+        const fmtPct = v => (v * 100).toFixed(2) + "%"
+        tbody.innerHTML = data.map(d => `<tr>
+            <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${d.bulan}</td>
+            <td style="padding:8px 10px; text-align:center; color:var(--accent-green);">${fmtPct(d.pencapaianTarget)}</td>
+        </tr>`).join("")
+    }
+
+    // Table for Pertumbuhan Chart (NEW)
+    renderPertumbuhanTable(data) {
+        const tbody = document.getElementById("tabelKwhPertumbuhan")
+        if (!tbody) return
+        const fmtPct = v => (v * 100).toFixed(2) + "%"
+        tbody.innerHTML = data.map(d => `<tr>
+            <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${d.bulan}</td>
+            <td style="padding:8px 10px; text-align:center; color:#00ff88;">${fmtPct(d.pertumbuhanReal)}</td>
+        </tr>`).join("")
+    }
+
+    // Table for Ringkasan Detail
+    renderRingkasanTable(data, akum) {
         const tbody = document.getElementById("tabelRingkasan")
         if (!tbody) return
         const fmt    = v => (v / 1_000_000).toFixed(2)
@@ -53,15 +97,15 @@ export default class KwhModule {
             const deltaPersen = akum ? d.deltaAkumPersen - 1 : d.deltaPersen - 1
             const color = deltaValue >= 0 ? '#00ff88' : '#f44336'
             return `<tr>
-                <td>${d.bulan}</td>
-                <td>${fmt(akum ? d.targetAkum2024    : d.target2024)}</td>
-                <td>${fmt(akum ? d.realisasiAkum2024 : d.realisasi2024)}</td>
-                <td>${fmt(akum ? d.targetAkum2025    : d.target2025)}</td>
-                <td>${fmt(akum ? d.realisasiAkum2025 : d.realisasi2025)}</td>
-                <td style="color:${color}">${fmt(deltaValue)}</td>
-                <td style="color:${color}">${fmtPct(deltaPersen)}</td>
-                <td>${fmtPct(d.pencapaianTarget)}</td>
-                <td>${fmtPct(d.pertumbuhanReal)}</td>
+                <td style="padding:8px 10px; text-align:center;">${d.bulan}</td>
+                <td style="padding:8px 10px; text-align:center;">${fmt(akum ? d.targetAkum2024    : d.target2024)}</td>
+                <td style="padding:8px 10px; text-align:center;">${fmt(akum ? d.realisasiAkum2024 : d.realisasi2024)}</td>
+                <td style="padding:8px 10px; text-align:center;">${fmt(akum ? d.targetAkum2025    : d.target2025)}</td>
+                <td style="padding:8px 10px; text-align:center;">${fmt(akum ? d.realisasiAkum2025 : d.realisasi2025)}</td>
+                <td style="padding:8px 10px; text-align:center; color:${color}">${fmt(deltaValue)}</td>
+                <td style="padding:8px 10px; text-align:center; color:${color}">${fmtPct(deltaPersen)}</td>
+                <td style="padding:8px 10px; text-align:center;">${fmtPct(d.pencapaianTarget)}</td>
+                <td style="padding:8px 10px; text-align:center;">${fmtPct(d.pertumbuhanReal)}</td>
             </tr>`
         }).join("")
     }

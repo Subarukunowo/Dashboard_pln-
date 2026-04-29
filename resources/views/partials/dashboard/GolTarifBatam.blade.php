@@ -19,25 +19,27 @@
             </select>
         </div>
     </div>
-    <div style="display:flex; gap:var(--gap); flex:1; min-height:350px;">
-        <div class="chart-wrapper" style="flex:2; height:350px;">
-            <canvas id="chartPieTarif"></canvas>
-        </div>
-        <div class="custom-scroll" style="flex:1; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-y:auto; max-height:350px;">
-            <div style="display:flex; gap:8px; padding:8px 10px; background:#252525; border-radius:6px 6px 0 0; font-size:0.72rem; position:sticky; top:0; z-index:1;">
-                <span style="color:#888;">Golongan</span>
-                <span style="color:var(--accent-green); margin-left:auto;">Nilai</span>
-                <span style="color:#aaa;">%</span>
-            </div>
-            <table style="width:100%; border-collapse:collapse;">
-                <tbody id="tabelPieTarif"></tbody>
-            </table>
-        </div>
+
+    <div class="chart-wrapper" style="width:100%; height:350px; margin-bottom:20px;">
+        <canvas id="chartPieTarif"></canvas>
+    </div>
+
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Golongan</th>
+                    <th style="padding:10px; text-align:center; color:var(--accent-green);">Nilai</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">%</th>
+                </tr>
+            </thead>
+            <tbody id="tabelPieTarif"></tbody>
+        </table>
     </div>
 </div>
 
 {{-- SECTION 2: REALISASI PENDAPATAN 2025 --}}
-<div class="card col-8">
+<div class="card col-12">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div class="card-title">Realisasi vs Target Pendapatan 2025 (Juta Rp)</div>
         <select id="filterBulanRealisasiGol" style="font-size:0.7rem; padding:4px;">
@@ -48,63 +50,106 @@
             <option value="9">Okt</option><option value="10">Nov</option><option value="11">Des</option>
         </select>
     </div>
-    <div class="chart-wrapper">
+
+    {{-- Chart Utama --}}
+    <div class="chart-wrapper" style="width:100%; height:300px; margin-bottom:20px;">
         <canvas id="chartRealisasiBulanan"></canvas>
     </div>
-</div>
+    {{-- Tabel Utama --}}
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+                    <th style="padding:10px; text-align:center; color:#ff9800;">Target</th>
+                    <th style="padding:10px; text-align:center; color:#00ff88;">Realisasi</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Delta</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">% Capai</th>
+                </tr>
+            </thead>
+            <tbody id="tabelRealisasi"></tbody>
+        </table>
+    </div>
 
-<div class="card col-4">
-    <div class="card-title">Delta Realisasi 2025 (Juta Rp)</div>
-    <div class="chart-wrapper">
+    {{-- Chart Delta --}}
+    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">Delta Realisasi 2025 (Juta Rp)</div>
+    <div class="chart-wrapper" style="width:100%; height:250px; margin-bottom:20px;">
         <canvas id="chartDeltaRealisasi"></canvas>
     </div>
-</div>
-
-<div class="card col-12">
-    <div class="card-title">Tabel Realisasi Pendapatan 2025</div>
-    <table>
-        <thead>
-            <tr>
-                <th>Bulan</th><th>Target</th><th>Realisasi</th><th>Delta</th><th>% Pencapaian</th>
-            </tr>
-        </thead>
-        <tbody id="tabelRealisasi"></tbody>
-    </table>
+    {{-- Tabel Delta --}}
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Delta (Juta Rp)</th>
+                </tr>
+            </thead>
+            <tbody id="tabelDeltaRealisasi"></tbody>
+        </table>
+    </div>
 </div>
 
 {{-- SECTION 3: TOTAL 2024 vs 2025 --}}
 <div class="card col-12">
     <div class="card-title">Total Realisasi Pendapatan 2024 vs 2025 (Triliun Rp)</div>
-    <div class="chart-wrapper" style="height:320px;">
+    
+    {{-- Chart Total Comparison --}}
+    <div class="chart-wrapper" style="width:100%; height:300px; margin-bottom:20px;">
         <canvas id="chartTotal2024vs2025"></canvas>
     </div>
-</div>
-
-<div class="card col-8">
-    <div class="card-title">Delta Total Realisasi (Triliun Rp)</div>
-    <div class="chart-wrapper">
-        <canvas id="chartTotalDelta"></canvas>
-    </div>
-</div>
-
-<div class="card col-4">
-    <div class="card-title">% Pertumbuhan Pendapatan</div>
-    <div class="chart-wrapper">
-        <canvas id="chartTotalPertumbuhan"></canvas>
-    </div>
-</div>
-
-<div class="card col-12">
-    <div class="card-title">Tabel Total Realisasi 2024 vs 2025</div>
-    <div class="custom-scroll" style="overflow-x:auto;">
-        <table>
-            <thead>
-                <tr>
-                    <th>Bulan</th><th>Target 2024</th><th>Realisasi 2024</th>
-                    <th>Target 2025</th><th>Realisasi 2025</th><th>Delta</th><th>Delta %</th>
+    {{-- Tabel Total --}}
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+                    <th style="padding:10px; text-align:center; color:#555;">Target '24</th>
+                    <th style="padding:10px; text-align:center; color:#2196f3;">Real '24</th>
+                    <th style="padding:10px; text-align:center; color:#ff9800;">Target '25</th>
+                    <th style="padding:10px; text-align:center; color:#00ff88;">Real '25</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Delta</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Δ%</th>
                 </tr>
             </thead>
             <tbody id="tabelTotal"></tbody>
+        </table>
+    </div>
+
+    {{-- Chart Delta Total --}}
+    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">Delta Total Realisasi (Triliun Rp)</div>
+    <div class="chart-wrapper" style="width:100%; height:250px; margin-bottom:20px;">
+        <canvas id="chartTotalDelta"></canvas>
+    </div>
+    {{-- Tabel Delta Total --}}
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Delta (Triliun Rp)</th>
+                </tr>
+            </thead>
+            <tbody id="tabelDeltaTotal"></tbody>
+        </table>
+    </div>
+
+    {{-- Chart Pertumbuhan --}}
+    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">% Pertumbuhan Pendapatan</div>
+    <div class="chart-wrapper" style="width:100%; height:250px; margin-bottom:20px;">
+        <canvas id="chartTotalPertumbuhan"></canvas>
+    </div>
+    {{-- Tabel Pertumbuhan --}}
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px;">
+        <table style="width:100%; border-collapse:collapse;">
+            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
+                <tr style="font-size:0.72rem;">
+                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+                    <th style="padding:10px; text-align:center; color:#ff9800;">% Target</th>
+                    <th style="padding:10px; text-align:center; color:#00ff88;">% Realisasi</th>
+                </tr>
+            </thead>
+            <tbody id="tabelPertumbuhan"></tbody>
         </table>
     </div>
 </div>
