@@ -4,7 +4,7 @@
 @section('title', 'Input Data Historis')
 
 @push('styles')
-    <link rel="stylesheet" href="{{ asset('css/fact-entry.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/pages/fact-entry.css') }}">
 @endpush
 
 @section('content')

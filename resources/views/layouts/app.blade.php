@@ -110,8 +110,10 @@
         @yield('content')
     </main>
 
-    {{-- CHATBOT --}}
+   {{-- CHATBOT: Hanya tampil di dashboard, bukan di historis --}}
+@if(!Request::is('historis*'))
     @include('partials.widgets.Chatbot')
+@endif
 
     {{-- SCRIPTS: non-blocking --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>

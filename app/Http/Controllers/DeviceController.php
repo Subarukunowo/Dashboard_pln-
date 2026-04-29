@@ -38,7 +38,7 @@ class DeviceController extends Controller
         $pendingDevices = UserDevice::with('user')
             ->where('status', 'pending')
             ->orderBy('requested_at', 'desc')
-            ->get();
+            ->gaet();
 
         return view('admin.devices.manage', compact('pendingDevices'));
     }

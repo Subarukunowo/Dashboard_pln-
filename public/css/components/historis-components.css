@@ -27,39 +27,146 @@
 }
 
 /* ═══════════════════════════════════════════════════════ */
-/* 2. GOLONGAN CHIPS */
+/* 2. GOLONGAN CHIPS — MULTI-SELECT DENGAN WARNA UNIK */
 /* ═══════════════════════════════════════════════════════ */
 .golongan-chips {
     display: flex;
-    gap: 8px;
+    gap: 10px;
     flex-wrap: wrap;
+    padding: 10px 0;
 }
 
 .hist-gol-chip {
+    position: relative;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    padding: 5px 11px;
-    background: var(--bg-input);
-    border: 1px solid var(--border-input);
-    border-radius: var(--radius-pill);
-    font-size: 0.74rem;
-    color: #bbb;
+    justify-content: center;
+    gap: 8px;
+    padding: 8px 16px;
+    background: var(--bg-input, #1a1a1a);
+    border: 2px solid var(--border-input, #333);
+    border-radius: 50px !important; /* PILL SHAPE */
+    font-size: 0.8rem;
+    font-weight: 500;
+    color: #aaa;
     cursor: pointer;
-    transition: all 0.15s;
+    transition: all 0.2s ease;
     user-select: none;
+    min-width: 100px;
+    white-space: nowrap;
 }
 
-.hist-gol-chip:hover { border-color: #555; color: var(--text-primary); }
-.hist-gol-chip.checked {
-    background: rgba(0, 255, 136, 0.08);
-    border-color: var(--accent-green);
-    color: var(--accent-green);
-    font-weight: 500;
+.hist-gol-chip input[type="checkbox"] {
+    display: none !important;
 }
-.hist-gol-chip input { display: none; }
+
+.chip-text {
+    font-weight: 500;
+    transition: color 0.2s ease;
+    pointer-events: none;
+}
+
+.chip-indicator {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    background: #444;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+    pointer-events: none;
+}
+
+/* Hover effect */
+.hist-gol-chip:hover {
+    border-color: #555;
+    transform: translateY(-1px);
+}
+
+/* Default checked state */
+.hist-gol-chip.checked {
+    font-weight: 600;
+    animation: chipPulse 0.3s ease;
+}
+
+.hist-gol-chip.checked .chip-indicator {
+    background: currentColor;
+    box-shadow: 0 0 8px currentColor;
+}
 
 /* ═══════════════════════════════════════════════════════ */
+/* WARNA UNIK UNTUK SETIAP GOLONGAN */
+/* ═══════════════════════════════════════════════════════ */
+
+/* SOSIAL — Cyan/Biru Muda */
+.gol-sosial.checked {
+    background: rgba(0, 188, 212, 0.12);
+    border-color: #00bcd4;
+    color: #00bcd4;
+    box-shadow: 0 0 0 2px rgba(0, 188, 212, 0.15);
+}
+
+/* RUMAH TANGGA — Hijau Emerald */
+.gol-rumah.checked {
+    background: rgba(16, 185, 129, 0.12);
+    border-color: #10b981;
+    color: #10b981;
+    box-shadow: 0 0 0 2px rgba(16, 185, 129, 0.15);
+}
+
+/* BISNIS — Orange */
+.gol-bisnis.checked {
+    background: rgba(249, 115, 22, 0.12);
+    border-color: #f97316;
+    color: #f97316;
+    box-shadow: 0 0 0 2px rgba(249, 115, 22, 0.15);
+}
+
+/* INDUSTRI — Merah */
+.gol-industri.checked {
+    background: rgba(239, 68, 68, 0.12);
+    border-color: #ef4444;
+    color: #ef4444;
+    box-shadow: 0 0 0 2px rgba(239, 68, 68, 0.15);
+}
+
+/* PUBLIK — Ungu/Violet */
+.gol-publik.checked {
+    background: rgba(168, 85, 247, 0.12);
+    border-color: #a855f7;
+    color: #a855f7;
+    box-shadow: 0 0 0 2px rgba(168, 85, 247, 0.15);
+}
+
+/* MULTIGUNA — Pink/Magenta */
+.gol-multiguna.checked {
+    background: rgba(236, 72, 153, 0.12);
+    border-color: #ec4899;
+    color: #ec4899;
+    box-shadow: 0 0 0 2px rgba(236, 72, 153, 0.15);
+}
+
+/* TOTAL — Emas/Kuning */
+.gol-total.checked {
+    background: rgba(234, 179, 8, 0.12);
+    border-color: #eab308;
+    color: #eab308;
+    box-shadow: 0 0 0 2px rgba(234, 179, 8, 0.15);
+}
+
+/* Default fallback */
+.gol-default.checked {
+    background: rgba(99, 102, 241, 0.12);
+    border-color: #6366f1;
+    color: #6366f1;
+    box-shadow: 0 0 0 2px rgba(99, 102, 241, 0.15);
+}
+
+/* Pulse animation */
+@keyframes chipPulse {
+    0% { transform: scale(1); }
+    50% { transform: scale(1.05); }
+    100% { transform: scale(1); }
+}* ═══════════════════════════════════════════════════════ */
 /* 3. CHART SECTION */
 /* ═══════════════════════════════════════════════════════ */
 .chart-header {
@@ -275,6 +382,14 @@
         padding-bottom: 4px;
         border-bottom: 1px dashed var(--border-input);
     }
+    
+    /* Mobile: Golongan chips tetap horizontal scrollable */
+    .golongan-chips {
+        flex-wrap: nowrap;
+        overflow-x: auto;
+        padding-bottom: 8px;
+        -webkit-overflow-scrolling: touch;
+    }
 }
 
 /* ═══════════════════════════════════════════════════════ */
@@ -294,4 +409,14 @@
     .entry-input { border-width: 2px; }
     .hist-btn-primary,
     .hist-btn-sm { border: 2px solid currentColor; }
+    
+    .hist-gol-chip.checked {
+        border-width: 3px;
+    }
+}
+
+/* Focus visible untuk keyboard navigation */
+.hist-gol-chip:focus-within {
+    outline: 2px solid var(--accent-orange);
+    outline-offset: 2px;
 }

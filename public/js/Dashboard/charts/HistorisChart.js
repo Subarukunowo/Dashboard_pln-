@@ -453,20 +453,27 @@
         DOM.dari?.addEventListener('change',   updateMetrik);
         DOM.sampai?.addEventListener('change', updateMetrik);
 
-        // Golongan chips — clone untuk remove existing listeners
-        document.querySelectorAll('.hist-gol-chip').forEach(chip => {
-            const newChip = chip.cloneNode(true);
-            chip.parentNode.replaceChild(newChip, chip);
-            newChip.addEventListener('click', function(e) {
-                e.preventDefault();
-                e.stopPropagation();
-                const cb = this.querySelector('input[type=checkbox]');
-                if (!cb) return;
-                cb.checked = !cb.checked;
-                this.classList.toggle('checked', cb.checked);
-                console.log(`🏷️ Golongan "${cb.value}": ${cb.checked ? '✓' : '✗'}`);
-            }, { passive: true });
-        });
+// Golongan chips — setup click handler
+document.querySelectorAll('.hist-gol-chip').forEach(chip => {
+    chip.addEventListener('click', function(e) {
+        // Jangan interfer jika checkbox yang diklik langsung
+        if (e.target.classList.contains('cb-golongan')) {
+            return;
+        }
+        
+        const cb = this.querySelector('input[type=checkbox]');
+        if (!cb) return;
+        
+        cb.checked = !cb.checked;
+        this.classList.toggle('checked', cb.checked);
+        
+        // Trigger change event
+        cb.dispatchEvent(new Event('change', { bubbles: true }));
+        
+        console.log(`🏷️ Golongan "${cb.value}": ${cb.checked ? '✓' : '✗'}`);
+    });
+    // ✅ HAPUS { passive: true } — tidak perlu karena tidak ada preventDefault
+});
 
         document.getElementById('histSelectAll')?.addEventListener('click', (e) => {
             e.preventDefault();
