@@ -24,7 +24,6 @@
 
     {{-- SECTION 1: LIHAT DATA HISTORIS --}}
     <section class="card section-historis" aria-labelledby="section-historis-title">
-
         <div class="section-header">
             <i class="fas fa-chart-area icon-accent" aria-hidden="true"></i>
             <div class="section-info">
@@ -34,7 +33,6 @@
         </div>
 
         <div class="filter-controls" role="group" aria-label="Filter data historis">
-
             <div class="filter-group filter-group--wide">
                 <label class="hist-label" for="histMetrik">Metrik</label>
                 <select id="histMetrik" class="hist-select">
@@ -83,7 +81,7 @@
         <div id="histWarning" class="hist-warning-box" role="alert" style="display:none;"></div>
     </section>
 
-    {{-- SECTION 2: GOLONGAN TARIF — multi-select, warna per golongan --}}
+    {{-- SECTION 2: GOLONGAN TARIF --}}
     <section class="card section-golongan" aria-labelledby="section-golongan-title">
         <div class="section-actions">
             <span id="section-golongan-title" class="hist-label">Golongan Tarif</span>
@@ -104,7 +102,6 @@
                     'TOTAL' => 'gol-total',
                 ];
             @endphp
-
             @foreach($golonganList as $g)
                 @php
                     $colorClass = $golonganColors[$g->kode] ?? 'gol-default';
@@ -112,11 +109,8 @@
                 @endphp
                 <label class="hist-gol-chip {{ $colorClass }} {{ $isChecked ? 'checked' : '' }}"
                        data-golongan="{{ $g->kode }}">
-                    <input type="checkbox"
-                           class="cb-golongan"
-                           name="golongan_tarif[]"
-                           value="{{ $g->kode }}"
-                           @checked($isChecked)>
+                    <input type="checkbox" class="cb-golongan" name="golongan_tarif[]"
+                           value="{{ $g->kode }}" @checked($isChecked)>
                     <span class="chip-text">{{ $g->nama }}</span>
                     <span class="chip-indicator"></span>
                 </label>
@@ -133,7 +127,7 @@
             </div>
             <div class="chart-controls" role="group" aria-label="Tipe visualisasi">
                 <button class="hist-btn-sm active" data-chart-type="bar"  id="histBtnBar"  type="button">Bar</button>
-                <button class="hist-btn-sm"         data-chart-type="line" id="histBtnLine" type="button">Line</button>
+                <button class="hist-btn-sm"        data-chart-type="line" id="histBtnLine" type="button">Line</button>
                 <button class="hist-btn-sm" id="histBtnTable" type="button">
                     <i class="fas fa-table"></i> Tabel
                 </button>
@@ -144,7 +138,7 @@
         </div>
     </section>
 
-    {{-- SECTION 4: TABLE — muncul di bawah chart --}}
+    {{-- SECTION 4: TABLE --}}
     <section class="card section-table" id="histCardTable" style="display:none;" aria-labelledby="table-title">
         <div class="table-header">
             <h3 id="table-title" class="card-title">Tabel Data</h3>
@@ -165,11 +159,8 @@
              style="border-left: 3px solid var(--accent-green, #00ff88);"
              aria-labelledby="entry-title">
 
-        <button type="button"
-                id="entryToggleBtn"
-                class="entry-toggle"
-                aria-expanded="false"
-                aria-controls="entryPanel">
+        <button type="button" id="entryToggleBtn" class="entry-toggle"
+                aria-expanded="false" aria-controls="entryPanel">
             <div class="toggle-content">
                 <i class="fas fa-edit icon-accent" aria-hidden="true"></i>
                 <div class="toggle-info">
@@ -188,6 +179,7 @@
                 <strong>tanggal 7 bulan berikutnya</strong>. Setelah itu dikunci untuk kalkulasi total.
             </div>
 
+            {{-- CONTROLS ROW --}}
             <div class="entry-controls" role="group" aria-label="Kontrol input data">
 
                 <div class="filter-group">
@@ -216,9 +208,9 @@
                     <select id="inputBulan" class="hist-select">
                         @php
                             $bulanNames = [
-                                1=>'Januari',2=>'Februari',3=>'Maret',4=>'April',
-                                5=>'Mei',6=>'Juni',7=>'Juli',8=>'Agustus',
-                                9=>'September',10=>'Oktober',11=>'November',12=>'Desember'
+                                1=>'Januari',  2=>'Februari', 3=>'Maret',    4=>'April',
+                                5=>'Mei',      6=>'Juni',     7=>'Juli',     8=>'Agustus',
+                                9=>'September',10=>'Oktober', 11=>'November',12=>'Desember'
                             ];
                         @endphp
                         @foreach($bulanNames as $num => $name)
@@ -230,14 +222,44 @@
                 </div>
 
                 <button id="btnLoadData" class="hist-btn-primary" type="button">
-                    <i class="fas fa-download"></i> Muat Data
+                    <i class="fas fa-rotate-right"></i> Muat Data
                 </button>
+
+                <a href="{{ route('fact-historis.download-template') }}"
+                   class="hist-btn-primary hist-btn-template"
+                   download title="Download template Excel">
+                    <i class="fas fa-file-excel"></i> Template
+                </a>
+
+                <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv"
+                       style="display:none;" aria-label="Pilih file Excel">
+                <button id="btnPickExcel" class="hist-btn-primary hist-btn-import" type="button"
+                        title="Import data dari file Excel">
+                    <i class="fas fa-file-import"></i> Import Excel
+                </button>
+
                 <button id="entrySaveBtn" class="hist-btn-primary green" type="button" style="display:none;">
                     <i class="fas fa-save"></i> Simpan
                 </button>
             </div>
 
-            <div id="entryStatus" class="entry-status" style="display:none;" role="status" aria-live="polite"></div>
+            {{-- Import status bar --}}
+            <div id="importStatusBar" class="import-status-bar" style="display:none;"
+                 role="status" aria-live="polite">
+                <div class="import-status-inner">
+                    <i class="fas fa-file-excel" style="color:#28a745;"></i>
+                    <span id="importStatusText"></span>
+                    <button id="btnClearImport" class="import-clear-btn" type="button" title="Hapus">
+                        <i class="fas fa-times"></i>
+                    </button>
+                </div>
+                <div class="import-progress-track" id="importProgressTrack" style="display:none;">
+                    <div class="import-progress-fill" id="importProgressFill" style="width:0%;"></div>
+                </div>
+            </div>
+
+            <div id="entryStatus" class="entry-status" style="display:none;"
+                 role="status" aria-live="polite"></div>
 
             <div id="entryLocked" class="hist-error-box" style="display:none;" role="alert">
                 <i class="fas fa-lock"></i>
@@ -245,17 +267,25 @@
                 Data untuk periode ini sudah tidak dapat diedit karena sudah melewati batas waktu input.
             </div>
 
+            {{-- TABEL ENTRY --}}
             <div id="entryTableWrap" style="display:none;">
+
+                <div id="tableDragOverlay" class="table-drag-overlay" style="display:none;" aria-hidden="true">
+                    <div class="table-drag-overlay-inner">
+                        <i class="fas fa-file-excel"></i>
+                        <span>Lepaskan untuk import data Excel</span>
+                    </div>
+                </div>
+
                 <div class="table-wrapper custom-scroll">
                     <table class="entry-table" aria-label="Form input data per golongan">
                         <thead id="entryThead"></thead>
                         <tbody id="entryTbody"></tbody>
                     </table>
                 </div>
+
                 <div class="entry-actions" role="group" aria-label="Aksi form input">
-                    <button class="hist-btn-sm" id="btnFillAll" type="button">
-                        Isi Nol
-                    </button>
+                    <button class="hist-btn-sm" id="btnFillAll"  type="button">Isi Nol</button>
                     <button class="hist-btn-sm" id="btnClearAll" type="button">
                         <i class="fas fa-eraser"></i> Reset
                     </button>
@@ -269,32 +299,9 @@
 @endsection
 
 @push('scripts')
-    {{-- Chart.js sudah di-load di app.blade.php, tapi load lagi dengan versi spesifik untuk historis --}}
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <script src="{{ asset('js/Dashboard/charts/HistorisChart.js') }}?v={{ filemtime(public_path('js/Dashboard/charts/HistorisChart.js')) }}" defer></script>
     <script src="{{ asset('js/Dashboard/pages/HistorisEntry.js') }}?v={{ filemtime(public_path('js/Dashboard/pages/HistorisEntry.js')) }}" defer></script>
-
-    <script>
-    document.addEventListener('DOMContentLoaded', function () {
-        // ── Entry panel toggle ──────────────────────────────────────
-        const entryToggle  = document.getElementById('entryToggleBtn');
-        const entryPanel   = document.getElementById('entryPanel');
-        const entryChevron = document.getElementById('entryChevron');
-
-        entryToggle?.addEventListener('click', () => {
-            const isOpen = !entryPanel.hidden;
-            entryPanel.hidden = isOpen;
-            entryToggle.setAttribute('aria-expanded', String(!isOpen));
-            entryChevron?.classList.toggle('open', !isOpen);
-            if (typeof toggleEntryPanel === 'function') toggleEntryPanel();
-        });
-
-        // ── Chip initial state sync ─────────────────────────────────
-        // Hanya sinkronisasi state awal. Click handler dikelola oleh HistorisChart.js.
-        document.querySelectorAll('.cb-golongan').forEach(cb => {
-            const chip = cb.closest('.hist-gol-chip');
-            if (chip) chip.classList.toggle('checked', cb.checked);
-        });
-    });
-    </script>
+    <script src="{{ asset('js/Dashboard/pages/HistorisImport.js') }}?v={{ filemtime(public_path('js/Dashboard/pages/HistorisImport.js')) }}" defer></script>
 @endpush

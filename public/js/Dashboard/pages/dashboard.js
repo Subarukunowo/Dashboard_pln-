@@ -37,7 +37,7 @@ import JamNyalaChart           from '../charts/JamNyalaChart.js'
 import LossesChart             from '../charts/LossesChart.js'
 import TunggakanChart          from '../charts/TunggakanChart.js'
 import P2tlChart               from '../charts/P2tlChart.js'
-
+import ScreenshotProtection from '../utils/ScreenshotProtection.js' 
 import { initStats }           from '../layout/UpdateStats.js'
 
 // Baca SCRIPT_URL dari meta tag (dari .env via config())
@@ -105,6 +105,7 @@ class Dashboard {
     async init() {
         try {
             console.log('Loading Dashboard Assets...')
+            ScreenshotProtection.init()
 
             this._initChatbotEvents()
             this._initClock()

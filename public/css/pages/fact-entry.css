@@ -1,6 +1,8 @@
-/* public/css/fact-entry.css */
-/* Scoped styles for fact-entry page */
+/* public/css/pages/fact-entry.css */
 
+/* =============================================
+   BASE CONTAINER
+   ============================================= */
 .fact-entry-container {
     padding: var(--gap, 16px);
     display: flex;
@@ -8,7 +10,9 @@
     gap: var(--gap, 16px);
 }
 
-/* Info Banner */
+/* =============================================
+   INFO BANNER
+   ============================================= */
 .fact-entry-container .info-banner {
     display: flex;
     align-items: flex-start;
@@ -36,7 +40,9 @@
     line-height: 1.6;
 }
 
-/* Filter Row */
+/* =============================================
+   FILTER ROW
+   ============================================= */
 .fact-entry-container .filter-row {
     display: flex;
     gap: 16px;
@@ -74,13 +80,6 @@
 .fact-entry-container .form-select:focus {
     border-color: var(--accent-orange, #ff9800);
 }
-.fact-entry-container .form-select .badge-current,
-.fact-entry-container .form-select .badge-future {
-    font-size: 0.75rem;
-    opacity: 0.8;
-}
-.fact-entry-container .form-select .badge-current { color: #00ff88; }
-.fact-entry-container .form-select .badge-future { color: #2196f3; }
 
 .fact-entry-container .hint {
     color: var(--text-muted, #888);
@@ -88,26 +87,32 @@
     margin-top: 4px;
 }
 
-/* Action Buttons */
+/* =============================================
+   ACTION BUTTONS ROW
+   ============================================= */
 .fact-entry-container .action-buttons {
     display: flex;
     gap: 8px;
     align-self: flex-end;
+    flex-wrap: wrap;
 }
 
+/* ---- Base Button ---- */
 .fact-entry-container .btn {
     background: var(--accent-orange, #ff9800);
     color: #000;
     border: none;
     border-radius: 6px;
-    padding: 9px 22px;
+    padding: 9px 18px;
     font-size: 0.82rem;
     font-weight: 700;
     cursor: pointer;
     display: inline-flex;
     align-items: center;
     gap: 6px;
-    transition: background 0.2s;
+    transition: background 0.2s, border-color 0.2s, color 0.2s;
+    text-decoration: none;
+    white-space: nowrap;
 }
 .fact-entry-container .btn:hover { background: #ffb74d; }
 .fact-entry-container .btn:disabled {
@@ -115,13 +120,17 @@
     color: #888;
     cursor: not-allowed;
 }
+
+/* ---- Simpan (success) ---- */
 .fact-entry-container .btn-success {
     background: #00ff88;
     color: #000;
 }
 .fact-entry-container .btn-success:hover { background: #66ffbb; }
+
+/* ---- Small utility ---- */
 .fact-entry-container .btn-sm {
-    padding: 4px 10px;
+    padding: 6px 12px;
     font-size: 0.72rem;
     background: #252525;
     color: #888;
@@ -133,23 +142,265 @@
     border-color: var(--accent-orange, #ff9800);
 }
 
-/* Status Message */
+/* ---- Download Template Button ---- */
+.fact-entry-container .btn-template {
+    background: transparent;
+    color: #28a745;
+    border: 1px solid #28a745;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    text-decoration: none;
+    transition: background 0.2s, color 0.2s;
+    white-space: nowrap;
+}
+.fact-entry-container .btn-template:hover {
+    background: rgba(40,167,69,0.15);
+    color: #4cbb6a;
+    border-color: #4cbb6a;
+}
+.fact-entry-container .btn-template i { font-size: 0.9rem; }
+
+/* ---- Import Excel Button ---- */
+.fact-entry-container .btn-import {
+    background: transparent;
+    color: #2196f3;
+    border: 1px solid #2196f3;
+    border-radius: 6px;
+    padding: 8px 16px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s, color 0.2s, border-color 0.2s;
+    white-space: nowrap;
+}
+.fact-entry-container .btn-import:hover {
+    background: rgba(33,150,243,0.12);
+    color: #64b5f6;
+    border-color: #64b5f6;
+}
+/* Active state when panel is open */
+.fact-entry-container .btn-import.active {
+    background: rgba(33,150,243,0.18);
+    color: #90caf9;
+    border-color: #90caf9;
+}
+
+/* =============================================
+   STATUS / LOCKED MESSAGES
+   ============================================= */
 .fact-entry-container .status-message {
     margin-top: 10px;
     padding: 8px 14px;
     border-radius: 6px;
     font-size: 0.85rem;
-    display: none;
+}
+.fact-entry-container .locked-message {
+    margin-top: 10px;
+    padding: 8px 14px;
+    border-radius: 6px;
+    font-size: 0.85rem;
+    background: rgba(255,68,68,0.08);
+    border: 1px solid rgba(255,68,68,0.25);
+    color: #ff6b6b;
 }
 
-/* Form Header */
+/* =============================================
+   EXCEL IMPORT PANEL
+   ============================================= */
+.fact-entry-container .excel-import-card {
+    border: 1px solid rgba(33,150,243,0.3);
+    background: rgba(33,150,243,0.04);
+    animation: slideDown 0.2s ease;
+}
+
+@keyframes slideDown {
+    from { opacity: 0; transform: translateY(-8px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Header */
+.fact-entry-container .import-card-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 14px;
+}
+.fact-entry-container .import-card-title {
+    font-weight: 700;
+    color: #fff;
+    font-size: 0.9rem;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+}
+.fact-entry-container .import-card-subtitle {
+    color: var(--text-muted, #888);
+    font-size: 0.75rem;
+    margin-top: 3px;
+}
+
+/* Close icon */
+.fact-entry-container .btn-icon-close {
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    padding: 4px 6px;
+    border-radius: 4px;
+    font-size: 0.85rem;
+    transition: color 0.15s, background 0.15s;
+}
+.fact-entry-container .btn-icon-close:hover {
+    color: #ff4444;
+    background: rgba(255,68,68,0.1);
+}
+
+/* Upload Area */
+.fact-entry-container .upload-area {
+    border: 2px dashed #333;
+    border-radius: 8px;
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+.fact-entry-container .upload-area:hover,
+.fact-entry-container .upload-area.drag-over {
+    border-color: #2196f3;
+    background: rgba(33,150,243,0.06);
+}
+
+.fact-entry-container .upload-label {
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+}
+.fact-entry-container .upload-icon {
+    font-size: 2rem;
+    color: #2196f3;
+    margin-bottom: 4px;
+}
+.fact-entry-container .upload-text {
+    font-size: 0.82rem;
+    color: #ccc;
+}
+.fact-entry-container .upload-hint {
+    font-size: 0.72rem;
+    color: #555;
+}
+
+/* File Preview */
+.fact-entry-container .file-preview {
+    margin-top: 12px;
+    padding: 10px 14px;
+    background: #1a1a1a;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    border: 1px solid #2a2a2a;
+}
+.fact-entry-container .file-name {
+    font-size: 0.8rem;
+    color: #ccc;
+    flex: 1;
+    word-break: break-all;
+}
+.fact-entry-container .btn-icon-remove {
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 3px;
+    transition: color 0.15s;
+}
+.fact-entry-container .btn-icon-remove:hover { color: #ff4444; }
+
+/* Import Actions */
+.fact-entry-container .import-actions {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+/* Process Import Button */
+.fact-entry-container .btn-import-process {
+    background: #2196f3;
+    color: #fff;
+    border: none;
+    border-radius: 6px;
+    padding: 8px 18px;
+    font-size: 0.8rem;
+    font-weight: 700;
+    cursor: pointer;
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    transition: background 0.2s;
+}
+.fact-entry-container .btn-import-process:hover { background: #42a5f5; }
+
+/* Progress Bar */
+.fact-entry-container .progress-track {
+    height: 4px;
+    background: #2a2a2a;
+    border-radius: 2px;
+    overflow: hidden;
+}
+.fact-entry-container .progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2196f3, #00ff88);
+    transition: width 0.3s ease;
+}
+.fact-entry-container .progress-text {
+    color: var(--text-muted, #888);
+    font-size: 0.7rem;
+    margin-top: 4px;
+    display: block;
+}
+
+/* Import Result */
+.fact-entry-container #importResult.success {
+    background: rgba(0,255,136,0.08);
+    border: 1px solid rgba(0,255,136,0.3);
+    color: #00ff88;
+    padding: 8px 12px;
+    border-radius: 6px;
+    display: block;
+}
+.fact-entry-container #importResult.error {
+    background: rgba(255,68,68,0.08);
+    border: 1px solid rgba(255,68,68,0.25);
+    color: #ff6b6b;
+    padding: 8px 12px;
+    border-radius: 6px;
+    display: block;
+}
+
+/* =============================================
+   DATA ENTRY FORM
+   ============================================= */
 .fact-entry-container .form-header {
     display: flex;
     justify-content: space-between;
     align-items: center;
     margin-bottom: 16px;
     padding-bottom: 12px;
-    border-bottom: 1px solid #333;
+    border-bottom: 1px solid #2a2a2a;
 }
 .fact-entry-container .form-title {
     font-weight: 700;
@@ -180,36 +431,21 @@
     margin-bottom: 12px;
 }
 
-/* Entry Table */
-.fact-entry-container .kategori-section {
-    margin-bottom: 24px;
-}
-.fact-entry-container .kategori-title {
-    font-size: 0.85rem;
-    font-weight: 700;
-    color: var(--accent-orange, #ff9800);
-    border-bottom: 2px solid var(--accent-orange, #ff9800);
-    padding-bottom: 8px;
-    margin-bottom: 12px;
-    text-transform: uppercase;
-}
-
-.fact-entry-container .table-responsive {
-    overflow-x: auto;
-}
+/* =============================================
+   ENTRY TABLE
+   ============================================= */
+.fact-entry-container .table-responsive { overflow-x: auto; }
 
 .fact-entry-container .entry-table {
     width: 100%;
     border-collapse: collapse;
     font-size: 0.8rem;
 }
-
 .fact-entry-container .entry-table th,
 .fact-entry-container .entry-table td {
     padding: 8px 10px;
     border-bottom: 1px solid #1e1e1e;
 }
-
 .fact-entry-container .entry-table th {
     background: #1a1a1a;
     color: var(--text-muted, #888);
@@ -223,7 +459,6 @@
     color: var(--accent-orange, #ff9800);
     min-width: 110px;
 }
-
 .fact-entry-container .entry-table td.cell-metrik {
     color: #ccc;
     font-weight: 500;
@@ -232,9 +467,7 @@
     color: var(--text-muted, #888);
     font-size: 0.75rem;
 }
-.fact-entry-container .entry-table td.cell-input {
-    padding: 4px 6px;
-}
+.fact-entry-container .entry-table td.cell-input { padding: 4px 6px; }
 
 /* Input Fields */
 .fact-entry-container .data-input {
@@ -262,4 +495,20 @@
     color: #555;
     border-color: #333;
     cursor: not-allowed;
+}
+
+/* =============================================
+   RESPONSIVE
+   ============================================= */
+@media (max-width: 600px) {
+    .fact-entry-container .action-buttons {
+        width: 100%;
+        justify-content: flex-start;
+    }
+    .fact-entry-container .btn,
+    .fact-entry-container .btn-template,
+    .fact-entry-container .btn-import {
+        flex: 1;
+        justify-content: center;
+    }
 }

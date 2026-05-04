@@ -25,6 +25,7 @@
 </header>
 
 <div class="fact-entry-container">
+
     {{-- INFO BANNER --}}
     <div class="card info-banner">
         <i class="fas fa-circle-info"></i>
@@ -48,8 +49,8 @@
                     @for($y = 2026; $y <= now()->year + 2; $y++)
                         <option value="{{ $y }}" {{ $y == now()->year ? 'selected' : '' }}>
                             {{ $y }}
-                            @if($y == now()->year) <span class="badge-current">(Sekarang)</span> @endif
-                            @if($y > now()->year) <span class="badge-future">(+{{ $y - now()->year }})</span> @endif
+                            @if($y == now()->year) (Sekarang) @endif
+                            @if($y > now()->year) (+{{ $y - now()->year }}) @endif
                         </option>
                     @endfor
                 </select>
@@ -67,16 +68,33 @@
                     @foreach($bulanNames as $num => $name)
                         <option value="{{ $num }}" {{ $num == now()->month ? 'selected' : '' }}>
                             {{ $name }}
-                            @if($num == now()->month) <span class="badge-current">(Ini)</span> @endif
+                            @if($num == now()->month) (Ini) @endif
                         </option>
                     @endforeach
                 </select>
             </div>
 
+            {{-- ACTION BUTTONS --}}
             <div class="action-buttons">
+                {{-- Muat Data --}}
                 <button id="btnLoadData" class="btn btn-primary">
                     <i class="fas fa-download"></i> Muat Data
                 </button>
+
+                {{-- Download Template --}}
+                <a href="{{ route('fact-historis.download-template') }}"
+                   class="btn btn-template"
+                   download
+                   title="Download template Excel untuk import data">
+                    <i class="fas fa-file-excel"></i> Template
+                </a>
+
+                {{-- Import Excel --}}
+                <button id="btnToggleImport" class="btn btn-import" title="Import data dari file Excel">
+                    <i class="fas fa-file-import"></i> Import
+                </button>
+
+                {{-- Simpan --}}
                 <button id="entrySaveBtn" class="btn btn-success" style="display:none;">
                     <i class="fas fa-save"></i> Simpan
                 </button>
@@ -85,6 +103,64 @@
 
         <div id="entryStatus" class="status-message" style="display:none;"></div>
         <div id="entryLocked" class="locked-message" style="display:none; margin-top:10px;"></div>
+    </div>
+
+    {{-- EXCEL IMPORT PANEL (toggled by btnToggleImport) --}}
+    <div class="card excel-import-card" id="excelImportCard" style="display:none;">
+        <div class="import-card-header">
+            <div>
+                <div class="import-card-title">
+                    <i class="fas fa-file-excel" style="color:#28a745;"></i>
+                    Import Data dari Excel
+                </div>
+                <div class="import-card-subtitle">
+                    Upload file Excel yang sudah diisi sesuai template
+                </div>
+            </div>
+            <button id="btnCloseImport" class="btn-icon-close" title="Tutup panel import">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        {{-- Upload Area --}}
+        <div class="upload-area" id="uploadArea">
+            <input type="file" id="excelFileInput" accept=".xlsx,.xls,.csv" style="display:none;">
+            <label for="excelFileInput" class="upload-label">
+                <i class="fas fa-cloud-upload-alt upload-icon"></i>
+                <span class="upload-text">Klik atau seret file ke sini</span>
+                <small class="upload-hint">.xlsx, .xls, .csv &nbsp;•&nbsp; Maks. 10 MB</small>
+            </label>
+        </div>
+
+        {{-- File Preview --}}
+        <div id="filePreview" class="file-preview" style="display:none;">
+            <i class="fas fa-file-excel" style="color:#28a745; font-size:1.1rem;"></i>
+            <span id="fileName" class="file-name"></span>
+            <button id="removeFile" class="btn-icon-remove" title="Hapus file">
+                <i class="fas fa-times"></i>
+            </button>
+        </div>
+
+        {{-- Import Actions --}}
+        <div id="importActions" class="import-actions" style="display:none;">
+            <button id="btnCancelImport" class="btn btn-sm">
+                <i class="fas fa-times"></i> Batal
+            </button>
+            <button id="btnProcessImport" class="btn btn-import-process">
+                <i class="fas fa-play"></i> Proses Import
+            </button>
+        </div>
+
+        {{-- Progress Bar --}}
+        <div id="importProgress" style="display:none; margin-top:12px;">
+            <div class="progress-track">
+                <div id="progressFill" class="progress-fill" style="width:0%;"></div>
+            </div>
+            <small id="progressText" class="progress-text">Memproses...</small>
+        </div>
+
+        {{-- Result --}}
+        <div id="importResult" style="display:none; margin-top:10px; font-size:0.8rem;"></div>
     </div>
 
     {{-- DATA ENTRY FORM --}}
@@ -119,28 +195,44 @@
         </div>
     </div>
 
-    {{-- Hidden Golongan Chips --}}
-    <div style="display:none;">
-        @php
-            $golonganDefault = [
-                ['kode'=>'S','nama'=>'Sosial'], ['kode'=>'R','nama'=>'Rumah Tangga'],
-                ['kode'=>'B','nama'=>'Bisnis'], ['kode'=>'I','nama'=>'Industri'],
-                ['kode'=>'P','nama'=>'Pemerintah'], ['kode'=>'M','nama'=>'Meteran'],
-                ['kode'=>'TOTAL','nama'=>'TOTAL'],
-            ];
-        @endphp
-        @foreach($golonganDefault as $gol)
-            <label class="cb-golongan">
-                <input type="checkbox" value="{{ $gol['kode'] }}" checked>
-                {{ $gol['nama'] }}
-            </label>
-        @endforeach
-    </div>
 </div>
 @endsection
 
 @push('scripts')
     <meta name="csrf-token" content="{{ csrf_token() }}">
-    {{-- ✅ Hanya load HistorisEntry.js untuk halaman ini --}}
-     <script src="{{ asset('js/Dashboard/pages/HistorisEntry.js') }}?v={{ filemtime(public_path('js/Dashboard/pages/HistorisEntry.js')) }}"></script>
+
+    <script src="{{ asset('js/Dashboard/pages/HistorisEntry.js') }}?v={{ filemtime(public_path('js/Dashboard/pages/HistorisEntry.js')) }}"></script>
+    <script src="{{ asset('js/Dashboard/pages/excel-import.js') }}?v={{ filemtime(public_path('js/Dashboard/pages/excel-import.js')) }}"></script>
+
+    <script>
+    // Toggle Import Panel
+    document.getElementById('btnToggleImport').addEventListener('click', function () {
+        const card = document.getElementById('excelImportCard');
+        const isHidden = card.style.display === 'none' || card.style.display === '';
+        card.style.display = isHidden ? 'block' : 'none';
+        this.classList.toggle('active', isHidden);
+    });
+
+    document.getElementById('btnCloseImport').addEventListener('click', function () {
+        document.getElementById('excelImportCard').style.display = 'none';
+        document.getElementById('btnToggleImport').classList.remove('active');
+    });
+
+    // Drag & Drop support
+    const uploadArea = document.getElementById('uploadArea');
+    uploadArea.addEventListener('dragover', e => { e.preventDefault(); uploadArea.classList.add('drag-over'); });
+    uploadArea.addEventListener('dragleave', () => uploadArea.classList.remove('drag-over'));
+    uploadArea.addEventListener('drop', e => {
+        e.preventDefault();
+        uploadArea.classList.remove('drag-over');
+        const file = e.dataTransfer.files[0];
+        if (file) {
+            const input = document.getElementById('excelFileInput');
+            const dt = new DataTransfer();
+            dt.items.add(file);
+            input.files = dt.files;
+            input.dispatchEvent(new Event('change'));
+        }
+    });
+    </script>
 @endpush

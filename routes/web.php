@@ -93,4 +93,20 @@ Route::get('/debug', function () {
         'mail.default (config)' => config('mail.default'),
         '.env loaded?' => file_exists(base_path('.env')) ? 'YES' : 'NO',
     ];
+}); 
+Route::middleware(['auth'])->group(function () {
+    Route::get('/fact-historis', [FactHistorisEntryController::class, 'create'])->name('fact-historis.create');
+    Route::get('/fact-historis/existing-data', [FactHistorisEntryController::class, 'getExistingData'])->name('fact-historis.existing');
+    Route::post('/fact-historis', [FactHistorisEntryController::class, 'store'])->name('fact-historis.store');
+    
+    // ✅ Tambah route import Excel (konsisten dengan controller existing)
+    Route::post('/fact-historis/import-excel', [FactHistorisEntryController::class, 'importExcel'])
+        ->name('fact-historis.import-excel');
+         // [NEW] POST: Import from Excel
+    Route::post('/fact-historis/import-excel', [FactHistorisEntryController::class, 'importExcel'])->name('fact-historis.import-excel');
+    
+    // [NEW] GET: Download template
+    Route::get('/fact-historis/download-template', [FactHistorisEntryController::class, 'downloadTemplate'])->name('fact-historis.download-template');
 });
+ 
+    

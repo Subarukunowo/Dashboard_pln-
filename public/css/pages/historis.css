@@ -542,3 +542,215 @@
     .historis-container { padding: 12px; }
     #histChartWrap      { height: 260px; }
 }
+/* ══════════════════════════════════════════════════════════
+   TAMBAHAN ke historis.css
+   Paste di bagian BAWAH file historis.css yang sudah ada
+   ══════════════════════════════════════════════════════════ */
+
+/* ─── BUTTON: Download Template (hijau outline) ───────────── */
+.hist-btn-primary.hist-btn-template {
+    background: transparent;
+    color: #28a745;
+    border: 1.5px solid #28a745;
+}
+.hist-btn-primary.hist-btn-template:hover {
+    background: rgba(40, 167, 69, 0.12);
+    color: #4cbb6a;
+    border-color: #4cbb6a;
+}
+
+/* ─── BUTTON: Import Excel (biru outline) ─────────────────── */
+.hist-btn-primary.hist-btn-import {
+    background: transparent;
+    color: #2196f3;
+    border: 1.5px solid #2196f3;
+}
+.hist-btn-primary.hist-btn-import:hover {
+    background: rgba(33, 150, 243, 0.12);
+    color: #64b5f6;
+    border-color: #64b5f6;
+}
+/* Saat panel import terbuka */
+.hist-btn-primary.hist-btn-import.active {
+    background: rgba(33, 150, 243, 0.18);
+    color: #90caf9;
+    border-color: #90caf9;
+}
+
+/* ─── BUTTON: Proses Import (biru solid) ──────────────────── */
+.hist-btn-primary.hist-btn-process {
+    background: #2196f3;
+    color: #fff;
+    border: none;
+}
+.hist-btn-primary.hist-btn-process:hover {
+    background: #42a5f5;
+}
+
+/* ─── IMPORT PANEL ────────────────────────────────────────── */
+.import-panel {
+    margin-top: 14px;
+    padding: 16px 18px;
+    background: rgba(33, 150, 243, 0.04);
+    border: 1px solid rgba(33, 150, 243, 0.25);
+    border-radius: 10px;
+    animation: importSlideDown 0.2s ease;
+}
+
+@keyframes importSlideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Header panel */
+.import-panel-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 4px;
+    margin-bottom: 14px;
+    position: relative;
+}
+.import-panel-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+}
+.import-panel-sub {
+    font-size: 0.72rem;
+    color: #555;
+    flex: 1;
+}
+.import-close-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    transition: color 0.15s, background 0.15s;
+}
+.import-close-btn:hover {
+    color: #ff4444;
+    background: rgba(255, 68, 68, 0.1);
+}
+
+/* Drop zone */
+.import-dropzone {
+    border: 2px dashed #2a2a2a;
+    border-radius: 8px;
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+.import-dropzone:hover,
+.import-dropzone.drag-over {
+    border-color: #2196f3;
+    background: rgba(33, 150, 243, 0.06);
+}
+.import-dropzone-label {
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: #888;
+    font-size: 0.8rem;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+.import-dropzone-label small {
+    font-size: 0.68rem;
+    color: #444;
+}
+.import-upload-icon {
+    font-size: 2rem;
+    color: #2196f3;
+    margin-bottom: 4px;
+}
+
+/* File preview */
+.import-file-preview {
+    margin-top: 10px;
+    padding: 9px 12px;
+    background: #161616;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.import-file-name {
+    font-size: 0.78rem;
+    color: #ccc;
+    flex: 1;
+    word-break: break-all;
+}
+.import-remove-btn {
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    transition: color 0.15s;
+}
+.import-remove-btn:hover { color: #ff4444; }
+
+/* Action row */
+.import-action-row {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+/* Progress bar */
+.import-progress-track {
+    height: 4px;
+    background: #2a2a2a;
+    border-radius: 2px;
+    overflow: hidden;
+}
+.import-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2196f3, #00ff88);
+    transition: width 0.3s ease;
+}
+.import-progress-text {
+    display: block;
+    color: #555;
+    font-size: 0.68rem;
+    margin-top: 5px;
+}
+
+/* Result messages */
+.import-result {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+.import-result.success {
+    background: rgba(0, 200, 83, 0.08);
+    border: 1px solid rgba(0, 200, 83, 0.3);
+    color: #00c853;
+    display: block;
+}
+.import-result.error {
+    background: rgba(244, 67, 54, 0.08);
+    border: 1px solid rgba(244, 67, 54, 0.25);
+    color: #ef9a9a;
+    display: block;
+}
