@@ -9,6 +9,7 @@ use App\Http\Controllers\Admin\AdminController;
 use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\HistorisController;
 use App\Http\Controllers\FactHistorisEntryController;
+use App\Http\Controllers\UserController; // ✅ TAMBAH INI
 
 // ===== PUBLIC API =====
 Route::get('/api/dashboard/bpp', [DashboardController::class, 'bpp']);
@@ -57,6 +58,10 @@ Route::middleware(['auth', '2fa'])->group(function () {
     Route::get('/dashboard', fn() => view('user.dashboard'))->name('dashboard');
     Route::get('/realisasi-penjualan', fn() => view('user.realisasi-penjualan'));
     Route::get('/penjualan-kwh',       fn() => view('user.penjualan-kwh'));
+    
+    // ✅ TAMBAH ROUTE PROFILE & SETTINGS DI SINI
+    Route::get('/profile', [UserController::class, 'profile'])->name('profile');
+    Route::get('/settings', [UserController::class, 'settings'])->name('settings');
 });
 
 // ===== AUTH + 2FA + ADMIN — Admin Panel =====
@@ -68,7 +73,7 @@ Route::prefix('admin')->name('admin.')->middleware(['auth', '2fa', 'admin'])->gr
 
     // Devices — approve & reject ditangani DeviceController
     Route::get('/devices',                    [AdminController::class, 'devices'])->name('devices');
- Route::any('/devices/{id}/approve', [DeviceController::class, 'approve'])->name('devices.approve');
+    Route::any('/devices/{id}/approve', [DeviceController::class, 'approve'])->name('devices.approve');
     Route::post('/devices/{id}/reject',       [DeviceController::class, 'reject'])->name('devices.reject');
     Route::delete('/devices/{device}/revoke', [DeviceController::class, 'destroy'])->name('devices.revoke');
 
@@ -83,30 +88,19 @@ Route::get('/historis/metrik', [HistorisController::class, 'availableMetrik'])->
 
 // ===== FACT HISTORIS ENTRY =====
 Route::middleware(['auth'])->group(function () {
-    Route::get('/fact-historis/create',         [FactHistorisEntryController::class, 'create'])->name('fact-historis.create');
-    Route::get('/fact-historis/existing-data',  [FactHistorisEntryController::class, 'getExistingData'])->name('fact-historis.existing-data');
-    Route::post('/fact-historis',               [FactHistorisEntryController::class, 'store'])->name('fact-historis.store');
+    Route::get('/fact-historis', [FactHistorisEntryController::class, 'create'])->name('fact-historis.create');
+    Route::get('/fact-historis/existing-data', [FactHistorisEntryController::class, 'getExistingData'])->name('fact-historis.existing-data');
+    Route::post('/fact-historis', [FactHistorisEntryController::class, 'store'])->name('fact-historis.store');
+    
+    // ✅ Import Excel & Template (hapus duplikat)
+    Route::post('/fact-historis/import-excel', [FactHistorisEntryController::class, 'importExcel'])->name('fact-historis.import-excel');
+    Route::get('/fact-historis/download-template', [FactHistorisEntryController::class, 'downloadTemplate'])->name('fact-historis.download-template');
 });
+
 Route::get('/debug', function () {
     return [
         'MAIL_MAILER (raw env)' => env('MAIL_MAILER'),
         'mail.default (config)' => config('mail.default'),
         '.env loaded?' => file_exists(base_path('.env')) ? 'YES' : 'NO',
     ];
-}); 
-Route::middleware(['auth'])->group(function () {
-    Route::get('/fact-historis', [FactHistorisEntryController::class, 'create'])->name('fact-historis.create');
-    Route::get('/fact-historis/existing-data', [FactHistorisEntryController::class, 'getExistingData'])->name('fact-historis.existing');
-    Route::post('/fact-historis', [FactHistorisEntryController::class, 'store'])->name('fact-historis.store');
-    
-    // ✅ Tambah route import Excel (konsisten dengan controller existing)
-    Route::post('/fact-historis/import-excel', [FactHistorisEntryController::class, 'importExcel'])
-        ->name('fact-historis.import-excel');
-         // [NEW] POST: Import from Excel
-    Route::post('/fact-historis/import-excel', [FactHistorisEntryController::class, 'importExcel'])->name('fact-historis.import-excel');
-    
-    // [NEW] GET: Download template
-    Route::get('/fact-historis/download-template', [FactHistorisEntryController::class, 'downloadTemplate'])->name('fact-historis.download-template');
 });
- 
-    

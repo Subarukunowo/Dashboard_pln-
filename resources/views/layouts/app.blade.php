@@ -15,7 +15,7 @@
     <link rel="preconnect" href="https://cdnjs.cloudflare.com">
     <link rel="preconnect" href="https://cdn.jsdelivr.net">
 
-    {{-- ✅ Font Awesome 6.5.1 — SATU KALI SAJA (hapus duplikat 6.0.0) --}}
+    {{-- Font Awesome 6.5.1 --}}
     <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css"
           crossorigin="anonymous" referrerpolicy="no-referrer">
 
@@ -27,7 +27,28 @@
     @stack('styles')
     @yield('head')
 
+    {{-- Anti-flash: apply saved theme & font before render --}}
+    <script>
+    (function () {
+        var t = localStorage.getItem('pln_theme') || 'dark';
+        if (t === 'light') document.documentElement.classList.add('lm-pre');
+
+        var A = { orange:'#ff9800', green:'#00ff88', blue:'#3b82f6', cyan:'#06b6d4', violet:'#8b5cf6', rose:'#f43f5e' };
+        var a = localStorage.getItem('pln_accent') || 'orange';
+        document.documentElement.style.setProperty('--accent-orange', A[a] || A.orange);
+
+        var f = localStorage.getItem('pln_font');
+        if (f) document.documentElement.style.fontSize = f + 'px';
+
+        if (localStorage.getItem('pln_anim') === '0') {
+            var s = document.createElement('style');
+            s.textContent = '*,*::before,*::after{animation:none!important;transition:none!important}';
+            document.head.appendChild(s);
+        }
+    })();
+    </script>
     <style>
+        html.lm-pre body { background: #f0f2f5 !important; }
         .visually-hidden {
             position: absolute; width: 1px; height: 1px; padding: 0;
             margin: -1px; overflow: hidden; clip: rect(0,0,0,0);
@@ -38,7 +59,6 @@
 <body>
 
     {{-- NAVBAR --}}
-    {{-- ✅ FA6 syntax: fa-solid / fas keduanya work di FA 6.x --}}
     <nav class="navbar" role="navigation" aria-label="Navigasi utama">
         <div class="nav-left">
             <a href="/dashboard"
@@ -64,16 +84,16 @@
                         aria-expanded="false"
                         type="button">
                     <img src="{{ auth()->user()->avatar ?? asset('img/default-avatar.png') }}"
-                         alt="" class="nav-avatar" aria-hidden="true">
+                         alt="" class="nav-avatar nav-avatar-img" aria-hidden="true">
                     <span class="nav-username">{{ auth()->user()->name }}</span>
                     <i class="fa-solid fa-caret-down" aria-hidden="true"></i>
                 </button>
 
                 <div class="dropdown-content" role="menu">
-                    <a href="/profile" role="menuitem">
+                    <a href="{{ route('profile') }}" role="menuitem">
                         <i class="fa-solid fa-circle-user" aria-hidden="true"></i> Profile
                     </a>
-                    <a href="javascript:void(0)" onclick="openSettings()" role="menuitem">
+                    <a href="{{ route('settings') }}" role="menuitem">
                         <i class="fa-solid fa-gear" aria-hidden="true"></i> Settings
                     </a>
                     <hr class="dropdown-divider">
@@ -93,8 +113,8 @@
         @yield('content')
     </main>
 
-    {{-- Chatbot hanya di dashboard, tidak di historis --}}
-    @if(!Request::is('historis*'))
+    {{-- Chatbot hanya di dashboard --}}
+    @if(!Request::is('historis*') && !Request::is('profile*') && !Request::is('settings*'))
         @include('partials.widgets.Chatbot')
     @endif
 
@@ -105,9 +125,36 @@
     @yield('scripts')
     @stack('scripts')
 
-    {{-- Toast Notifications --}}
+    {{-- Apply theme on DOMContentLoaded (light mode body class) --}}
     <script>
     document.addEventListener('DOMContentLoaded', function () {
+        // Apply light-mode class to body
+        var t = localStorage.getItem('pln_theme') || 'dark';
+        document.body.classList.toggle('light-mode', t === 'light');
+        document.documentElement.classList.remove('lm-pre');
+
+        // Navbar dropdown toggle
+        const profileBtn  = document.querySelector('.profile-btn');
+        const dropContent = document.querySelector('.dropdown-content');
+
+        if (profileBtn && dropContent) {
+            profileBtn.addEventListener('click', function (e) {
+                e.stopPropagation();
+                const isOpen = dropContent.classList.toggle('show');
+                profileBtn.setAttribute('aria-expanded', isOpen);
+            });
+
+            document.addEventListener('click', function () {
+                dropContent.classList.remove('show');
+                profileBtn.setAttribute('aria-expanded', 'false');
+            });
+
+            dropContent.addEventListener('click', function (e) {
+                e.stopPropagation();
+            });
+        }
+
+        // Toast notifications from session
         const Toast = Swal.mixin({
             toast: true, position: 'top-end', showConfirmButton: false,
             timer: 3000, timerProgressBar: true,
@@ -116,6 +163,7 @@
                 toast.addEventListener('mouseleave', Swal.resumeTimer);
             }
         });
+
         @if(session('success'))
             Toast.fire({ icon: 'success', title: '{{ addslashes(session('success')) }}' });
         @endif
@@ -124,6 +172,9 @@
         @endif
         @if(session('warning'))
             Toast.fire({ icon: 'warning', title: '{{ addslashes(session('warning')) }}' });
+        @endif
+        @if(session('pending'))
+            Toast.fire({ icon: 'info', title: '{{ addslashes(session('pending')) }}' });
         @endif
     });
     </script>

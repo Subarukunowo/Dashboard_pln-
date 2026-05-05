@@ -1,0 +1,175 @@
+/* ============================================================
+   ACCOUNT SIDEBAR — Profile & Settings
+   Shared sidebar layout for /profile and /settings pages
+   Mirrors dash-sidebar style: #161616 bg | #ff9800 accent
+   ============================================================ */
+
+/* ── Layout wrapper (injected inside .app-main) ── */
+.account-layout {
+    display: flex;
+    min-height: calc(100vh - 56px);
+    background: #0f0f0f;
+}
+
+/* ── Sidebar ── */
+.account-sidebar {
+    width: 220px;
+    flex-shrink: 0;
+    background: #161616;
+    border-right: 1px solid #222;
+    padding: 20px 0;
+    position: sticky;
+    top: 56px;
+    height: calc(100vh - 56px);
+    overflow-y: auto;
+}
+
+.account-sidebar::-webkit-scrollbar { width: 4px; }
+.account-sidebar::-webkit-scrollbar-thumb { background: #2e2e2e; border-radius: 4px; }
+
+/* User mini card at top of sidebar */
+.sidebar-user-card {
+    display: flex;
+    align-items: center;
+    gap: 0.65rem;
+    padding: 0 14px 16px;
+    border-bottom: 1px solid #222;
+    margin-bottom: 8px;
+}
+.sidebar-user-avatar {
+    width: 34px; height: 34px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1.5px solid rgba(255,152,0,0.35);
+    flex-shrink: 0;
+}
+.sidebar-user-name {
+    font-size: 0.78rem;
+    font-weight: 600;
+    color: #e0e0e0;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    line-height: 1.3;
+}
+.sidebar-user-role {
+    font-size: 0.65rem;
+    color: #555;
+    margin-top: 0.1rem;
+}
+
+/* Section label */
+.acc-section-label {
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #3a3a3a;
+    text-transform: uppercase;
+    letter-spacing: 1.5px;
+    padding: 10px 16px 5px;
+}
+
+/* Sidebar nav item */
+.acc-sidebar-item {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 9px 16px;
+    font-size: 0.78rem;
+    color: #606060;
+    cursor: pointer;
+    border-left: 3px solid transparent;
+    transition: all 0.15s;
+    text-decoration: none;
+    user-select: none;
+}
+.acc-sidebar-item:hover {
+    background: #1e1e1e;
+    color: #cccccc;
+}
+.acc-sidebar-item.active {
+    background: rgba(255,152,0,0.08);
+    color: #ff9800;
+    border-left-color: #ff9800;
+}
+.acc-sidebar-item i {
+    font-size: 0.75rem;
+    width: 14px;
+    text-align: center;
+    flex-shrink: 0;
+    opacity: 0.7;
+}
+.acc-sidebar-item.active i { opacity: 1; }
+
+/* Danger item */
+.acc-sidebar-item.danger { color: #555; }
+.acc-sidebar-item.danger:hover { color: #ef4444; background: rgba(239,68,68,0.06); }
+
+/* Sidebar divider */
+.acc-sidebar-divider {
+    height: 1px;
+    background: #222;
+    margin: 8px 0;
+}
+
+/* ── Main content area ── */
+.account-content {
+    flex: 1;
+    min-width: 0;
+    padding: 2.5rem 2rem 4rem;
+    overflow-y: auto;
+}
+
+/* Content max-width centering */
+.account-content-inner {
+    max-width: 560px;
+    margin: 0 auto;
+}
+
+/* Page title in content */
+.acc-page-title {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #888;
+    letter-spacing: -0.01em;
+    margin-bottom: 1.5rem;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+}
+.acc-page-title i { color: #ff9800; font-size: 0.85rem; }
+
+/* Mobile sidebar toggle button */
+.acc-sidebar-toggle {
+    display: none;
+    align-items: center;
+    justify-content: center;
+    background: #ff9800;
+    border: none;
+    border-radius: 6px;
+    width: 32px; height: 32px;
+    color: #000;
+    font-size: 0.95rem;
+    cursor: pointer;
+    flex-shrink: 0;
+    margin-bottom: 1rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 900px) {
+    .account-sidebar {
+        position: fixed;
+        left: -220px;
+        top: 56px;
+        z-index: 200;
+        transition: left 0.2s ease;
+        height: calc(100vh - 56px);
+        box-shadow: 4px 0 20px rgba(0,0,0,0.4);
+    }
+    .account-sidebar.open { left: 0; }
+    .acc-sidebar-toggle { display: flex; }
+    .account-content { padding: 1.25rem 1rem 3rem; }
+}
+
+@media (max-width: 480px) {
+    .account-content { padding: 1rem 0.75rem 3rem; }
+}
