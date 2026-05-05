@@ -11,15 +11,18 @@ return Application::configure(basePath: dirname(__DIR__))
         api: __DIR__.'/../routes/api.php',  
         health: '/up',
     )
-  ->withMiddleware(function (Middleware $middleware) {
-    
-    $middleware->alias([
-        '2fa' => \App\Http\Middleware\TwoFactor::class,
-        'data_historis' => env('DATA_HISTORIS_URL'),
-        'admin' => \App\Http\Middleware\AdminOnly::class,
-    ]);
-})
-
+    ->withMiddleware(function (Middleware $middleware) {
+        $middleware->alias([
+            '2fa' => \App\Http\Middleware\TwoFactor::class,
+            'data_historis' => env('DATA_HISTORIS_URL'),
+            'admin' => \App\Http\Middleware\AdminOnly::class,
+        ]);
+    })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
-    })->create();
+    })
+    // ✅ TAMBAHKAN INI: Register custom commands
+    ->withCommands([
+        \App\Console\Commands\CacheUserAvatars::class,
+    ])
+    ->create();
