@@ -16,7 +16,9 @@
     <div class="account-content">
 
         <button class="acc-sidebar-toggle" id="accSidebarToggle" aria-label="Toggle menu">
-            <i class="fa-solid fa-bars"></i>
+            <i class="fa-solid fa-bars">
+                
+            </i>
         </button>
 
         <div class="account-content-inner">

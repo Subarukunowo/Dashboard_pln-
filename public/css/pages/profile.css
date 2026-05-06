@@ -1,4 +1,3 @@
-
 @import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;0,9..40,700;1,9..40,300&family=DM+Mono:wght@400;500&display=swap');
 
 :root {
@@ -37,11 +36,11 @@ body {
 .profile-shell {
     min-height: 100vh;
     background: var(--bg);
-    padding: 3rem 1.5rem 5rem;
+    padding: 2rem 1rem 3rem;
 }
 
 .profile-container {
-    max-width: 560px;
+    max-width: 680px;
     margin: 0 auto;
 }
 
@@ -51,7 +50,7 @@ body {
     font-weight: 600;
     color: var(--text-2);
     letter-spacing: -0.01em;
-    margin-bottom: 1.75rem;
+    margin-bottom: 1.25rem;
     display: flex;
     align-items: center;
     gap: 0.5rem;
@@ -69,7 +68,7 @@ body {
 
 /* ── Hero Section ── */
 .profile-hero-section {
-    padding: 2rem 2rem 0;
+    padding: 1.75rem 1.75rem 0;
     display: flex;
     flex-direction: column;
     align-items: center;
@@ -77,7 +76,6 @@ body {
     position: relative;
 }
 
-/* subtle top gradient strip */
 .profile-hero-section::before {
     content: '';
     position: absolute;
@@ -90,11 +88,10 @@ body {
 /* ── Avatar ── */
 .profile-avatar-wrap {
     position: relative;
-    margin-bottom: 1rem;
+    margin-bottom: 0.85rem;
     z-index: 1;
     cursor: pointer;
 }
-
 .profile-avatar-wrap:hover .avatar-overlay { opacity: 1; }
 
 .profile-avatar {
@@ -112,7 +109,6 @@ body {
     outline-color: var(--accent);
 }
 
-/* Score badge — like ref image */
 .profile-score-badge {
     position: absolute;
     bottom: -2px; right: -2px;
@@ -126,7 +122,6 @@ body {
     font-family: var(--mono);
 }
 
-/* avatar overlay for upload hint */
 .avatar-overlay {
     position: absolute;
     inset: 0;
@@ -151,7 +146,7 @@ body {
 
 /* ── Name & Role ── */
 .profile-name {
-    font-size: 1.25rem;
+    font-size: 1.35rem;
     font-weight: 700;
     letter-spacing: -0.02em;
     color: var(--text);
@@ -159,21 +154,21 @@ body {
     margin-top: 0.5rem;
 }
 .profile-role-line {
-    font-size: 0.8rem;
+    font-size: 0.82rem;
     color: var(--text-2);
     display: flex;
     align-items: center;
     justify-content: center;
     gap: 0.4rem;
-    margin-bottom: 1rem;
+    margin-bottom: 0.85rem;
 }
 .profile-role-dot { color: var(--text-3); }
 
-/* ── Action icons row (like ref) ── */
+/* ── Action icons row ── */
 .profile-actions {
     display: flex;
     gap: 0.6rem;
-    margin-bottom: 1.5rem;
+    margin-bottom: 1.25rem;
 }
 .profile-action-btn {
     width: 38px; height: 38px;
@@ -200,24 +195,22 @@ body {
     margin: 0;
 }
 
-/* ── Info Table (like ref image table layout) ── */
-.profile-info-table {
-    padding: 0;
-}
+/* ── Info Table ── */
+.profile-info-table { padding: 0; }
 
 .info-row {
     display: flex;
     align-items: flex-start;
-    padding: 0.95rem 2rem;
+    padding: 0.8rem 1.75rem;
     border-bottom: 1px solid var(--border);
-    gap: 1.5rem;
+    gap: 1.25rem;
     transition: background 0.15s;
 }
 .info-row:last-child { border-bottom: none; }
 .info-row:hover { background: rgba(255,255,255,0.02); }
 
 .info-row-label {
-    width: 130px;
+    width: 125px;
     flex-shrink: 0;
     font-size: 0.78rem;
     color: var(--text-2);
@@ -227,7 +220,7 @@ body {
 
 .info-row-value {
     flex: 1;
-    font-size: 0.875rem;
+    font-size: 0.9rem;
     color: var(--text);
     font-weight: 500;
     word-break: break-all;
@@ -236,10 +229,7 @@ body {
     gap: 0.4rem;
 }
 
-/* editable field */
-.info-row-value.editable {
-    cursor: pointer;
-}
+.info-row-value.editable { cursor: pointer; }
 .info-row-value.editable:hover .edit-hint { opacity: 1; }
 
 .edit-hint {
@@ -249,7 +239,6 @@ body {
     transition: opacity 0.15s;
 }
 
-/* inline edit input */
 .info-edit-input {
     background: var(--surface-2);
     border: 1px solid var(--accent);
@@ -267,7 +256,6 @@ body {
     box-shadow: 0 0 0 3px var(--accent-glow);
 }
 
-/* status badge */
 .status-chip {
     display: inline-flex;
     align-items: center;
@@ -294,7 +282,6 @@ body {
     background: currentColor;
 }
 
-/* link style value */
 .info-link {
     color: var(--accent);
     text-decoration: none;
@@ -306,16 +293,15 @@ body {
 .info-link:hover { text-decoration: underline; }
 .info-link i { font-size: 0.7rem; }
 
-/* mono value */
 .mono-value {
     font-family: var(--mono);
     font-size: 0.78rem;
     color: var(--text-2);
 }
 
-/* ── Section Header inside card ── */
+/* ── Section Header ── */
 .card-section-header {
-    padding: 1.25rem 2rem 0;
+    padding: 1rem 1.75rem 0;
     font-size: 0.68rem;
     font-weight: 700;
     letter-spacing: 0.1em;
@@ -328,7 +314,7 @@ body {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: 1rem 2rem;
+    padding: 0.9rem 1.75rem;
     gap: 1rem;
 }
 .twofa-left {
@@ -346,6 +332,7 @@ body {
 .twofa-icon-wrap.off { background: var(--accent-dim); color: var(--accent); }
 .twofa-name { font-size: 0.85rem; font-weight: 600; color: var(--text); }
 .twofa-sub  { font-size: 0.73rem; color: var(--text-2); margin-top: 0.1rem; }
+
 .btn-2fa {
     display: inline-flex; align-items: center; gap: 0.4rem;
     padding: 0.42rem 1rem;
@@ -359,12 +346,12 @@ body {
 }
 .btn-2fa:hover { background: rgba(255,152,0,0.2); border-color: var(--accent); }
 
-/* ── Second card: Devices ── */
+/* ── Devices Card ── */
 .device-item {
     display: flex;
     align-items: center;
     gap: 1rem;
-    padding: 1rem 2rem;
+    padding: 0.9rem 1.75rem;
     border-bottom: 1px solid var(--border);
     transition: background 0.15s;
 }
@@ -380,9 +367,8 @@ body {
     font-size: 0.82rem;
     flex-shrink: 0;
 }
-
 .device-name {
-    font-size: 0.85rem;
+    font-size: 0.87rem;
     font-weight: 600;
     color: var(--text);
     white-space: nowrap;
@@ -420,12 +406,12 @@ body {
 .device-status.pending  { background: var(--accent-dim); color: var(--accent); border: 1px solid rgba(255,152,0,0.2); }
 .device-status.rejected { background: rgba(239,68,68,.1); color: var(--red); border: 1px solid rgba(239,68,68,0.2); }
 
-/* ── Third card: Activity ── */
+/* ── Activity Card ── */
 .activity-item {
     display: flex;
     align-items: flex-start;
     gap: 0.85rem;
-    padding: 0.9rem 2rem;
+    padding: 0.8rem 1.75rem;
     border-bottom: 1px solid var(--border);
     position: relative;
 }
@@ -444,27 +430,27 @@ body {
 .dot-device  { background: var(--accent-dim); color: var(--accent); }
 .dot-default { background: rgba(255,255,255,.05); color: var(--text-2); }
 
-.act-title { font-size: 0.82rem; font-weight: 500; color: var(--text); line-height: 1.4; }
+.act-title { font-size: 0.84rem; font-weight: 500; color: var(--text); line-height: 1.4; }
 .act-meta  { font-size: 0.7rem; color: var(--text-2); margin-top: 0.2rem; display: flex; gap: 0.6rem; align-items: center; }
 .act-meta i { font-size: 0.6rem; }
 .act-ip    { font-family: var(--mono); font-size: 0.68rem; }
 
-/* ── Empty ── */
+/* ── Empty State ── */
 .empty-state {
     text-align: center;
     padding: 2rem 1rem;
     color: var(--text-2);
     font-size: 0.82rem;
 }
-.empty-state i { display: block; font-size: 1.5rem; color: var(--accent-dim); margin-bottom: 0.5rem; color: rgba(255,152,0,0.25); }
+.empty-state i { display: block; font-size: 1.5rem; color: var(--accent-dim); margin-bottom: 0.5rem; }
 
-/* ── Save actions bar ── */
+/* ── Save Bar ── */
 .save-bar {
     display: none;
     align-items: center;
     justify-content: flex-end;
     gap: 0.6rem;
-    padding: 0.9rem 2rem;
+    padding: 0.8rem 1.75rem;
     border-top: 1px solid var(--border);
     background: rgba(255,152,0,0.03);
     animation: slideUp 0.2s ease;
@@ -498,7 +484,7 @@ body {
 }
 .btn-cancel:hover { color: var(--text); border-color: rgba(255,255,255,0.12); }
 
-/* ── Avatar upload modal ── */
+/* ── Avatar Modal ── */
 .avatar-modal-backdrop {
     position: fixed; inset: 0;
     background: rgba(0,0,0,0.75);
@@ -516,7 +502,7 @@ body {
     border-radius: var(--radius-xl);
     padding: 2rem;
     width: 100%;
-    max-width: 380px;
+    max-width: 400px;
     text-align: center;
 }
 .avatar-modal-title {
@@ -595,14 +581,19 @@ body {
 }
 
 /* ── Responsive ── */
-@media (max-width: 600px) {
-    .profile-shell { padding: 1.5rem 1rem 4rem; }
-    .info-row { padding: 0.85rem 1.25rem; gap: 0.75rem; }
-    .info-row-label { width: 100px; font-size: 0.73rem; }
+@media (max-width: 720px) {
+    .profile-shell { padding: 1.5rem 1rem 3rem; }
+    .profile-container { max-width: 100%; }
+    
+    .info-row { padding: 0.8rem 1.25rem; gap: 1rem; }
+    .info-row-label { width: 110px; font-size: 0.75rem; }
+    
     .card-section-header { padding: 1rem 1.25rem 0; }
     .twofa-row { padding: 0.9rem 1.25rem; }
     .device-item { padding: 0.85rem 1.25rem; }
     .activity-item { padding: 0.8rem 1.25rem; }
     .save-bar { padding: 0.75rem 1.25rem; }
     .profile-hero-section { padding: 1.5rem 1.25rem 0; }
+    
+    .profile-name { font-size: 1.2rem; }
 }

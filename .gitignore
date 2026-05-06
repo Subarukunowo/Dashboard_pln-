@@ -1,6 +1,7 @@
 *.log
 .DS_Store
 .env
+.env.staging
 .env.backup
 .env.testing
 .env.production
