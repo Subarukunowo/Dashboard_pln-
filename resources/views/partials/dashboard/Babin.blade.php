@@ -14,13 +14,8 @@
                 <option value="bulanan">Bulanan</option>
                 <option value="akumulasi">Akumulasi</option>
             </select>
-            <select id="filterBulanBabin" style="font-size:0.7rem; padding:4px;">
-                <option value="all">Semua Bulan</option>
-                <option value="0">Jan</option><option value="1">Feb</option><option value="2">Mar</option>
-                <option value="3">Apr</option><option value="4">Mei</option><option value="5">Jun</option>
-                <option value="6">Jul</option><option value="7">Agu</option><option value="8">Sep</option>
-                <option value="9">Okt</option><option value="10">Nov</option><option value="11">Des</option>
-            </select>
+            {{-- Opsi bulan di-inject oleh BabinModule.initFilters() --}}
+            <select id="filterBulanBabin" style="font-size:0.7rem; padding:4px;"></select>
         </div>
     </div>
 
@@ -31,12 +26,12 @@
     <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px;">
         <table style="width:100%; border-collapse:collapse;">
             <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-                <tr style="font-size:0.72rem;">
-                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
-                    <th style="padding:10px; text-align:center; color:#2196f3;">Real '24</th>
-                    <th style="padding:10px; text-align:center; color:#ff9800;">Target '25</th>
-                    <th style="padding:10px; text-align:center; color:var(--accent-green);">Real '25</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Selisih</th>
+                <tr style="font-size:0.65rem; text-transform:uppercase;">
+                    <th style="padding:10px; color:#888;">Bulan</th>
+                    <th style="padding:10px; color:#2196f3;">Real '24</th>
+                    <th style="padding:10px; color:#ff9800;">Target '25</th>
+                    <th style="padding:10px; color:var(--accent-green);">Real '25</th>
+                    <th style="padding:10px; color:#aaa;">Selisih</th>
                 </tr>
             </thead>
             <tbody id="babinSideTable"></tbody>
@@ -56,7 +51,7 @@
 
 <div class="card col-12">
     <div class="card-title">KWH Penjualan PLN Batam Gabungan</div>
-    
+
     <div class="chart-wrapper" style="width:100%; height:300px; margin-bottom:20px;">
         <canvas id="chartAllJualBar"></canvas>
     </div>
@@ -64,10 +59,10 @@
     <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px;">
         <table style="width:100%; border-collapse:collapse;">
             <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-                <tr style="font-size:0.72rem;">
-                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
-                    <th style="padding:10px; text-align:center; color:#2196f3;">KWH Batam</th>
-                    <th style="padding:10px; text-align:center; color:#ff9800;">Batam-Bintan</th>
+                <tr style="font-size:0.65rem; text-transform:uppercase;">
+                    <th style="padding:10px; color:#888;">Bulan</th>
+                    <th style="padding:10px; color:#2196f3;">KWH Batam</th>
+                    <th style="padding:10px; color:#ff9800;">Batam-Bintan</th>
                 </tr>
             </thead>
             <tbody id="allJualSideTable"></tbody>

@@ -24,7 +24,7 @@
                     <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
                     <th style="padding:10px; text-align:center; color:var(--accent-orange);">Rencana</th>
                     <th style="padding:10px; text-align:center; color:var(--accent-green);">Real</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Δ</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Selisih</th>
                 </tr>
             </thead>
             <tbody id="pelangganSideTable"></tbody>
@@ -32,7 +32,7 @@
     </div>
 
  
-    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">Delta Penambahan Pelanggan</div>
+    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">Selisih Penambahan Pelanggan</div>
     <div class="chart-wrapper" style="width:100%; height:280px; margin-bottom:20px;">
         <canvas id="chartPelangganDelta"></canvas>
     </div>

@@ -52,32 +52,46 @@ export default class JamNyalaModule {
     }
 
     // Table for Line Chart (NEW)
-    renderLineTable(labels, datasets) {
-        const tbody = document.getElementById("tabelJamNyalaLine")
-        if (!tbody) return
-        
-        // Update header based on selected tarif
-        const header = document.getElementById("headerJamNyalaLine")
-        if (header && datasets.length === 1) {
-            header.textContent = datasets[0].label
-        } else if (header && datasets.length > 1) {
-            header.textContent = "Jam Nyala"
-        }
-
-        tbody.innerHTML = labels.map((bln, i) => {
-            const cells = datasets.map((ds, j) => {
-                const val = ds.data[i] || 0
-                const color = COLORS[j % COLORS.length]
-                return `<td style="padding:8px 10px; text-align:center; color:${color}">${val.toFixed(0)}</td>`
-            }).join("")
-            
-            return `<tr>
-                <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${bln}</td>
-                ${cells}
-            </tr>`
-        }).join("")
+// Table for Line Chart (REVISED)
+renderLineTable(labels, datasets) {
+    const tbody = document.getElementById("tabelJamNyalaLine")
+    const thead = document.querySelector("#tabelJamNyalaLine").previousElementSibling
+    if (!tbody || !thead) return
+    
+    // Update header dengan multiple columns
+    const headerRow = thead.querySelector("tr")
+    if (datasets.length > 1) {
+        // Multiple tarifs: show all as column headers
+        headerRow.innerHTML = `
+            <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+            ${datasets.map((ds, i) => `
+                <th style="padding:10px; text-align:center; color:${COLORS[i % COLORS.length]}; font-size:0.7rem;">
+                    ${ds.label}
+                </th>
+            `).join("")}
+        `
+    } else {
+        // Single tarif: show simple header
+        headerRow.innerHTML = `
+            <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
+            <th style="padding:10px; text-align:center; color:var(--accent-green);">Jam Nyala</th>
+        `
     }
 
+    // Render table body
+    tbody.innerHTML = labels.map((bln, i) => {
+        const cells = datasets.map((ds, j) => {
+            const val = ds.data[i] || 0
+            const color = COLORS[j % COLORS.length]
+            return `<td style="padding:8px 10px; text-align:center; color:${color}; font-weight:500;">${val.toFixed(0)}</td>`
+        }).join("")
+        
+        return `<tr style="border-bottom:1px solid #333;">
+            <td style="padding:8px 10px; color:#888; font-size:0.75rem; text-align:center;">${bln}</td>
+            ${cells}
+        </tr>`
+    }).join("")
+}
     // Table for Bar Chart
     renderTable(labels, d, tarifName) {
         const tbody = document.getElementById("jamNyalaSideTable")

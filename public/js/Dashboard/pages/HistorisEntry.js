@@ -21,16 +21,16 @@
             saveData: '/fact-historis',
         },
         metrics: [
-            { kode: 'daya_va',         nama: 'Daya Tersambung',           satuan: 'VA'        },
-            { kode: 'delta_gwh',       nama: 'Delta GWh',                 satuan: 'GWh'       },
-            { kode: 'growth',          nama: 'Growth',                    satuan: '%'         },
-            { kode: 'komposisi',       nama: 'Komposisi',                 satuan: '%'         },
-            { kode: 'kwh_jual',        nama: 'KWH Jual',                  satuan: 'KWH'       },
-            { kode: 'mwh_jual',        nama: 'MWH Jual',                  satuan: 'MWH'       },
-            { kode: 'pelanggan',       nama: 'Pelanggan',                 satuan: 'pelanggan' },
-            { kode: 'pertumbuhan_yoy', nama: 'Pertumbuhan YoY Kumulatif', satuan: '%'         },
-            { kode: 'rpkwh',           nama: 'RP/KWH Jual',               satuan: 'Rp/KWh'   },
-            { kode: 'rupiah',          nama: 'Rupiah Penjualan',          satuan: 'Rp'        },
+            { kode: 'daya_va',         nama: 'Daya Tersambung',           satuan: 'VA',         autoConvertVA: true },
+            { kode: 'delta_gwh',       nama: 'Delta GWh',                 satuan: 'GWh'         },
+            { kode: 'growth',          nama: 'Growth',                    satuan: '%'           },
+            { kode: 'komposisi',       nama: 'Komposisi',                 satuan: '%'           },
+            { kode: 'kwh_jual',        nama: 'KWH Jual',                  satuan: 'KWH'         },
+            { kode: 'mwh_jual',        nama: 'MWH Jual',                  satuan: 'MWH'         },
+            { kode: 'pelanggan',       nama: 'Pelanggan',                 satuan: 'pelanggan'   },
+            { kode: 'pertumbuhan_yoy', nama: 'Pertumbuhan YoY Kumulatif', satuan: '%'           },
+            { kode: 'rpkwh',           nama: 'RP/KWH Jual',               satuan: 'Rp/KWh'     },
+            { kode: 'rupiah',          nama: 'Rupiah Penjualan',          satuan: 'Rp'          },
         ],
         /* Kode golongan → class badge CSS */
         golBadgeClass: {
@@ -80,6 +80,43 @@
 
         getSatuan: metrikKode =>
             Config.metrics.find(m => m.kode === metrikKode)?.satuan ?? null,
+
+        /**
+         * Konversi nilai VA ke KVA atau MVA untuk tampilan.
+         * Aturan: >= 1.000.000 VA → MVA, sisanya → KVA.
+         * Mengembalikan { nilai: string, satuan: 'KVA'|'MVA' }
+         * atau null jika input tidak valid.
+         */
+        convertVADisplay(vaValue) {
+            const num = parseFloat(vaValue);
+            if (isNaN(num) || vaValue === '' || vaValue === null || vaValue === undefined) {
+                return null;
+            }
+            if (num >= 1_000_000) {
+                return {
+                    nilai:  (num / 1_000_000).toLocaleString('id-ID', { maximumFractionDigits: 3 }),
+                    satuan: 'MVA',
+                };
+            }
+            return {
+                nilai:  (num / 1_000).toLocaleString('id-ID', { maximumFractionDigits: 2 }),
+                satuan: 'KVA',
+            };
+        },
+
+        /**
+         * Dari semua input daya_va yang terisi, tentukan label satuan
+         * dominan untuk kolom: MVA jika ada satu pun ≥ 1.000.000, else KVA.
+         */
+        dominantVASatuan() {
+            const inputs = DOM.entryTbody?.querySelectorAll(
+                '.data-input[data-metrik-kode="daya_va"]'
+            ) ?? [];
+            const hasMVA = [...inputs].some(inp =>
+                inp.value && parseFloat(inp.value) >= 1_000_000
+            );
+            return hasMVA ? 'MVA' : 'KVA';
+        },
     };
 
     /* ─────────────────────────────────────────────────────────
@@ -154,6 +191,14 @@
          - input.data-input  (bukan .entry-input)
          - data-metrik-kode  (bukan data-metrik / data-metrik-nama)
          - th class .h-s/.h-r/.h-b/... untuk badge golongan
+
+       Khusus daya_va (autoConvertVA: true):
+         - Input tetap menerima dan menyimpan nilai mentah dalam VA.
+         - td.td-satuan berisi <span id="satuan-daya_va"> yang
+           menampilkan "KVA" atau "MVA" secara dinamis.
+         - Di bawah setiap input, teks hint kecil menampilkan
+           nilai hasil konversi (mis. "12,50 KVA") secara real-time.
+         - Tooltip input menampilkan nilai VA asli.
     ───────────────────────────────────────────────────────── */
     function buildEntryTable(data) {
         if (!DOM.entryThead || !DOM.entryTbody) return;
@@ -207,8 +252,57 @@
 
         /* ── BODY ── */
         DOM.entryTbody.innerHTML = Config.metrics.map(metric => {
+
             const existingRows = data?.[metric.kode] ?? [];
 
+            /* ── DAYA VA: input biasa, kolom satuan & hint dikonversi otomatis ── */
+            if (metric.autoConvertVA) {
+
+                /* Label satuan awal berdasarkan data yang sudah ada */
+                const sampleVal   = existingRows.find(r => r.nilai != null)?.nilai ?? '';
+                const initSatuan  = sampleVal !== ''
+                    ? (Utils.convertVADisplay(sampleVal)?.satuan ?? 'KVA')
+                    : 'KVA';
+
+                const cells = golongans.map(gol => {
+                    const row      = existingRows.find(r => r.golongan_kode === gol.kode);
+                    const nilai    = row?.nilai ?? '';
+                    const hasValue = nilai !== '';
+                    const conv     = hasValue ? Utils.convertVADisplay(nilai) : null;
+
+                    return `
+                        <td class="td-val">
+                            <input type="number" step="any"
+                                class="data-input${hasValue ? ' has-value' : ''}"
+                                data-metrik-kode="${metric.kode}"
+                                data-golongan="${gol.kode}"
+                                value="${hasValue ? nilai : ''}"
+                                placeholder="0"
+                                title="${hasValue ? `${Number(nilai).toLocaleString('id-ID')} VA` : ''}"
+                                ${State.isLocked ? 'disabled' : ''}>
+                            <span class="va-hint"
+                                  data-golongan="${gol.kode}"
+                                  style="display:block;font-size:0.72rem;
+                                         color:var(--text-muted,#9e9e9e);
+                                         margin-top:2px;text-align:right;
+                                         min-height:1em;pointer-events:none;
+                                         user-select:none;letter-spacing:0.01em;">
+                                ${conv ? `${conv.nilai} ${conv.satuan}` : ''}
+                            </span>
+                        </td>`;
+                }).join('');
+
+                return `
+                    <tr>
+                        <td class="td-metrik">${metric.nama}</td>
+                        <td class="td-satuan">
+                            <span id="satuan-daya_va">${initSatuan}</span>
+                        </td>
+                        ${cells}
+                    </tr>`;
+            }
+
+            /* ── NORMAL: semua metrik lainnya ── */
             const cells = golongans.map(gol => {
                 const row      = existingRows.find(r => r.golongan_kode === gol.kode);
                 const nilai    = row?.nilai ?? '';
@@ -238,6 +332,26 @@
         DOM.entryTbody.querySelectorAll('.data-input').forEach(input => {
             input.addEventListener('input', function () {
                 this.classList.toggle('has-value', this.value !== '');
+
+                /* Real-time konversi untuk baris daya_va */
+                if (this.dataset.metrikKode === 'daya_va') {
+                    const conv = this.value !== '' ? Utils.convertVADisplay(this.value) : null;
+
+                    /* Update hint di bawah input ini */
+                    const hint = this.closest('td')?.querySelector('.va-hint');
+                    if (hint) {
+                        hint.textContent = conv ? `${conv.nilai} ${conv.satuan}` : '';
+                    }
+
+                    /* Update tooltip */
+                    this.title = this.value
+                        ? `${Number(this.value).toLocaleString('id-ID')} VA`
+                        : '';
+
+                    /* Update label kolom satuan secara dominan */
+                    const satuanSpan = document.getElementById('satuan-daya_va');
+                    if (satuanSpan) satuanSpan.textContent = Utils.dominantVASatuan();
+                }
             });
         });
     }
@@ -299,6 +413,8 @@
 
     /* ─────────────────────────────────────────────────────────
        DATA SAVER
+       daya_va tetap disimpan dalam VA (satuan asli).
+       Konversi KVA/MVA hanya untuk tampilan, tidak ikut dikirim.
     ───────────────────────────────────────────────────────── */
     async function saveEntryData() {
         if (State.isLocked) {

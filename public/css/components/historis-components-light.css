@@ -1,0 +1,202 @@
+/* ============================================================
+   LIGHT MODE OVERRIDES — append ini ke paling bawah file
+   historis-components.css. Jangan ubah apapun di atasnya.
+   Semua selector di sini hanya aktif saat html.light-mode ada.
+   ============================================================ */
+
+html.light-mode {
+    /* Timpa CSS vars lokal --hc-* ke palette terang */
+    --hc-bg-page:       #f0f2f5;
+    --hc-bg-card:       #ffffff;
+    --hc-bg-input:      #f4f6fa;
+    --hc-bg-row-alt:    #f8fafc;
+    --hc-bg-hover:      #eef2f7;
+
+    --hc-border:        rgba(0, 0, 0, 0.08);
+    --hc-border-focus:  #e07b00;
+    --hc-border-mid:    rgba(0, 0, 0, 0.14);
+
+    --hc-text-primary:  #1a1f35;
+    --hc-text-secondary:#4a5270;
+    --hc-text-muted:    #9ba3bf;
+    --hc-text-mono:     #374151;
+
+    --hc-accent:        #e07b00;
+    --hc-accent-green:  #059669;
+    --hc-accent-blue:   #2563eb;
+}
+
+/* ── Golongan chips (warna sudah pakai rgba, cukup terangkan base) ── */
+html.light-mode .hist-gol-chip {
+    background:   var(--hc-bg-input);
+    border-color: var(--hc-border);
+    color:        var(--hc-text-secondary);
+}
+
+html.light-mode .hist-gol-chip:hover {
+    border-color: var(--hc-border-mid);
+    color:        var(--hc-text-primary);
+}
+
+/* ── Table hist-table ────────────────────────────────────── */
+html.light-mode .hist-table th {
+    background:  var(--hc-bg-input);
+    color:       var(--hc-text-secondary);
+    border-color: var(--hc-border);
+}
+
+html.light-mode .hist-table td {
+    color:        var(--hc-text-secondary);
+    border-color: var(--hc-border);
+}
+
+html.light-mode .hist-table td:first-child {
+    color:      var(--hc-text-primary);
+    background: var(--hc-bg-card);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
+}
+
+html.light-mode .hist-table tbody tr:nth-child(even) td {
+    background: var(--hc-bg-row-alt);
+}
+
+html.light-mode .hist-table tbody tr:nth-child(even) td:first-child {
+    background: var(--hc-bg-row-alt);
+}
+
+html.light-mode .hist-table tbody tr:hover td {
+    background: var(--hc-bg-hover);
+}
+
+html.light-mode .hist-table tbody tr:hover td:first-child {
+    background: var(--hc-bg-hover);
+}
+
+/* ── Table entry-table ───────────────────────────────────── */
+html.light-mode .entry-table thead th {
+    background:   var(--hc-bg-input);
+    color:        var(--hc-text-muted);
+    border-color: var(--hc-border-mid);
+}
+
+html.light-mode .entry-table thead th.h-metrik {
+    color:      var(--hc-text-secondary);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
+}
+
+html.light-mode .entry-table tbody tr:nth-child(even) td {
+    background: var(--hc-bg-row-alt);
+}
+
+html.light-mode .entry-table tbody tr:hover td {
+    background: var(--hc-bg-hover);
+}
+
+html.light-mode .entry-table td.td-metrik {
+    color:      var(--hc-text-primary);
+    background: var(--hc-bg-card);
+    box-shadow: 2px 0 8px rgba(0, 0, 0, 0.06);
+}
+
+html.light-mode .entry-table tbody tr:nth-child(even) td.td-metrik {
+    background: var(--hc-bg-row-alt);
+}
+
+html.light-mode .entry-table tbody tr:hover td.td-metrik {
+    background: var(--hc-bg-hover);
+}
+
+html.light-mode .entry-table td.td-satuan {
+    color: var(--hc-text-muted);
+}
+
+/* ── Input angka ─────────────────────────────────────────── */
+html.light-mode .entry-table .data-input {
+    color:        var(--hc-text-muted);
+    border-color: var(--hc-border);
+}
+
+html.light-mode .entry-table .data-input:hover:not(:focus) {
+    border-color: var(--hc-border-mid);
+}
+
+html.light-mode .entry-table .data-input:focus {
+    border-color: var(--hc-accent);
+    background:   rgba(224, 123, 0, 0.04);
+    color:        var(--hc-text-primary);
+}
+
+html.light-mode .entry-table .data-input.has-value {
+    color: var(--hc-text-mono);
+}
+
+/* ── Import status bar ───────────────────────────────────── */
+html.light-mode .import-status-bar {
+    border-color: var(--hc-border);
+}
+
+html.light-mode .import-status-loading {
+    background:   rgba(37, 99, 235, 0.06);
+    border-color: rgba(37, 99, 235, 0.25);
+    color:        #1d4ed8;
+}
+
+html.light-mode .import-status-success {
+    background:   rgba(5, 150, 105, 0.06);
+    border-color: rgba(5, 150, 105, 0.25);
+    color:        #065f46;
+}
+
+html.light-mode .import-status-warning {
+    background:   rgba(224, 123, 0, 0.06);
+    border-color: rgba(224, 123, 0, 0.25);
+    color:        #92400e;
+}
+
+html.light-mode .import-status-error {
+    background:   rgba(220, 38, 38, 0.06);
+    border-color: rgba(220, 38, 38, 0.25);
+    color:        #991b1b;
+}
+
+/* ── Drag overlay ────────────────────────────────────────── */
+html.light-mode .table-drag-overlay {
+    background:   rgba(37, 99, 235, 0.06);
+    border-color: rgba(37, 99, 235, 0.4);
+}
+
+html.light-mode .table-drag-overlay-inner {
+    color: var(--hc-accent-blue);
+}
+
+/* ── Section entry border ────────────────────────────────── */
+html.light-mode .section-entry {
+    border-left-color: var(--hc-accent-green);
+}
+
+/* ── Entry toggle text ───────────────────────────────────── */
+html.light-mode .toggle-info h3 {
+    color: var(--hc-text-primary);
+}
+
+html.light-mode .toggle-info .text-muted {
+    color: var(--hc-text-muted);
+}
+
+html.light-mode .toggle-icon {
+    color: var(--hc-text-muted);
+}
+
+html.light-mode .entry-toggle:hover .toggle-info h3 {
+    color: #111;
+}
+
+/* ── Entry panel divider ─────────────────────────────────── */
+html.light-mode .entry-panel {
+    border-top-color: var(--hc-border);
+}
+
+/* ── Import progress track ───────────────────────────────── */
+html.light-mode .import-progress-track {
+    background: var(--hc-border);
+}

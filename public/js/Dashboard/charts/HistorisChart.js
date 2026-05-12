@@ -1,6 +1,8 @@
 /**
  * HistorisChart.js — Chart Historis Handler (1997-2025)
  * Path: public/js/Dashboard/charts/HistorisChart.js
+ * 
+ * ✨ UPDATE: Display daya_va dalam kVA (VA → kVA conversion, frontend-only)
  */
 'use strict';
 
@@ -8,11 +10,11 @@
 
     // ── STATE ────────────────────────────────────────────────────────
     const State = {
-        chart:       null,
-        type:        'bar',
-        lastData:    null,
+        chart:        null,
+        type:         'bar',
+        lastData:     null,
         tableVisible: false,
-        initialized: false,
+        initialized:  false,
     };
 
     const GROWTH_METRICS = ['pertumbuhan_yoy', 'growth'];
@@ -29,7 +31,6 @@
     };
 
     // ── DOM REFS ─────────────────────────────────────────────────────
-    // Dibaca lazy (saat dibutuhkan) agar aman dengan defer
     function el(id) { return document.getElementById(id); }
 
     // ── HELPERS ──────────────────────────────────────────────────────
@@ -38,13 +39,29 @@
         return GROWTH_METRICS.includes(el('histMetrik')?.value?.toLowerCase() ?? '');
     }
 
+    // ➕ NEW: Cek apakah metrik saat ini adalah daya_va
+    function isDayaVA() {
+        const metrik = el('histMetrik')?.value?.toLowerCase() ?? '';
+        return metrik === 'daya_va';
+    }
+
+    // ➕ NEW: Konversi nilai VA → kVA hanya untuk display
+    function toDisplayValue(v) {
+        if (v === null || v === undefined || isNaN(v)) return v;
+        return isDayaVA() ? v / 1000 : v;
+    }
+
     function getSatuan() {
         if (isGrowth()) return '%';
+        // ➕ OVERRIDE: tampilkan kVA jika metrik daya_va
+        if (isDayaVA()) return 'kVA';
         return el('histMetrik')?.selectedOptions?.[0]?.dataset?.satuan ?? '';
     }
 
     function getMetrikNama() {
-        return el('histMetrik')?.selectedOptions?.[0]?.text?.split('(')[0]?.trim() || 'Metrik';
+        const base = el('histMetrik')?.selectedOptions?.[0]?.text?.split('(')[0]?.trim() || 'Metrik';
+        // ➕ OVERRIDE: ganti (VA) → (kVA) di judul
+        return isDayaVA() ? base.replace(/\(VA\)$/i, '(kVA)') : base;
     }
 
     // ── KUNCI: Baca langsung dari checkbox state di DOM ──────────────
@@ -56,13 +73,20 @@
 
     function formatNilai(v, satuan) {
         if (v === null || v === undefined || isNaN(v)) return '—';
-        if (satuan === '%') return v.toFixed(2) + '%';
-        if (satuan === 'Rp' || satuan === 'Rp/KWh') return 'Rp ' + Math.abs(v).toLocaleString('id-ID');
-        const abs = Math.abs(v);
-        if (abs >= 1e9) return (v / 1e9).toFixed(2) + ' M';
-        if (abs >= 1e6) return (v / 1e6).toFixed(2) + ' Jt';
-        if (abs >= 1e3) return (v / 1e3).toFixed(1) + ' rb';
-        return v.toLocaleString('id-ID', { maximumFractionDigits: 2 });
+        
+        // ➕ APPLY konversi VA→kVA sebelum format
+        const displayVal = toDisplayValue(v);
+        const displaySat = isDayaVA() ? 'kVA' : satuan;
+
+        if (displaySat === '%') return displayVal.toFixed(2) + '%';
+        if (displaySat === 'Rp' || displaySat === 'Rp/KWh') 
+            return 'Rp ' + Math.abs(displayVal).toLocaleString('id-ID');
+        
+        const abs = Math.abs(displayVal);
+        if (abs >= 1e9) return (displayVal / 1e9).toFixed(2) + ' M';
+        if (abs >= 1e6) return (displayVal / 1e6).toFixed(2) + ' Jt';
+        if (abs >= 1e3) return (displayVal / 1e3).toFixed(1) + ' rb';
+        return displayVal.toLocaleString('id-ID', { maximumFractionDigits: 2 });
     }
 
     function hexToRgba(hex, alpha = 0.75) {
@@ -109,8 +133,6 @@
     }
 
     // ── CHIP SETUP ────────────────────────────────────────────────────
-    // Dipanggil ulang setiap saat aman karena pakai { once: false }
-    // Strategi: event delegation pada container, bukan per-chip
 
     function setupChips() {
         const container = document.querySelector('.golongan-chips');
@@ -124,14 +146,12 @@
             const cb = chip.querySelector('.cb-golongan');
             if (!cb) return;
 
-            // Toggle
             cb.checked = !cb.checked;
             chip.classList.toggle('checked', cb.checked);
 
             console.log(`🏷️ ${cb.value}: ${cb.checked ? '✓ ON' : '✗ OFF'} | Total checked:`, getSelectedGolongan().length);
         });
 
-        // Pilih Semua / Hapus Semua — pakai event delegation pada document
         el('histSelectAll')?.addEventListener('click', e => {
             e.preventDefault();
             document.querySelectorAll('.cb-golongan').forEach(cb => {
@@ -146,7 +166,6 @@
                 cb.checked = false;
                 cb.closest('.hist-gol-chip')?.classList.remove('checked');
             });
-            // Kembalikan TOTAL sebagai default
             const totalCb = document.querySelector('.cb-golongan[value="TOTAL"]');
             if (totalCb) {
                 totalCb.checked = true;
@@ -168,12 +187,12 @@
         const nLabels  = data.labels?.length || 0;
         const step     = nLabels > 80 ? Math.ceil(nLabels / 60) : 1;
 
-        // Update judul
+        // Update judul & subtitle
         if (el('chart-title'))       el('chart-title').textContent       = getMetrikNama();
         if (el('histChartSubtitle')) el('histChartSubtitle').textContent =
             `${el('histDari')?.value || '?'} – ${el('histSampai')?.value || '?'} | Satuan: ${satuan || '-'}`;
 
-        // Destroy lama
+        // Destroy chart lama
         if (State.chart) { State.chart.destroy(); State.chart = null; }
 
         try {
@@ -212,7 +231,11 @@
                                     const v = ctx.raw, lbl = ctx.dataset.label;
                                     if (v == null) return `${lbl}: —`;
                                     if (growth) return `${lbl}: ${v >= 0 ? '+' : ''}${v.toFixed(2)}%`;
-                                    return `${lbl}: ${formatNilai(v, satuan)}${satuan ? ' ' + satuan : ''}`;
+                                    
+                                    // ➕ FORMAT dengan konversi VA→kVA jika perlu
+                                    const displayVal = toDisplayValue(v);
+                                    const displaySat = isDayaVA() ? 'kVA' : satuan;
+                                    return `${lbl}: ${formatNilai(displayVal, displaySat)}${displaySat ? ' ' + displaySat : ''}`;
                                 }
                             }
                         },
@@ -226,7 +249,13 @@
                             },
                             ticks: {
                                 color: '#555', font: { size: 10 },
-                                callback: v => growth ? v.toFixed(1) + '%' : formatNilai(v, satuan),
+                                callback: v => {
+                                    if (growth) return v.toFixed(1) + '%';
+                                    // ➕ APPLY konversi untuk skala Y
+                                    const displayVal = toDisplayValue(v);
+                                    const displaySat = isDayaVA() ? 'kVA' : satuan;
+                                    return formatNilai(displayVal, displaySat);
+                                },
                             },
                             beginAtZero: !growth,
                         },
@@ -278,12 +307,16 @@
                     ${(data.datasets || []).map(d => {
                         const v = d.data?.[i];
                         let cell = '<span style="color:#333">—</span>';
+                        
                         if (v != null && !isNaN(v)) {
                             if (growth) {
                                 const c = v >= 0 ? '#00c853' : '#f44336';
                                 cell = `<span style="color:${c};font-weight:600;">${v >= 0 ? '+' : ''}${v.toFixed(2)}%</span>`;
                             } else {
-                                cell = formatNilai(v, satuan);
+                                // ➕ APPLY konversi VA→kVA untuk display di tabel
+                                const displayVal = toDisplayValue(v);
+                                const displaySat = isDayaVA() ? 'kVA' : satuan;
+                                cell = formatNilai(displayVal, displaySat);
                             }
                         }
                         return `<td style="text-align:right;padding:7px 8px;color:#888;font-variant-numeric:tabular-nums;font-size:0.82rem;">${cell}</td>`;
@@ -390,11 +423,17 @@
             const sel = el('histMetrik');
             const cur = sel?.value;
             if (sel && list?.length) {
-                sel.innerHTML = list.map(m =>
-                    `<option value="${m.kode}" data-satuan="${m.satuan}" ${m.kode === cur ? 'selected' : ''}>
-                        ${m.nama} (${m.satuan})
-                    </option>`
-                ).join('');
+                sel.innerHTML = list.map(m => {
+                    // ➕ OVERRIDE: tampilkan (kVA) untuk daya_va di dropdown
+                    const isDaya = m.kode.toLowerCase() === 'daya_va';
+                    const displaySatuan = isDaya ? 'kVA' : m.satuan;
+                    const displayName = isDaya 
+                        ? m.nama.replace(/\(VA\)$/i, '(kVA)') 
+                        : m.nama;
+                    return `<option value="${m.kode}" data-satuan="${displaySatuan}" ${m.kode === cur ? 'selected' : ''}>
+                        ${displayName} (${displaySatuan})
+                    </option>`;
+                }).join('');
             }
             updateGrowthHint();
         } catch (e) { console.warn('⚠️ updateMetrikList error:', e); }
@@ -405,7 +444,12 @@
     function bindEvents() {
         if (State.initialized) return;
 
-        el('histBtnGenerate')?.addEventListener('click', e => { e.preventDefault(); loadChart(); });
+        // ✅ Pastikan event listener untuk Generate tetap ada
+        el('histBtnGenerate')?.addEventListener('click', e => { 
+            e.preventDefault(); 
+            loadChart(); 
+        });
+        
         el('histBtnBar')?.addEventListener('click',      e => { e.preventDefault(); setChartType('bar'); });
         el('histBtnLine')?.addEventListener('click',     e => { e.preventDefault(); setChartType('line'); });
         el('histBtnTable')?.addEventListener('click',    e => { e.preventDefault(); State.tableVisible ? hideTable() : showTable(); });
@@ -436,7 +480,7 @@
         if (typeof Chart === 'undefined') { setTimeout(init, 300); return; }
         bindEvents();
         updateGrowthHint();
-        console.log('✅ HistorisChart.js ready');
+        console.log('✅ HistorisChart.js ready (VA→kVA display enabled)');
     }
 
     if (document.readyState === 'loading') {

@@ -20,8 +20,8 @@ export default class PenjualanChart {
                     ...(target.length > 0 ? [{
                         label: 'Target Rencana',
                         data: target,
-                        backgroundColor: 'rgba(255, 255, 255, 0.1)',
-                        borderColor: '#888',
+                        backgroundColor: '#ff9800',
+                        borderColor: '#ff9800',
                         borderWidth: 1,
                         fill: isAccumulated
                     }] : []),

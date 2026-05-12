@@ -3,19 +3,61 @@
    ======================================== */
 
 :root {
-    /* 🔥 Warna dengan kontras WCAG AA (min 4.5:1) */
+    /* 🔥 Dark Mode Variables (Default) */
     --navbar-bg: #161616;
     --navbar-border: #2a2a2a;
-    --text-primary: #ffffff;        /* Kontras 16:1 ✅ */
-    --text-secondary: #c0c0c0;      /* Kontras 10:1 ✅ (bukan #a0a0a0) */
-    --text-muted: #b8b8b8;          /* Kontras 8.5:1 ✅ */
-    --accent-orange: #ff9800;       /* Kontras 8.5:1 ✅ */
+    --text-primary: #ffffff;
+    --text-secondary: #c0c0c0;
+    --text-muted: #b8b8b8;
+    --accent-orange: #ff9800;
     --accent-orange-hover: #f57c00;
     --navbar-hover-bg: #252525;
     --navbar-active-bg: rgba(255, 152, 0, 0.12);
     --dropdown-bg: #1e1e1e;
     --dropdown-border: #333333;
     --dropdown-hover: #2a2a2a;
+    
+    /* 🌓 Theme Toggle Specific */
+    --toggle-bg: rgba(255, 255, 255, 0.1);
+    --toggle-border: rgba(255, 255, 255, 0.2);
+    --toggle-hover: rgba(255, 255, 255, 0.2);
+    --toggle-icon-color: #ffffff;
+    
+    /* 📌 Additional Header/Title Bar */
+    --header-secondary-bg: #1a1a1a;
+    --header-secondary-text: #ffffff;
+    --sidebar-bg: #111111;
+    --sidebar-text: #888888;
+    --sidebar-hover: #1e1e1e;
+    --sidebar-active: #ff9800;
+}
+
+/* 🌓 Light Mode Overrides */
+body.light-mode {
+    --navbar-bg: #ffffff;
+    --navbar-border: #e2e8f0;
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --navbar-hover-bg: #f1f5f9;
+    --navbar-active-bg: rgba(255, 152, 0, 0.15);
+    --dropdown-bg: #ffffff;
+    --dropdown-border: #e2e8f0;
+    --dropdown-hover: #f8fafc;
+    
+    /* Theme Toggle Light Mode */
+    --toggle-bg: rgba(0, 0, 0, 0.05);
+    --toggle-border: rgba(0, 0, 0, 0.1);
+    --toggle-hover: rgba(0, 0, 0, 0.1);
+    --toggle-icon-color: #1e293b;
+    
+    /* 📌 Additional Header/Title Bar - Light Mode */
+    --header-secondary-bg: #f8fafc;
+    --header-secondary-text: #0f172a;
+    --sidebar-bg: #1e293b;
+    --sidebar-text: #94a3b8;
+    --sidebar-hover: #334155;
+    --sidebar-active: #ff9800;
 }
 
 /* ===== Navbar Container ===== */
@@ -32,6 +74,47 @@
     z-index: 1000;
     color: var(--text-primary);
     font-family: 'Inter', 'Segoe UI', sans-serif;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* 📌 Secondary Header Bar (PLN COMMERCIAL DASHBOARD) */
+.header-secondary,
+.page-header,
+.dashboard-header,
+.title-bar {
+    background-color: var(--header-secondary-bg);
+    color: var(--header-secondary-text);
+    border-bottom: 1px solid var(--navbar-border);
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* 📌 Sidebar Styling */
+.sidebar,
+.app-sidebar,
+.nav-sidebar {
+    background-color: var(--sidebar-bg);
+    transition: background-color 0.3s ease;
+}
+
+.sidebar .nav-link,
+.sidebar .menu-item,
+.app-sidebar a {
+    color: var(--sidebar-text);
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .menu-item:hover,
+.app-sidebar a:hover {
+    background-color: var(--sidebar-hover);
+    color: var(--text-primary);
+}
+
+.sidebar .nav-link.active,
+.sidebar .menu-item.active,
+.app-sidebar a.active {
+    color: var(--sidebar-active);
+    background-color: rgba(255, 152, 0, 0.1);
 }
 
 /* ===== Nav Left - Links ===== */
@@ -55,7 +138,6 @@
     white-space: nowrap;
 }
 
-/* ✅ Hover state - kontras tetap tinggi */
 .nav-item:hover {
     background-color: var(--navbar-hover-bg);
     color: var(--accent-orange);
@@ -65,7 +147,6 @@
     color: var(--accent-orange);
 }
 
-/* ✅ Active state - jelas dan kontras */
 .nav-item.active {
     background-color: var(--navbar-active-bg);
     color: var(--accent-orange);
@@ -76,7 +157,6 @@
     color: var(--accent-orange);
 }
 
-/* ✅ Icon styling */
 .nav-item i {
     color: var(--text-primary);
     font-size: 0.95rem;
@@ -85,18 +165,81 @@
     transition: color 0.2s ease;
 }
 
-/* ✅ Span text - pastikan inherit warna parent */
 .nav-item span {
     color: inherit;
     line-height: 1;
 }
 
-/* ===== Nav Right - Profile ===== */
+/* ===== Nav Right - Theme Toggle + Profile ===== */
 .nav-right {
     display: flex;
     align-items: center;
+    gap: 4px;
 }
 
+/* 🌓 Theme Toggle Button */
+.theme-toggle-btn {
+    background: var(--toggle-bg);
+    border: 1px solid var(--toggle-border);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--toggle-icon-color);
+    font-size: 18px;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.theme-toggle-btn:hover {
+    background: var(--toggle-hover);
+    transform: rotate(15deg) scale(1.05);
+}
+
+.theme-toggle-btn:active {
+    transform: scale(0.95);
+}
+
+.theme-toggle-btn:focus-visible {
+    outline: 2px solid var(--accent-orange);
+    outline-offset: 2px;
+}
+
+/* Icon positioning - Dark mode default (show moon) */
+.theme-icon-moon,
+.theme-icon-sun {
+    position: absolute;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    color: var(--toggle-icon-color);
+}
+
+.theme-icon-moon {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+}
+
+.theme-icon-sun {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.5);
+}
+
+/* Light mode - swap icons */
+body.light-mode .theme-icon-moon {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+}
+
+body.light-mode .theme-icon-sun {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+}
+
+/* ===== Profile Dropdown ===== */
 .profile-dropdown {
     position: relative;
 }
@@ -122,7 +265,6 @@
     outline-offset: 2px;
 }
 
-/* ✅ Avatar */
 .nav-avatar {
     display: block;
     width: 32px;
@@ -133,7 +275,10 @@
     background-color: #2a2a2a;
 }
 
-/* ✅ Username - HARUS kontras tinggi */
+body.light-mode .nav-avatar {
+    background-color: #e2e8f0;
+}
+
 .nav-username {
     color: var(--text-primary);
     font-size: 0.9rem;
@@ -144,7 +289,6 @@
     white-space: nowrap;
 }
 
-/* ✅ Caret icon */
 .profile-btn .fa-caret-down {
     color: var(--text-secondary);
     font-size: 0.7rem;
@@ -173,7 +317,10 @@
     z-index: 1001;
 }
 
-/* Show dropdown */
+body.light-mode .dropdown-content {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
 .profile-dropdown:hover .dropdown-content,
 .profile-dropdown:focus-within .dropdown-content {
     opacity: 1;
@@ -181,7 +328,6 @@
     transform: translateY(0);
 }
 
-/* ✅ Dropdown items */
 .dropdown-content a,
 .dropdown-content button {
     display: flex;
@@ -217,7 +363,6 @@
     color: var(--accent-orange);
 }
 
-/* ✅ Divider */
 .dropdown-divider {
     margin: 6px 0;
     border: none;
@@ -231,21 +376,29 @@
     }
     
     .nav-username {
-        display: none; /* Sembunyikan username di mobile */
+        display: none;
     }
     
     .nav-item span {
-        display: none; /* Hanya icon di mobile */
+        display: none;
     }
     
     .nav-item {
         padding: 10px;
     }
+    
+    .theme-toggle-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+        margin-right: 4px;
+    }
 }
 
-/* ===== Focus Visible untuk Keyboard Navigation ===== */
+/* ===== Focus Visible for Keyboard Navigation ===== */
 .nav-item:focus-visible,
 .profile-btn:focus-visible,
+.theme-toggle-btn:focus-visible,
 .dropdown-content a:focus-visible,
 .dropdown-content button:focus-visible {
     outline: 2px solid var(--accent-orange);
@@ -254,9 +407,15 @@
 
 /* ===== Reduced Motion ===== */
 @media (prefers-reduced-motion: reduce) {
-    .nav-item,
-    .profile-btn,
-    .dropdown-content {
-        transition: none !important;
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .theme-toggle-btn:hover {
+        transform: none;
     }
 }

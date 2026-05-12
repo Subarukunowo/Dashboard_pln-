@@ -29,7 +29,7 @@
                     <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
                     <th style="padding:10px; text-align:center; color:#ff9800;">Rencana</th>
                     <th style="padding:10px; text-align:center; color:var(--accent-green);">Realisasi</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Δ</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Selisih</th>
                 </tr>
             </thead>
             <tbody id="kvaSideTable"></tbody>
@@ -37,7 +37,7 @@
     </div>
 
     {{-- Chart Delta --}}
-    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">Delta Penambahan KVA</div>
+    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">Selisih Penambahan KVA</div>
     <div class="chart-wrapper" style="width:100%; height:250px; margin-bottom:20px;">
         <canvas id="chartKvaDelta"></canvas>
     </div>
@@ -48,7 +48,7 @@
             <thead style="position:sticky; top:0; background:#252525; z-index:1;">
                 <tr style="font-size:0.72rem;">
                     <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Delta (kVA)</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Selisih (kVA)</th>
                 </tr>
             </thead>
             <tbody id="tabelKvaDelta"></tbody>
@@ -127,7 +127,7 @@
     </div>
 
     {{-- Chart Delta Perbandingan --}}
-    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">Delta Perbandingan KVA</div>
+    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">Selisih Perbandingan KVA</div>
     <div class="chart-wrapper" style="width:100%; height:250px; margin-bottom:20px;">
         <canvas id="chartKvaDeltaPerbandingan"></canvas>
     </div>
@@ -138,7 +138,7 @@
             <thead style="position:sticky; top:0; background:#252525; z-index:1;">
                 <tr style="font-size:0.72rem;">
                     <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Delta (kVA)</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Selisih (kVA)</th>
                 </tr>
             </thead>
             <tbody id="tabelKvaDeltaPerbandingan"></tbody>
@@ -184,8 +184,8 @@
                     <th style="padding:10px; text-align:center; color:#2196f3;">Realisasi 2024</th>
                     <th style="padding:10px; text-align:center; color:#ff9800;">Target 2025</th>
                     <th style="padding:10px; text-align:center; color:var(--accent-green);">Realisasi 2025</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Delta</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">% Delta</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Selisih</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">% Selisih</th>
                     <th style="padding:10px; text-align:center; color:#aaa;">% Capai Target</th>
                     <th style="padding:10px; text-align:center; color:#aaa;">% Capai Real</th>
                 </tr>

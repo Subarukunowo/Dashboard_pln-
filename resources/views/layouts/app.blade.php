@@ -27,28 +27,71 @@
     @stack('styles')
     @yield('head')
 
-    {{-- Anti-flash: apply saved theme & font before render --}}
+    {{-- 🌓 Anti-Flash: Apply theme BEFORE render to prevent FOUC --}}
     <script>
     (function () {
-        var t = localStorage.getItem('pln_theme') || 'dark';
-        if (t === 'light') document.documentElement.classList.add('lm-pre');
+        var theme = localStorage.getItem('pln_theme') || 'dark';
 
-        var A = { orange:'#ff9800', green:'#00ff88', blue:'#3b82f6', cyan:'#06b6d4', violet:'#8b5cf6', rose:'#f43f5e' };
-        var a = localStorage.getItem('pln_accent') || 'orange';
-        document.documentElement.style.setProperty('--accent-orange', A[a] || A.orange);
+        // ⭐ Apply BOTH html class (anti-flash) dan body class (untuk CSS selector)
+        if (theme === 'light') {
+            document.documentElement.classList.add('light-mode-pre');
+            // body belum tersedia di <head>, pakai DOMContentLoaded
+            document.addEventListener('DOMContentLoaded', function () {
+                document.body.classList.add('light-mode');
+            });
+        }
 
-        var f = localStorage.getItem('pln_font');
-        if (f) document.documentElement.style.fontSize = f + 'px';
+        // Apply accent color
+        var accents = {
+            orange:'#ff9800', green:'#00ff88', blue:'#3b82f6',
+            cyan:'#06b6d4', violet:'#8b5cf6', rose:'#f43f5e'
+        };
+        var accent = localStorage.getItem('pln_accent') || 'orange';
+        document.documentElement.style.setProperty('--accent-orange', accents[accent] || accents.orange);
 
+        // Apply custom font size if saved
+        var fontSize = localStorage.getItem('pln_font');
+        if (fontSize) {
+            document.documentElement.style.fontSize = fontSize + 'px';
+        }
+
+        // Disable animations if user prefers reduced motion
         if (localStorage.getItem('pln_anim') === '0') {
-            var s = document.createElement('style');
-            s.textContent = '*,*::before,*::after{animation:none!important;transition:none!important}';
-            document.head.appendChild(s);
+            var style = document.createElement('style');
+            style.textContent = '*,*::before,*::after{animation:none!important;transition:none!important}';
+            document.head.appendChild(style);
         }
     })();
     </script>
+
+    {{-- ⭐ Pre-render styles for anti-flash — WARNA SIDEBAR HARUS SESUAI CSS --}}
     <style>
-        html.lm-pre body { background: #f0f2f5 !important; }
+        /* Body background saat light mode pre-render */
+        html.light-mode-pre body {
+            background: #f0f2f5 !important;
+            color: #1e293b !important;
+        }
+
+        /* Navbar — putih di light mode */
+        html.light-mode-pre .navbar {
+            background: #ffffff !important;
+            border-color: #e2e8f0 !important;
+            color: #1e293b !important;
+        }
+
+        /* ⭐ SIDEBAR — harus #1e293b (slate-800), BUKAN putih */
+        html.light-mode-pre .dash-sidebar {
+            background: #1e293b !important;
+            border-color: #334155 !important;
+        }
+
+        /* Header dashboard */
+        html.light-mode-pre .dash-header {
+            background: #ffffff !important;
+            border-color: #e2e8f0 !important;
+            color: #0f172a !important;
+        }
+
         .visually-hidden {
             position: absolute; width: 1px; height: 1px; padding: 0;
             margin: -1px; overflow: hidden; clip: rect(0,0,0,0);
@@ -77,6 +120,16 @@
         </div>
 
         <div class="nav-right">
+            {{-- 🌓 Theme Toggle Button --}}
+            <button id="theme-toggle"
+                    class="theme-toggle-btn"
+                    aria-label="Ganti tema gelap/terang"
+                    title="Toggle Dark/Light Mode (Ctrl+Shift+L)"
+                    type="button">
+                <i class="fa-solid fa-moon theme-icon-moon" aria-hidden="true"></i>
+                <i class="fa-solid fa-sun theme-icon-sun" aria-hidden="true"></i>
+            </button>
+
             <div class="profile-dropdown">
                 <button class="profile-btn"
                         aria-label="Menu profil {{ auth()->user()->name }}"
@@ -115,7 +168,7 @@
 
     {{-- Chatbot hanya di dashboard --}}
     @if(!Request::is('historis*') && !Request::is('profile*') && !Request::is('settings*'))
-        @include('partials.widgets.Chatbot')
+        @include('partials.widgets.chatbot')
     @endif
 
     {{-- Scripts --}}
@@ -125,15 +178,59 @@
     @yield('scripts')
     @stack('scripts')
 
-    {{-- Apply theme on DOMContentLoaded (light mode body class) --}}
+    {{-- 🌓 Theme Toggle + UI Scripts --}}
     <script>
     document.addEventListener('DOMContentLoaded', function () {
-        // Apply light-mode class to body
-        var t = localStorage.getItem('pln_theme') || 'dark';
-        document.body.classList.toggle('light-mode', t === 'light');
-        document.documentElement.classList.remove('lm-pre');
+        // ========== 🌓 THEME TOGGLE FUNCTIONALITY ==========
+        const themeToggle = document.getElementById('theme-toggle');
+        const htmlEl      = document.documentElement;
 
-        // Navbar dropdown toggle
+        function applyTheme(theme) {
+            if (theme === 'light') {
+                document.body.classList.add('light-mode');
+                htmlEl.classList.add('light-mode-pre');
+                localStorage.setItem('pln_theme', 'light');
+            } else {
+                document.body.classList.remove('light-mode');
+                htmlEl.classList.remove('light-mode-pre');
+                localStorage.setItem('pln_theme', 'dark');
+            }
+            // ⭐ TIDAK ada setTimeout — light-mode-pre tidak pernah dihapus saat light mode aktif
+        }
+
+        // Initialize theme on load
+        const savedTheme = localStorage.getItem('pln_theme') || 'dark';
+        applyTheme(savedTheme);
+
+        // Theme toggle click handler
+        if (themeToggle) {
+            themeToggle.addEventListener('click', function () {
+                const currentTheme = localStorage.getItem('pln_theme') || 'dark';
+                applyTheme(currentTheme === 'light' ? 'dark' : 'light');
+
+                // Rotation animation feedback
+                this.style.transition = 'transform 0.4s cubic-bezier(0.68,-0.55,0.265,1.55)';
+                this.style.transform  = 'rotate(360deg)';
+                setTimeout(() => { this.style.transform = ''; }, 400);
+            });
+        }
+
+        // Keyboard shortcut: Ctrl+Shift+L
+        document.addEventListener('keydown', function (e) {
+            if ((e.ctrlKey || e.metaKey) && e.shiftKey && e.key.toLowerCase() === 'l') {
+                e.preventDefault();
+                if (themeToggle) themeToggle.click();
+            }
+        });
+
+        // System theme change (only if no user preference saved)
+        if (!localStorage.getItem('pln_theme')) {
+            window.matchMedia('(prefers-color-scheme: dark)').addEventListener('change', (e) => {
+                applyTheme(e.matches ? 'dark' : 'light');
+            });
+        }
+
+        // ========== 👤 NAVBAR DROPDOWN ==========
         const profileBtn  = document.querySelector('.profile-btn');
         const dropContent = document.querySelector('.dropdown-content');
 
@@ -154,7 +251,7 @@
             });
         }
 
-        // Toast notifications from session
+        // ========== 🔔 TOAST NOTIFICATIONS ==========
         const Toast = Swal.mixin({
             toast: true, position: 'top-end', showConfirmButton: false,
             timer: 3000, timerProgressBar: true,

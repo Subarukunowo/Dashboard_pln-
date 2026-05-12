@@ -15,7 +15,7 @@
     <link rel="apple-touch-icon" sizes="180x180" href="{{ asset('assets/favicons/apple-touch-icon.png') }}?v={{ time() }}" />
     <link rel="manifest" href="{{ asset('assets/favicons/site.webmanifest') }}?v={{ time() }}" />
     
-    <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
+    <link rel="stylesheet" href="{{ asset('css/pages/admin.css') }}">
 @endpush
 
 @section('content')

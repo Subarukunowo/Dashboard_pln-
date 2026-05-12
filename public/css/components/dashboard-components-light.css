@@ -1,0 +1,91 @@
+/* ============================================================
+   LIGHT MODE OVERRIDES — append ini ke paling bawah file
+   dashboard-components.css. Jangan ubah apapun di atasnya.
+   Semua selector di sini hanya aktif saat html.light-mode ada.
+   ============================================================ */
+
+html.light-mode {
+    /* Timpa design tokens lokal file ini */
+    --bg-dark:       #f0f2f5;
+    --card-bg:       #ffffff;
+    --text-main:     #1a1f35;
+    --text-muted:    #5a6380;
+    --accent-orange: #e07b00;   /* sedikit lebih gelap agar kontras di putih */
+    --accent-green:  #059669;
+}
+
+/* ── Body ───────────────────────────────────────────────── */
+html.light-mode body {
+    background: var(--bg-dark);
+    color:      var(--text-main);
+}
+
+/* ── Card ───────────────────────────────────────────────── */
+html.light-mode .card {
+    background:    var(--card-bg);
+    border-color:  rgba(0, 0, 0, 0.08);
+    box-shadow:    0 2px 16px rgba(0, 0, 0, 0.07);
+}
+
+html.light-mode .card-title {
+    color: var(--text-muted);
+}
+
+/* ── Table ──────────────────────────────────────────────── */
+html.light-mode th {
+    background:    #f4f6fa;
+    color:         var(--text-muted);
+    border-bottom: 1px solid rgba(0, 0, 0, 0.08);
+}
+
+html.light-mode td {
+    border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+    color:         #374151;
+}
+
+html.light-mode td:first-child {
+    color: var(--text-muted);
+}
+
+html.light-mode tr:hover {
+    background: #f7f9fc;
+}
+
+/* ── Select / Filter ────────────────────────────────────── */
+html.light-mode select {
+    background:   #ffffff;
+    color:        var(--text-main);
+    border-color: rgba(0, 0, 0, 0.15);
+}
+
+html.light-mode select:focus {
+    border-color: var(--accent-orange);
+}
+
+/* ── Chart skeleton shimmer ─────────────────────────────── */
+html.light-mode .chart-wrapper,
+html.light-mode .chart-container {
+    background: linear-gradient(
+        90deg,
+        #e8eaf0 25%,
+        #f4f6fa 50%,
+        #e8eaf0 75%
+    );
+    background-size: 200% 100%;
+}
+
+html.light-mode .chart-wrapper.ready,
+html.light-mode .chart-container.ready {
+    background: var(--card-bg);
+}
+
+/* ── Scrollbar ──────────────────────────────────────────── */
+html.light-mode .custom-scroll {
+    scrollbar-color: var(--accent-orange) #e5e8f0;
+}
+
+html.light-mode .custom-scroll::-webkit-scrollbar-track  { background: #e5e8f0; }
+html.light-mode .custom-scroll::-webkit-scrollbar-thumb  {
+    background: linear-gradient(180deg, var(--accent-orange), var(--accent-green));
+}
+html.light-mode .custom-scroll::-webkit-scrollbar-corner { background: #e5e8f0; }

@@ -64,10 +64,10 @@
             </select>
             <select id="filterBulanPenjualan" aria-label="Filter bulan penjualan" style="font-size:0.7rem; padding:4px;">
                 <option value="all">Semua Bulan</option>
-                <option value="0">Jan</option><option value="1">Feb</option><option value="2">Mar</option>
-                <option value="3">Apr</option><option value="4">Mei</option><option value="5">Jun</option>
-                <option value="6">Jul</option><option value="7">Agu</option><option value="8">Sep</option>
-                <option value="9">Okt</option><option value="10">Nov</option><option value="11">Des</option>
+                <option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option>
+                <option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option>
+                <option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option>
+                <option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option>
             </select>
             <select id="filterViewPenjualan" aria-label="Tampilan data penjualan" style="font-size:0.7rem; padding:4px;">
                 <option value="bulanan">Bulanan</option>
@@ -85,7 +85,7 @@
                     <th style="padding:10px; text-align:center; color:#888;">Bln</th>
                     <th style="padding:10px; text-align:center; color:var(--accent-orange);">Target</th>
                     <th style="padding:10px; text-align:center; color:var(--accent-green);">Real</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Δ Delta</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">Selisih</th>
                 </tr>
             </thead>
             <tbody id="penjualanTableBody"></tbody>

@@ -1,27 +1,34 @@
 const LABELS = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"]
 
+const BULAN_PENUH = {
+    "Jan": "Januari",  "Feb": "Februari", "Mar": "Maret",
+    "Apr": "April",    "Mei": "Mei",       "Jun": "Juni",
+    "Jul": "Juli",     "Agu": "Agustus",   "Sep": "September",
+    "Okt": "Oktober",  "Nov": "November",  "Des": "Desember",
+}
+
 export default class BabinModule {
     constructor(chart) { this.chart = chart }
 
     render(data, state) {
         if (!data) return
-        const akum    = state.view === "akumulasi"
-        const is2024  = state.tahun === "2024"
+        const akum     = state.view === "akumulasi"
+        const is2024   = state.tahun === "2024"
         const sliceIdx = (state.bulan && state.bulan !== "all")
             ? parseInt(state.bulan) + 1 : 12
-        const labels  = LABELS.slice(0, sliceIdx)
+        const labels   = LABELS.slice(0, sliceIdx)
 
         const src = state.section === "babin" ? {
-            real2024:    data.babinReal2024,
-            target2025:  data.babinTarget2025,
-            akum2025:    data.babinAkum2025,
+            real2024:   data.babinReal2024,
+            target2025: data.babinTarget2025,
+            akum2025:   data.babinAkum2025,
         } : {
-            real2024:    data.semReal2024,
-            target2025:  data.semTarget2025,
-            akum2025:    data.semAkum2025,
+            real2024:   data.semReal2024,
+            target2025: data.semTarget2025,
+            akum2025:   data.semAkum2025,
         }
 
-        const rows = (akum ? src.akum2025 : src.target2025).slice(0, sliceIdx)
+        const rows     = (akum ? src.akum2025 : src.target2025).slice(0, sliceIdx)
         const real2024 = src.real2024.slice(0, sliceIdx)
 
         this.chart.make("chartBabinBar", "bar", labels, [
@@ -30,12 +37,11 @@ export default class BabinModule {
             { label: "Realisasi 2025", data: rows.map(d => d.realisasi),     backgroundColor: "#00ff88" },
         ], v => (v / 1_000_000).toFixed(1) + " jt kWh")
 
-        const delta = rows.map((d, i) => d.realisasi - d.target)
+        const delta = rows.map(d => d.realisasi - d.target)
         this.chart.make("chartBabinDelta", "bar", labels, [
             { label: "Delta", data: delta, backgroundColor: delta.map(v => v >= 0 ? "#00ff88" : "#f44336") }
         ], v => (v / 1_000_000).toFixed(1) + " jt kWh")
 
-        // pie — pakai tahun yang dipilih
         const allJualSliced = data.allJualData.slice(0, sliceIdx)
         const latest = allJualSliced.filter(d =>
             is2024 ? d.kwhBatam2024 > 0 : d.kwhBatam2025 > 0
@@ -51,58 +57,60 @@ export default class BabinModule {
         }
 
         this.chart.make("chartAllJualBar", "bar", allJualSliced.map(d => d.bulan), [
-            { label: "KWH Batam 2024",    data: allJualSliced.map(d => d.kwhBatam2024),      backgroundColor: "#2196f3" },
-            { label: "KWH Batam 2025",    data: allJualSliced.map(d => d.kwhBatam2025),      backgroundColor: "#00ff88" },
-            { label: "Batam-Bintan 2024", data: allJualSliced.map(d => d.batamBintan2024),   backgroundColor: "#555" },
-            { label: "Batam-Bintan 2025", data: allJualSliced.map(d => d.batamBintan2025),   backgroundColor: "#ff9800" },
+            { label: "KWH Batam 2024",    data: allJualSliced.map(d => d.kwhBatam2024),    backgroundColor: "#2196f3" },
+            { label: "KWH Batam 2025",    data: allJualSliced.map(d => d.kwhBatam2025),    backgroundColor: "#00ff88" },
+            { label: "Batam-Bintan 2024", data: allJualSliced.map(d => d.batamBintan2024), backgroundColor: "#555" },
+            { label: "Batam-Bintan 2025", data: allJualSliced.map(d => d.batamBintan2025), backgroundColor: "#ff9800" },
         ], v => (v / 1_000_000).toFixed(1) + " jt kWh")
 
-        // [UPDATED] Panggil fungsi dengan nama baru
         this.renderTable(labels, rows, real2024)
         this.renderAllJualTable(allJualSliced, is2024)
     }
 
     initFilters(state, onChange) {
-        document.getElementById("filterViewBabin")?.addEventListener("change",    e => { state.view    = e.target.value; onChange() })
         document.getElementById("filterSectionBabin")?.addEventListener("change", e => { state.section = e.target.value; onChange() })
         document.getElementById("filterTahunBabin")?.addEventListener("change",   e => { state.tahun   = e.target.value; onChange() })
-        document.getElementById("filterBulanBabin")?.addEventListener("change",   e => { state.bulan   = e.target.value; onChange() })
+        document.getElementById("filterViewBabin")?.addEventListener("change",    e => { state.view    = e.target.value; onChange() })
+
+        const filterBulan = document.getElementById("filterBulanBabin")
+        if (filterBulan) {
+            filterBulan.innerHTML =
+                `<option value="all">Semua Bulan</option>` +
+                LABELS.map((lbl, i) => `<option value="${i}">${BULAN_PENUH[lbl]}</option>`).join("")
+            filterBulan.addEventListener("change", e => { state.bulan = e.target.value; onChange() })
+        }
     }
 
-    // [RENAMED] _renderSideTable -> renderTable
-    // Tambahan: text-align:center untuk isi tabel
     renderTable(labels, rows, real2024) {
         const tbody = document.getElementById("babinSideTable")
         if (!tbody) return
         const fmt = v => (v / 1_000_000).toFixed(2)
-        
+
         tbody.innerHTML = labels.map((bln, i) => {
             const delta = (rows[i]?.realisasi || 0) - (rows[i]?.target || 0)
             const color = delta >= 0 ? 'var(--accent-green)' : '#f44336'
             return `<tr>
-                <td style="color:#888; font-size:0.75rem; text-align:center;">${bln}</td>
-                <td style="text-align:center; color:#2196f3;">${fmt(real2024[i]?.realisasi || 0)}</td>
-                <td style="text-align:center; color:#ff9800;">${fmt(rows[i]?.target || 0)}</td>
-                <td style="text-align:center; color:var(--accent-green);">${fmt(rows[i]?.realisasi || 0)}</td>
-                <td style="text-align:center; color:${color}; font-weight:600;">${delta >= 0 ? '+' : ''}${fmt(delta)}</td>
+                <td>${BULAN_PENUH[bln] ?? bln}</td>
+                <td>${fmt(real2024[i]?.realisasi || 0)}</td>
+                <td>${fmt(rows[i]?.target || 0)}</td>
+                <td>${fmt(rows[i]?.realisasi || 0)}</td>
+                <td style="color:${color};">${delta >= 0 ? '+' : ''}${fmt(delta)}</td>
             </tr>`
         }).join("")
     }
 
-    // [RENAMED] _renderAllJualSideTable -> renderAllJualTable
-    // Tambahan: text-align:center untuk isi tabel
     renderAllJualTable(d, is2024) {
         const tbody = document.getElementById("allJualSideTable")
         if (!tbody) return
         const fmt = v => (v / 1_000_000).toFixed(2)
-        
+
         tbody.innerHTML = d.map(r => {
-            const kwh  = is2024 ? r.kwhBatam2024      : r.kwhBatam2025
-            const bb   = is2024 ? r.batamBintan2024    : r.batamBintan2025
+            const kwh = is2024 ? r.kwhBatam2024   : r.kwhBatam2025
+            const bb  = is2024 ? r.batamBintan2024 : r.batamBintan2025
             return `<tr>
-                <td style="color:#888; font-size:0.75rem; text-align:center;">${r.bulan}</td>
-                <td style="text-align:center; color:#2196f3;">${fmt(kwh)}</td>
-                <td style="text-align:center; color:#ff9800;">${fmt(bb)}</td>
+                <td>${BULAN_PENUH[r.bulan] ?? r.bulan}</td>
+                <td>${fmt(kwh)}</td>
+                <td>${fmt(bb)}</td>
             </tr>`
         }).join("")
     }

@@ -4,35 +4,13 @@ import BppChart from "../charts/BppChart.js"
 export default class BppModule {
     constructor(sheetsService, labels) {
         this.service = new BppService(sheetsService)
-        this.chart = new BppChart("bppComparisonChart")
-        this.data = null
-        this.labels = labels
+        this.chart   = new BppChart("bppComparisonChart")
+        this.data    = null
+        this.labels  = labels
     }
 
     async load() {
         this.data = await this.service.getAllBpp()
-    }
-
-    // Method baru: Handle rendering tabel secara mandiri
-    renderTable(konsolidasi, internal, labels) {
-        const tableBody = document.getElementById('bppTableBody')
-        if (!tableBody) return
-
-        tableBody.innerHTML = labels.map((label, i) => {
-            const delta      = konsolidasi[i] - internal[i]
-            const deltaColor = delta >= 0 ? '#f44336' : '#00ff88'
-            const fmt        = v => v ? v.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 }) : '—'
-            
-            // Layout centered sesuai permintaan sebelumnya
-            return `<tr class="bpp-row">
-                <td class="bpp-bulan" style="text-align:center;">${label}</td>
-                <td class="bpp-val kons" style="text-align:center;">${fmt(konsolidasi[i])}</td>
-                <td class="bpp-val intl" style="text-align:center;">${internal[i] ? fmt(internal[i]) : '—'}</td>
-                <td class="bpp-val" style="text-align:center; color:${deltaColor}">
-                    ${delta !== 0 ? (delta > 0 ? '+' : '') + fmt(delta) : '—'}
-                </td>
-            </tr>`
-        }).join('')
     }
 
     render(state) {
@@ -40,24 +18,51 @@ export default class BppModule {
         const data = this.data[state.type]
         if (!data) return
 
-        let kons = [...data.konsolidasi]
-        let intl = [...data.internal]
+        let kons          = [...data.konsolidasi]
+        let intl          = [...data.internal]
         let displayLabels = [...this.labels]
-        let mode = "trend"
+        let mode          = "trend"
 
         if (state.month !== "all") {
-            const index = parseInt(state.month)
-            kons = [kons[index]]
-            intl = [intl[index]]
+            const index   = parseInt(state.month)
+            kons          = [kons[index]]
+            intl          = [intl[index]]
             displayLabels = [this.labels[index]]
-            mode = "single"
+            mode          = "single"
         }
 
-        // 1. Render tabel dulu (sekarang di-handle module)
         this.renderTable(kons, intl, displayLabels)
-        
-        // 2. Render chart
         this.chart.render(kons, intl, displayLabels, mode)
+    }
+
+    renderTable(konsolidasi, internal, labels) {
+        const tableBody = document.getElementById('bppTableBody')
+        if (!tableBody) return
+
+        const bulanPenuh = {
+            'Jan': 'Januari',  'Feb': 'Februari', 'Mar': 'Maret',
+            'Apr': 'April',    'Mei': 'Mei',       'Jun': 'Juni',
+            'Jul': 'Juli',     'Agu': 'Agustus',   'Sep': 'September',
+            'Okt': 'Oktober',  'Nov': 'November',  'Des': 'Desember',
+        }
+
+        const fmt = v => v
+            ? v.toLocaleString('id-ID', { minimumFractionDigits: 2, maximumFractionDigits: 2 })
+            : '—'
+
+        tableBody.innerHTML = labels.map((label, i) => {
+            const hasInternal = !!internal[i]
+            const delta       = hasInternal ? (konsolidasi[i] - internal[i]) : null
+           const deltaColor = delta === null ? '#888' : delta > 0 ? '#00ff88' : '#f44336'
+            const deltaText   = delta === null ? '—' : (delta > 0 ? '+' : '') + fmt(delta)
+
+            return `<tr>
+                <td>${bulanPenuh[label] ?? label}</td>
+                <td>${fmt(konsolidasi[i])}</td>
+                <td>${hasInternal ? fmt(internal[i]) : '—'}</td>
+                <td style="color:${deltaColor};">${deltaText}</td>
+            </tr>`
+        }).join('')
     }
 
     initFilters(state, onChange) {
