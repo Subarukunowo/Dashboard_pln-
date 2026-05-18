@@ -3,23 +3,29 @@
 @section('title', 'PLN Commercial Dashboard')
 
 @push('styles')
-    {{-- Favicon --}}
+    {{-- Favicon (tetap pakai asset() — tidak di-bundle Vite) --}}
     <link rel="icon"             type="image/png"     href="{{ asset('assets/favicons/favicon-96x96.png') }}?v={{ time() }}" sizes="96x96">
     <link rel="icon"             type="image/svg+xml" href="{{ asset('assets/favicons/favicon.svg') }}?v={{ time() }}">
     <link rel="shortcut icon"                         href="{{ asset('assets/favicons/favicon.ico') }}?v={{ time() }}">
     <link rel="apple-touch-icon" sizes="180x180"      href="{{ asset('assets/favicons/apple-touch-icon.png') }}?v={{ time() }}">
     <link rel="manifest"                              href="{{ asset('assets/favicons/site.webmanifest') }}?v={{ time() }}">
 
-    {{-- Dashboard CSS --}}
-    <link rel="stylesheet" href="{{ asset('css/components/dashboard-components.css') }}">
-    <link rel="stylesheet" href="{{ asset('css/pages/dashboard.css') }}">
+    {{-- Dashboard CSS — di-serve Vite (hash otomatis, cache-busting gratis) --}}
+    @vite([
+        'resources/css/components/dashboard-components.css',
+        'resources/css/pages/dashboard.css',
+    ])
 
-    {{-- Non-critical (async) --}}
-    <link rel="stylesheet" href="{{ asset('css/components/chatbot.css') }}" media="print" onload="this.media='all'">
-    <link rel="stylesheet" href="{{ asset('css/layouts/sidebar.css') }}" media="print" onload="this.media='all'">
+    {{-- Non-critical CSS (async) — tetap pakai Vite tapi di-load async --}}
+    <link rel="stylesheet"
+          href="{{ Vite::asset('resources/css/components/chatbot.css') }}"
+          media="print" onload="this.media='all'">
+    <link rel="stylesheet"
+          href="{{ Vite::asset('resources/css/layouts/sidebar.css') }}"
+          media="print" onload="this.media='all'">
     <noscript>
-        <link rel="stylesheet" href="{{ asset('css/components/chatbot.css') }}">
-        <link rel="stylesheet" href="{{ asset('css/layouts/sidebar.css') }}">
+        <link rel="stylesheet" href="{{ Vite::asset('resources/css/components/chatbot.css') }}">
+        <link rel="stylesheet" href="{{ Vite::asset('resources/css/layouts/sidebar.css') }}">
     </noscript>
 @endpush
 
@@ -83,8 +89,9 @@
 @endsection
 
 @section('scripts')
-    <link rel="modulepreload" href="{{ asset('js/Dashboard/charts/BaseChart.js') }}">
-    <link rel="modulepreload" href="{{ asset('js/Dashboard/services/SheetsService.js') }}">
-    <script type="module" src="{{ asset('js/Dashboard/pages/dashboard.js') }}"></script>
+    {{-- Vite bundle dashboard — semua module/services/charts masuk 1 file --}}
+    @vite('resources/js/Dashboard/pages/dashboard.js')
+
+    {{-- Sidebar tetap terpisah (dipakai di halaman lain juga) --}}
     <script src="{{ asset('js/sidebar.js') }}" defer></script>
 @endsection

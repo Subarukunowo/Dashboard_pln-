@@ -5,33 +5,33 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Login — PLN Dashboard</title>
     <link rel="stylesheet" href="{{ asset('css/pages/login.css') }}">
-    <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
 </head>
 <body>
-
-<div class="blob blob-1"></div>
-<div class="blob blob-2"></div>
 
 <div class="wrapper">
     <div class="left-panel">
         <div class="brand">
-            <div class="brand-icon">P</div>
+            <img src="{{ asset('assets/favicons/favicon-96x96.png') }}"
+                 alt="PLN Logo"
+                 class="brand-icon">
             <div>
                 <div class="brand-name">PLN Batam</div>
                 <div class="brand-sub">Commercial Division</div>
             </div>
         </div>
+
         <div class="left-content">
-            <h2>Dashboard<br>Monitoring<br><span>& Analisis</span></h2>
-            <p>Pantau kinerja penjualan, pendapatan,<br>dan RPKWH secara real-time.</p>
+            <h2>Dashboard<br>Monitoring<br><em>&amp; Analisis</em></h2>
+            <p>Pantau kinerja penjualan, pendapatan, dan RPKWH secara real-time.</p>
         </div>
+
         <div class="stats">
             <div class="stat">
                 <div class="stat-val">47</div>
                 <div class="stat-lbl">Sheet Aktif</div>
             </div>
             <div class="stat">
-                <div class="stat-val">2025</div>
+                <div class="stat-val">{{ now()->year }}</div>
                 <div class="stat-lbl">Tahun Data</div>
             </div>
             <div class="stat">
@@ -48,8 +48,8 @@
         @if(session('error'))
             <div class="alert-error">
                 <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
-                    <circle cx="7" cy="7" r="6" stroke="#f44336" stroke-width="1.5"/>
-                    <path d="M7 4v3M7 9.5v.5" stroke="#f44336" stroke-width="1.5" stroke-linecap="round"/>
+                    <circle cx="7" cy="7" r="6" stroke="#f87171" stroke-width="1.5"/>
+                    <path d="M7 4v3M7 9.5v.5" stroke="#f87171" stroke-width="1.5" stroke-linecap="round"/>
                 </svg>
                 {{ session('error') }}
             </div>
@@ -72,7 +72,7 @@
         </a>
 
         <div class="notice">
-            <span>⚠ Akses terbatas.</span> Hanya akun yang terdaftar dan diizinkan yang dapat mengakses dashboard ini.
+            <strong>⚠ Akses terbatas.</strong> Hanya akun yang terdaftar dan diizinkan yang dapat mengakses dashboard ini.
         </div>
 
         <div class="footer">© PLN Batam · REVAS Division</div>

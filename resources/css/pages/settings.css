@@ -1,0 +1,272 @@
+/* ============================================================
+   SETTINGS PAGE — PLN Commercial Dashboard
+   public/css/pages/settings.css
+   Dark default | Light mode via body.light-mode
+   ============================================================ */
+
+/* ── Base tokens ── */
+:root {
+    --bg-dark:       #0f0f0f;
+    --card-bg:       #1a1a1a;
+    --surface-2:     #222222;
+    --accent-orange: #ff9800;
+    --accent-green:  #00e676;
+    --text-main:     #f0f0f0;
+    --text-muted:    #808080;
+    --text-faint:    #555555;
+    --border:        rgba(255,255,255,0.06);
+    --input-bg:      #111111;
+    --radius:        12px;
+    --radius-sm:     8px;
+    --radius-xs:     6px;
+    --shadow:        0 2px 16px rgba(0,0,0,0.4);
+}
+
+/* ── Light mode ── */
+body.light-mode {
+    --bg-dark:    #f0f2f5;
+    --card-bg:    #ffffff;
+    --surface-2:  #f5f5f5;
+    --text-main:  #111111;
+    --text-muted: #666666;
+    --text-faint: #999999;
+    --border:     rgba(0,0,0,0.08);
+    --input-bg:   #f5f5f5;
+    --shadow:     0 2px 12px rgba(0,0,0,0.06);
+}
+body.light-mode .app-main { background: var(--bg-dark) !important; }
+body.light-mode .navbar {
+    background: #ffffff !important;
+    border-bottom: 1px solid rgba(0,0,0,.07) !important;
+    box-shadow: 0 2px 10px rgba(0,0,0,.06) !important;
+}
+body.light-mode .nav-item,
+body.light-mode .nav-username,
+body.light-mode .profile-btn { color: #111111 !important; }
+body.light-mode .nav-item:hover,
+body.light-mode .nav-item.active {
+    background: rgba(255,152,0,.1) !important;
+    color: var(--accent-orange) !important;
+}
+body.light-mode .dropdown-content {
+    background: #ffffff !important;
+    border: 1px solid rgba(0,0,0,.08) !important;
+    box-shadow: 0 8px 24px rgba(0,0,0,.1) !important;
+    color: #111111 !important;
+}
+body.light-mode .dropdown-content a,
+body.light-mode .dropdown-content button { color: #111111 !important; }
+
+/* ── Page title ── */
+.acc-page-title {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-muted);
+    margin-bottom: 1.1rem;
+    display: flex;
+    align-items: center;
+    gap: 0.45rem;
+}
+.acc-page-title i { color: var(--accent-orange); }
+
+/* ── Settings layout container ── */
+.account-content-inner {
+    max-width: 760px;
+}
+
+/* ── Card ── */
+.settings-card {
+    background: var(--card-bg);
+    border: 1px solid var(--border);
+    border-radius: var(--radius);
+    box-shadow: var(--shadow);
+    overflow: hidden;
+    margin-bottom: 0.85rem;
+    transition: background .3s, border-color .3s;
+}
+.settings-card-header {
+    padding: 0.75rem 1.25rem;
+    border-bottom: 1px solid var(--border);
+    display: flex; align-items: center; gap: 0.45rem;
+    font-size: 0.62rem; font-weight: 700;
+    letter-spacing: 0.1em; text-transform: uppercase;
+    color: var(--accent-orange);
+}
+.settings-card-body { padding: 1rem 1.25rem; }
+
+/* ── Setting Row ── */
+.setting-row {
+    display: flex; align-items: center;
+    justify-content: space-between;
+    padding: 0.75rem 0;
+    border-bottom: 1px solid var(--border);
+    gap: 1rem; flex-wrap: wrap;
+}
+.setting-row:last-child  { border-bottom: none; padding-bottom: 0; }
+.setting-row:first-child { padding-top: 0; }
+.setting-info { flex: 1; min-width: 0; }
+.setting-label {
+    font-size: 0.82rem; font-weight: 600;
+    color: var(--text-main);
+    display: flex; align-items: center; gap: 0.38rem;
+    margin-bottom: 0.18rem;
+}
+.setting-label i { color: var(--accent-orange); font-size: 0.75rem; }
+.setting-desc { font-size: 0.72rem; color: var(--text-muted); }
+
+/* ── Theme Toggle ── */
+.theme-toggle-group {
+    display: flex;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    border-radius: 9px;
+    overflow: hidden; flex-shrink: 0;
+    padding: 2px;
+    gap: 2px;
+}
+.theme-btn {
+    display: flex; align-items: center; gap: 0.32rem;
+    padding: 0.38rem 0.85rem;
+    font-size: 0.76rem; font-weight: 600;
+    background: transparent; border: none;
+    cursor: pointer; color: var(--text-muted);
+    transition: all .2s; white-space: nowrap;
+    font-family: inherit; border-radius: 7px;
+}
+.theme-btn.active { background: var(--accent-orange); color: #000; }
+.theme-btn:not(.active):hover { color: var(--text-main); background: rgba(255,255,255,.05); }
+
+/* ── Toggle Switch ── */
+.toggle-switch { position: relative; width: 40px; height: 22px; flex-shrink: 0; }
+.toggle-switch input { opacity: 0; width: 0; height: 0; }
+.toggle-slider {
+    position: absolute; inset: 0;
+    background: rgba(255,255,255,.07);
+    border: 1px solid var(--border);
+    border-radius: 22px; cursor: pointer; transition: .22s;
+}
+.toggle-slider::before {
+    content: '';
+    position: absolute;
+    width: 16px; height: 16px;
+    left: 2px; top: 50%; transform: translateY(-50%);
+    background: var(--text-muted); border-radius: 50%; transition: .2s;
+}
+.toggle-switch input:checked + .toggle-slider { background: var(--accent-orange); border-color: var(--accent-orange); }
+.toggle-switch input:checked + .toggle-slider::before { transform: translate(18px,-50%); background: #000; }
+
+/* ── Select ── */
+.settings-select {
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    border-radius: var(--radius-sm);
+    padding: 0.38rem 0.75rem;
+    font-size: 0.78rem; cursor: pointer; outline: none;
+    transition: border-color .2s; min-width: 140px;
+    font-family: inherit;
+}
+.settings-select:focus { border-color: var(--accent-orange); }
+
+/* ── Accent Picker ── */
+.accent-picker { display: flex; gap: 0.4rem; flex-wrap: wrap; }
+.accent-swatch {
+    width: 24px; height: 24px; border-radius: 50%;
+    cursor: pointer; border: 2px solid transparent;
+    transition: transform .15s, border-color .2s; position: relative;
+}
+.accent-swatch:hover { transform: scale(1.18); }
+.accent-swatch.selected { border-color: #fff; box-shadow: 0 0 0 2px var(--accent-orange); }
+.accent-swatch.selected::after {
+    content: ''; position: absolute; inset: 4px;
+    border-radius: 50%; border: 2px solid rgba(255,255,255,.8);
+}
+
+/* ── Avatar Row ── */
+.avatar-setting-row {
+    display: flex; align-items: center; gap: 1rem;
+    padding: 0.75rem 0; border-bottom: 1px solid var(--border); flex-wrap: wrap;
+}
+.settings-avatar {
+    width: 46px; height: 46px; border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--accent-orange);
+    box-shadow: 0 0 8px rgba(255,152,0,.18);
+    flex-shrink: 0;
+}
+.av-name { font-size: 0.84rem; font-weight: 700; color: var(--text-main); }
+.av-note { font-size: 0.72rem; color: var(--text-muted); margin-top: 0.07rem; }
+.badge-google-sm {
+    display: inline-flex; align-items: center; gap: 0.28rem;
+    font-size: 0.68rem; font-weight: 600;
+    padding: 0.12rem 0.55rem; border-radius: 20px;
+    background: rgba(255,255,255,.04);
+    color: var(--text-muted); border: 1px solid var(--border);
+    margin-top: 0.22rem;
+}
+
+/* ── Text Input ── */
+.settings-input {
+    width: 100%;
+    background: var(--input-bg);
+    border: 1px solid var(--border);
+    color: var(--text-main);
+    border-radius: var(--radius-sm);
+    padding: 0.4rem 0.8rem;
+    font-size: 0.82rem; outline: none;
+    transition: border-color .2s;
+    font-family: inherit;
+}
+.settings-input:focus { border-color: var(--accent-orange); }
+.settings-input:read-only { opacity: .5; cursor: not-allowed; }
+
+/* ── Buttons ── */
+.btn-primary {
+    display: inline-flex; align-items: center; gap: 0.38rem;
+    padding: 0.44rem 1.1rem; border-radius: var(--radius-sm);
+    font-size: 0.8rem; font-weight: 700;
+    background: var(--accent-orange); color: #000;
+    border: none; cursor: pointer; transition: opacity .2s;
+    font-family: inherit;
+    box-shadow: 0 2px 10px rgba(255,152,0,.25);
+}
+.btn-primary:hover { opacity: .88; }
+
+.btn-danger {
+    display: inline-flex; align-items: center; gap: 0.38rem;
+    padding: 0.38rem 0.85rem; border-radius: var(--radius-sm);
+    font-size: 0.76rem; font-weight: 600;
+    border: 1px solid rgba(239,68,68,.3);
+    color: #ef4444; background: rgba(239,68,68,.07);
+    cursor: pointer; transition: all .2s; white-space: nowrap;
+    font-family: inherit;
+}
+.btn-danger:hover { background: rgba(239,68,68,.14); border-color: #ef4444; }
+
+.btn-outline {
+    display: inline-flex; align-items: center; gap: 0.38rem;
+    padding: 0.38rem 0.85rem; border-radius: var(--radius-sm);
+    font-size: 0.76rem; font-weight: 600;
+    border: 1px solid rgba(255,152,0,.3);
+    color: var(--accent-orange); background: rgba(255,152,0,.07);
+    text-decoration: none;
+    cursor: pointer; transition: all .2s; white-space: nowrap;
+    font-family: inherit;
+}
+.btn-outline:hover { background: rgba(255,152,0,.14); }
+
+/* ── Footer ── */
+.settings-footer {
+    display: flex; justify-content: flex-end;
+    padding-top: 0.75rem; border-top: 1px solid var(--border); margin-top: 0.5rem;
+}
+
+/* ── Responsive ── */
+@media (max-width: 560px) {
+    .setting-row       { flex-direction: column; align-items: flex-start; }
+    .theme-toggle-group { width: 100%; }
+    .theme-btn         { flex: 1; justify-content: center; }
+    .settings-select   { width: 100%; }
+    .settings-card-body { padding: 0.85rem 1rem; }
+    .account-content-inner { max-width: 100%; }
+}

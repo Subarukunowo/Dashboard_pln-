@@ -1,0 +1,12 @@
+/* Override ukuran logo sidebar AdminLTE */
+.main-sidebar .brand-link .brand-image {
+    height: 50px !important;  /* Tinggi fix */
+    width: auto !important;   /* Lebar otomatis (jangan dipaksa!) */
+    /* object-fit: contain; */ /* Opsional: kalau mau tetap pake width+height */
+}
+
+/* Opsional: geser teks PLN biar lebih seimbang */
+.main-sidebar .brand-link .brand-text {
+    margin-left: 8px;
+    font-size: 1.1rem;
+}

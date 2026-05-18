@@ -1,0 +1,421 @@
+/* ========================================
+   NAVBAR STYLES - Accessibility Optimized
+   ======================================== */
+
+:root {
+    /* 🔥 Dark Mode Variables (Default) */
+    --navbar-bg: #161616;
+    --navbar-border: #2a2a2a;
+    --text-primary: #ffffff;
+    --text-secondary: #c0c0c0;
+    --text-muted: #b8b8b8;
+    --accent-orange: #ff9800;
+    --accent-orange-hover: #f57c00;
+    --navbar-hover-bg: #252525;
+    --navbar-active-bg: rgba(255, 152, 0, 0.12);
+    --dropdown-bg: #1e1e1e;
+    --dropdown-border: #333333;
+    --dropdown-hover: #2a2a2a;
+    
+    /* 🌓 Theme Toggle Specific */
+    --toggle-bg: rgba(255, 255, 255, 0.1);
+    --toggle-border: rgba(255, 255, 255, 0.2);
+    --toggle-hover: rgba(255, 255, 255, 0.2);
+    --toggle-icon-color: #ffffff;
+    
+    /* 📌 Additional Header/Title Bar */
+    --header-secondary-bg: #1a1a1a;
+    --header-secondary-text: #ffffff;
+    --sidebar-bg: #111111;
+    --sidebar-text: #888888;
+    --sidebar-hover: #1e1e1e;
+    --sidebar-active: #ff9800;
+}
+
+/* 🌓 Light Mode Overrides */
+body.light-mode {
+    --navbar-bg: #ffffff;
+    --navbar-border: #e2e8f0;
+    --text-primary: #1e293b;
+    --text-secondary: #475569;
+    --text-muted: #64748b;
+    --navbar-hover-bg: #f1f5f9;
+    --navbar-active-bg: rgba(255, 152, 0, 0.15);
+    --dropdown-bg: #ffffff;
+    --dropdown-border: #e2e8f0;
+    --dropdown-hover: #f8fafc;
+    
+    /* Theme Toggle Light Mode */
+    --toggle-bg: rgba(0, 0, 0, 0.05);
+    --toggle-border: rgba(0, 0, 0, 0.1);
+    --toggle-hover: rgba(0, 0, 0, 0.1);
+    --toggle-icon-color: #1e293b;
+    
+    /* 📌 Additional Header/Title Bar - Light Mode */
+    --header-secondary-bg: #f8fafc;
+    --header-secondary-text: #0f172a;
+    --sidebar-bg: #1e293b;
+    --sidebar-text: #94a3b8;
+    --sidebar-hover: #334155;
+    --sidebar-active: #ff9800;
+}
+
+/* ===== Navbar Container ===== */
+.navbar {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: 0 24px;
+    height: 56px;
+    background-color: var(--navbar-bg);
+    border-bottom: 1px solid var(--navbar-border);
+    position: sticky;
+    top: 0;
+    z-index: 1000;
+    color: var(--text-primary);
+    font-family: 'Inter', 'Segoe UI', sans-serif;
+    transition: background-color 0.3s ease, border-color 0.3s ease, color 0.3s ease;
+}
+
+/* 📌 Secondary Header Bar (PLN COMMERCIAL DASHBOARD) */
+.header-secondary,
+.page-header,
+.dashboard-header,
+.title-bar {
+    background-color: var(--header-secondary-bg);
+    color: var(--header-secondary-text);
+    border-bottom: 1px solid var(--navbar-border);
+    transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+}
+
+/* 📌 Sidebar Styling */
+.sidebar,
+.app-sidebar,
+.nav-sidebar {
+    background-color: var(--sidebar-bg);
+    transition: background-color 0.3s ease;
+}
+
+.sidebar .nav-link,
+.sidebar .menu-item,
+.app-sidebar a {
+    color: var(--sidebar-text);
+    transition: color 0.2s ease, background-color 0.2s ease;
+}
+
+.sidebar .nav-link:hover,
+.sidebar .menu-item:hover,
+.app-sidebar a:hover {
+    background-color: var(--sidebar-hover);
+    color: var(--text-primary);
+}
+
+.sidebar .nav-link.active,
+.sidebar .menu-item.active,
+.app-sidebar a.active {
+    color: var(--sidebar-active);
+    background-color: rgba(255, 152, 0, 0.1);
+}
+
+/* ===== Nav Left - Links ===== */
+.nav-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+}
+
+.nav-item {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 8px 16px;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    font-weight: 500;
+    border-radius: 8px;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+}
+
+.nav-item:hover {
+    background-color: var(--navbar-hover-bg);
+    color: var(--accent-orange);
+}
+
+.nav-item:hover i {
+    color: var(--accent-orange);
+}
+
+.nav-item.active {
+    background-color: var(--navbar-active-bg);
+    color: var(--accent-orange);
+    font-weight: 600;
+}
+
+.nav-item.active i {
+    color: var(--accent-orange);
+}
+
+.nav-item i {
+    color: var(--text-primary);
+    font-size: 0.95rem;
+    width: 16px;
+    text-align: center;
+    transition: color 0.2s ease;
+}
+
+.nav-item span {
+    color: inherit;
+    line-height: 1;
+}
+
+/* ===== Nav Right - Theme Toggle + Profile ===== */
+.nav-right {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+/* 🌓 Theme Toggle Button */
+.theme-toggle-btn {
+    background: var(--toggle-bg);
+    border: 1px solid var(--toggle-border);
+    border-radius: 50%;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    color: var(--toggle-icon-color);
+    font-size: 18px;
+    position: relative;
+    overflow: hidden;
+    flex-shrink: 0;
+}
+
+.theme-toggle-btn:hover {
+    background: var(--toggle-hover);
+    transform: rotate(15deg) scale(1.05);
+}
+
+.theme-toggle-btn:active {
+    transform: scale(0.95);
+}
+
+.theme-toggle-btn:focus-visible {
+    outline: 2px solid var(--accent-orange);
+    outline-offset: 2px;
+}
+
+/* Icon positioning - Dark mode default (show moon) */
+.theme-icon-moon,
+.theme-icon-sun {
+    position: absolute;
+    transition: all 0.4s cubic-bezier(0.68, -0.55, 0.265, 1.55);
+    color: var(--toggle-icon-color);
+}
+
+.theme-icon-moon {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+}
+
+.theme-icon-sun {
+    opacity: 0;
+    transform: rotate(90deg) scale(0.5);
+}
+
+/* Light mode - swap icons */
+body.light-mode .theme-icon-moon {
+    opacity: 0;
+    transform: rotate(-90deg) scale(0.5);
+}
+
+body.light-mode .theme-icon-sun {
+    opacity: 1;
+    transform: rotate(0deg) scale(1);
+}
+
+/* ===== Profile Dropdown ===== */
+.profile-dropdown {
+    position: relative;
+}
+
+.profile-btn {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    padding: 6px 12px;
+    background: transparent;
+    border: none;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background 0.2s ease;
+}
+
+.profile-btn:hover {
+    background-color: var(--navbar-hover-bg);
+}
+
+.profile-btn:focus {
+    outline: 2px solid var(--accent-orange);
+    outline-offset: 2px;
+}
+
+.nav-avatar {
+    display: block;
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 2px solid var(--accent-orange);
+    background-color: #2a2a2a;
+}
+
+body.light-mode .nav-avatar {
+    background-color: #e2e8f0;
+}
+
+.nav-username {
+    color: var(--text-primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    max-width: 150px;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.profile-btn .fa-caret-down {
+    color: var(--text-secondary);
+    font-size: 0.7rem;
+    transition: color 0.2s ease;
+}
+
+.profile-btn:hover .fa-caret-down {
+    color: var(--accent-orange);
+}
+
+/* ===== Dropdown Menu ===== */
+.dropdown-content {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 200px;
+    background-color: var(--dropdown-bg);
+    border: 1px solid var(--dropdown-border);
+    border-radius: 10px;
+    padding: 8px 0;
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.4);
+    opacity: 0;
+    visibility: hidden;
+    transform: translateY(-10px);
+    transition: all 0.2s ease;
+    z-index: 1001;
+}
+
+body.light-mode .dropdown-content {
+    box-shadow: 0 10px 30px rgba(0, 0, 0, 0.15);
+}
+
+.profile-dropdown:hover .dropdown-content,
+.profile-dropdown:focus-within .dropdown-content {
+    opacity: 1;
+    visibility: visible;
+    transform: translateY(0);
+}
+
+.dropdown-content a,
+.dropdown-content button {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    width: 100%;
+    padding: 10px 16px;
+    color: var(--text-primary);
+    text-decoration: none;
+    font-size: 0.9rem;
+    background: none;
+    border: none;
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.15s ease;
+}
+
+.dropdown-content a:hover,
+.dropdown-content button:hover {
+    background-color: var(--dropdown-hover);
+    color: var(--accent-orange);
+}
+
+.dropdown-content a i,
+.dropdown-content button i {
+    color: var(--text-secondary);
+    width: 16px;
+    font-size: 0.9rem;
+}
+
+.dropdown-content a:hover i,
+.dropdown-content button:hover i {
+    color: var(--accent-orange);
+}
+
+.dropdown-divider {
+    margin: 6px 0;
+    border: none;
+    border-top: 1px solid var(--dropdown-border);
+}
+
+/* ===== Responsive ===== */
+@media (max-width: 768px) {
+    .navbar {
+        padding: 0 16px;
+    }
+    
+    .nav-username {
+        display: none;
+    }
+    
+    .nav-item span {
+        display: none;
+    }
+    
+    .nav-item {
+        padding: 10px;
+    }
+    
+    .theme-toggle-btn {
+        width: 36px;
+        height: 36px;
+        font-size: 16px;
+        margin-right: 4px;
+    }
+}
+
+/* ===== Focus Visible for Keyboard Navigation ===== */
+.nav-item:focus-visible,
+.profile-btn:focus-visible,
+.theme-toggle-btn:focus-visible,
+.dropdown-content a:focus-visible,
+.dropdown-content button:focus-visible {
+    outline: 2px solid var(--accent-orange);
+    outline-offset: 2px;
+}
+
+/* ===== Reduced Motion ===== */
+@media (prefers-reduced-motion: reduce) {
+    *,
+    *::before,
+    *::after {
+        animation-duration: 0.01ms !important;
+        animation-iteration-count: 1 !important;
+        transition-duration: 0.01ms !important;
+    }
+    
+    .theme-toggle-btn:hover {
+        transform: none;
+    }
+}

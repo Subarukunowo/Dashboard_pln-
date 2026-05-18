@@ -1,0 +1,334 @@
+@import url('https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,300;0,9..40,400;0,9..40,500;0,9..40,600;1,9..40,300&family=DM+Serif+Display:ital@0;1&display=swap');
+
+/* ─── Reset ──────────────────────────────────────────────── */
+*, *::before, *::after { margin: 0; padding: 0; box-sizing: border-box; }
+
+/* ─── Tokens ─────────────────────────────────────────────── */
+:root {
+    --bg:          #0c0b09;
+    --surface:     #131210;
+    --border:      #1f1e1a;
+    --border-mid:  #2a2824;
+    --text:        #e8e4dc;
+    --text-muted:  #6b6760;
+    --text-dim:    #3d3b37;
+    --amber:       #d4860a;
+    --amber-soft:  #f0a830;
+    --amber-glow:  rgba(212, 134, 10, 0.12);
+    --amber-line:  rgba(212, 134, 10, 0.22);
+    --green-soft:  rgba(52, 168, 83, 0.08);
+}
+
+/* ─── Base ───────────────────────────────────────────────── */
+html, body {
+    height: 100%;
+    font-family: 'DM Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    -webkit-font-smoothing: antialiased;
+}
+
+body {
+    display: grid;
+    place-items: center;
+    min-height: 100vh;
+    overflow: hidden;
+}
+
+/* ─── Background noise texture ───────────────────────────── */
+body::before {
+    content: '';
+    position: fixed;
+    inset: 0;
+    opacity: 0.018;
+    background-image: url("data:image/svg+xml,%3Csvg viewBox='0 0 256 256' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='4'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)'/%3E%3C/svg%3E");
+    background-size: 200px 200px;
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* Subtle warm vignette — not dramatic */
+body::after {
+    content: '';
+    position: fixed;
+    inset: 0;
+    background: radial-gradient(ellipse 70% 60% at 20% 80%, rgba(212,134,10,0.04) 0%, transparent 70%),
+                radial-gradient(ellipse 50% 50% at 80% 10%, rgba(52,168,83,0.03) 0%, transparent 60%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ─── Wrapper ────────────────────────────────────────────── */
+.wrapper {
+    position: relative;
+    z-index: 1;
+    display: flex;
+    width: min(900px, 96vw);
+    min-height: 540px;
+    border-radius: 4px;
+    overflow: hidden;
+    border: 1px solid var(--border);
+    box-shadow:
+        0 0 0 1px rgba(255,255,255,0.03),
+        0 24px 64px rgba(0,0,0,0.55),
+        0 4px 12px rgba(0,0,0,0.4);
+}
+
+/* ─── Left Panel ─────────────────────────────────────────── */
+.left-panel {
+    flex: 1;
+    background: var(--surface);
+    padding: 52px 48px;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between;
+    border-right: 1px solid var(--border);
+    position: relative;
+    overflow: hidden;
+}
+
+/* Thin amber rule — top left decorative */
+.left-panel::before {
+    content: '';
+    position: absolute;
+    top: 0; left: 0;
+    width: 2px;
+    height: 100%;
+    background: linear-gradient(to bottom, transparent, var(--amber) 30%, var(--amber) 70%, transparent);
+    opacity: 0.35;
+}
+
+/* ─── Brand ──────────────────────────────────────────────── */
+.brand {
+    display: flex;
+    align-items: center;
+    gap: 11px;
+}
+
+.brand-icon {
+    width: 30px;
+    height: 30px;
+    border-radius: 3px;
+    object-fit: contain;
+    flex-shrink: 0;
+}
+
+.brand-name {
+    font-size: 0.82rem;
+    font-weight: 600;
+    color: var(--text);
+    letter-spacing: 0.3px;
+}
+
+.brand-sub {
+    font-size: 0.67rem;
+    color: var(--text-muted);
+    margin-top: 1px;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+/* ─── Left heading ───────────────────────────────────────── */
+.left-content {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    padding: 40px 0 32px;
+}
+
+.left-content h2 {
+    font-family: 'DM Serif Display', serif;
+    font-size: clamp(2rem, 3.2vw, 2.6rem);
+    font-weight: 400;
+    line-height: 1.18;
+    letter-spacing: -0.5px;
+    color: var(--text);
+    margin-bottom: 18px;
+}
+
+.left-content h2 em {
+    font-style: italic;
+    color: var(--amber-soft);
+}
+
+.left-content p {
+    font-size: 0.82rem;
+    color: var(--text-muted);
+    line-height: 1.75;
+    max-width: 28ch;
+}
+
+/* ─── Stats ──────────────────────────────────────────────── */
+.stats {
+    display: flex;
+    gap: 0;
+    border: 1px solid var(--border-mid);
+    border-radius: 3px;
+    overflow: hidden;
+}
+
+.stat {
+    flex: 1;
+    padding: 14px 16px;
+    border-right: 1px solid var(--border-mid);
+}
+.stat:last-child { border-right: none; }
+
+.stat-val {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.35rem;
+    color: var(--amber-soft);
+    letter-spacing: -0.5px;
+    line-height: 1;
+}
+
+.stat-lbl {
+    font-size: 0.64rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 0.8px;
+    margin-top: 5px;
+}
+
+/* ─── Right Panel ────────────────────────────────────────── */
+.right-panel {
+    width: 360px;
+    background: var(--bg);
+    padding: 52px 44px;
+    display: flex;
+    flex-direction: column;
+    justify-content: center;
+    flex-shrink: 0;
+}
+
+.right-panel h3 {
+    font-family: 'DM Serif Display', serif;
+    font-size: 1.6rem;
+    font-weight: 400;
+    letter-spacing: -0.3px;
+    color: var(--text);
+    margin-bottom: 4px;
+}
+
+.subtitle {
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    margin-bottom: 40px;
+    line-height: 1.5;
+}
+
+/* ─── Divider ────────────────────────────────────────────── */
+.divider {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 20px;
+}
+
+.divider-line {
+    flex: 1;
+    height: 1px;
+    background: var(--border);
+}
+
+.divider-text {
+    font-size: 0.65rem;
+    color: var(--text-dim);
+    text-transform: uppercase;
+    letter-spacing: 1.2px;
+    white-space: nowrap;
+}
+
+/* ─── Google Button ──────────────────────────────────────── */
+.btn-google {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 10px;
+    width: 100%;
+    padding: 13px 20px;
+    background: #fff;
+    color: #1a1a1a;
+    border: none;
+    border-radius: 3px;
+    font-family: 'DM Sans', sans-serif;
+    font-size: 0.86rem;
+    font-weight: 500;
+    cursor: pointer;
+    text-decoration: none;
+    transition: background 0.15s, box-shadow 0.15s, transform 0.12s;
+    letter-spacing: 0.1px;
+}
+
+.btn-google:hover {
+    background: #f8f8f8;
+    box-shadow: 0 4px 16px rgba(0,0,0,0.3);
+    transform: translateY(-1px);
+}
+
+.btn-google:active {
+    transform: translateY(0);
+    box-shadow: none;
+}
+
+.btn-google svg {
+    flex-shrink: 0;
+}
+
+/* ─── Error Alert ────────────────────────────────────────── */
+.alert-error {
+    background: rgba(239, 68, 68, 0.06);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 3px;
+    padding: 10px 13px;
+    font-size: 0.78rem;
+    color: #f87171;
+    margin-bottom: 18px;
+    display: flex;
+    align-items: flex-start;
+    gap: 8px;
+    line-height: 1.5;
+}
+
+/* ─── Notice ─────────────────────────────────────────────── */
+.notice {
+    margin-top: 20px;
+    padding: 11px 13px;
+    background: var(--amber-glow);
+    border: 1px solid var(--amber-line);
+    border-radius: 3px;
+    font-size: 0.74rem;
+    color: var(--text-muted);
+    line-height: 1.65;
+}
+
+.notice strong {
+    color: var(--amber-soft);
+    font-weight: 500;
+}
+
+/* ─── Footer ─────────────────────────────────────────────── */
+.footer {
+    margin-top: 32px;
+    font-size: 0.68rem;
+    color: var(--text-dim);
+    letter-spacing: 0.3px;
+}
+
+/* ─── Entrance animation ─────────────────────────────────── */
+@keyframes fadeUp {
+    from { opacity: 0; transform: translateY(12px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.wrapper {
+    animation: fadeUp 0.5s cubic-bezier(0.22, 1, 0.36, 1) both;
+}
+
+/* ─── Mobile ─────────────────────────────────────────────── */
+@media (max-width: 680px) {
+    .left-panel { display: none; }
+    .wrapper    { max-width: 100%; border-radius: 0; border: none; min-height: 100dvh; }
+    .right-panel { width: 100%; padding: 48px 28px; }
+}

@@ -1,0 +1,207 @@
+/* ============================================================
+   filter-components.css  — tambahkan ke / @import dari dashboard-components.css
+   Filter bar, grouped selects, inline labels, pills, icon buttons
+   ============================================================ */
+
+/* --- Wrapper utama filter di kanan card-title --- */
+.filter-bar {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    flex-wrap: wrap;
+}
+
+/* -------------------------------------------------------
+   GAYA 1 — filter-group
+   Beberapa elemen (ikon + select + chevron) dalam satu kotak.
+   Pakai untuk card yang punya 2–4 filter berjejer.
+------------------------------------------------------- */
+.filter-group {
+    display: flex;
+    align-items: center;
+    background: var(--bg-secondary);
+    border: 1px solid var(--input-border);
+    border-radius: 8px;
+    overflow: hidden;
+    transition: border-color 0.2s ease;
+}
+.filter-group:focus-within {
+    border-color: var(--accent-orange);
+}
+
+.filter-group .filter-icon {
+    padding: 0 8px;
+    color: var(--text-secondary);
+    font-size: 13px;
+    line-height: 1;
+    pointer-events: none;
+    flex-shrink: 0;
+}
+
+.filter-group select {
+    background: transparent;
+    color: var(--input-text);
+    border: none;
+    padding: 6px 4px 6px 0;
+    font-size: 0.7rem;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    min-width: 0;
+}
+
+.filter-chevron {
+    padding: 0 8px 0 2px;
+    color: var(--text-secondary);
+    font-size: 11px;
+    pointer-events: none;
+    flex-shrink: 0;
+    transition: transform 0.2s ease, color 0.2s ease;
+}
+.filter-group:focus-within .filter-chevron {
+    transform: rotate(180deg);
+    color: var(--accent-orange);
+}
+
+/* Pemisah vertikal tipis antar filter-group */
+.filter-sep {
+    width: 1px;
+    height: 20px;
+    background: var(--border-color);
+    flex-shrink: 0;
+}
+
+/* -------------------------------------------------------
+   GAYA 2 — filter-inline
+   Ikon + label teks + select. Untuk filter dengan 1–2 opsi
+   yang butuh label eksplisit (misal: "EMIN:").
+------------------------------------------------------- */
+.filter-inline {
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--surface-hover);
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 5px 8px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    transition: border-color 0.2s ease;
+}
+.filter-inline:focus-within {
+    border-color: var(--accent-orange);
+}
+.filter-inline span {
+    white-space: nowrap;
+}
+.filter-inline select {
+    background: transparent;
+    border: none;
+    color: var(--input-text);
+    font-size: 0.7rem;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+    padding-right: 2px;
+}
+
+/* -------------------------------------------------------
+   GAYA 3 — filter-pill
+   Rounded pill, bisa toggle .active secara JS.
+------------------------------------------------------- */
+.filter-pill {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--input-border);
+    border-radius: 20px;
+    padding: 5px 10px 5px 8px;
+    font-size: 0.7rem;
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+    white-space: nowrap;
+}
+.filter-pill:hover {
+    border-color: var(--accent-orange);
+    color: var(--text-primary);
+}
+.filter-pill.active {
+    border-color: var(--accent-orange);
+    color: var(--accent-orange);
+    background: rgba(255, 152, 0, 0.08);
+}
+.filter-pill select {
+    background: transparent;
+    border: none;
+    color: inherit;
+    font-size: inherit;
+    outline: none;
+    cursor: pointer;
+    appearance: none;
+    -webkit-appearance: none;
+}
+
+/* -------------------------------------------------------
+   GAYA 4 — filter-icon-btn
+   Tombol ikon saja. Paling compact, cocok untuk toggle
+   Bulanan / Akumulasi tanpa label.
+------------------------------------------------------- */
+.filter-icon-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 30px;
+    height: 30px;
+    background: var(--bg-secondary);
+    border: 1px solid var(--input-border);
+    border-radius: 6px;
+    color: var(--text-secondary);
+    cursor: pointer;
+    user-select: none;
+    transition: border-color 0.2s ease, color 0.2s ease, background 0.2s ease;
+    font-size: 14px;
+}
+.filter-icon-btn:hover {
+    border-color: var(--accent-orange);
+    color: var(--accent-orange);
+}
+.filter-icon-btn.active {
+    border-color: var(--accent-green);
+    color: var(--accent-green);
+    background: rgba(0, 255, 136, 0.08);
+}
+
+/* -------------------------------------------------------
+   LIGHT MODE overrides
+------------------------------------------------------- */
+body.light-mode .filter-group,
+body.light-mode .filter-pill,
+body.light-mode .filter-icon-btn {
+    background: var(--bg-secondary);
+}
+body.light-mode .filter-inline {
+    background: var(--surface-hover);
+}
+body.light-mode .filter-pill.active {
+    background: rgba(234, 88, 12, 0.08);
+}
+body.light-mode .filter-icon-btn.active {
+    background: rgba(22, 163, 74, 0.08);
+}
+
+/* -------------------------------------------------------
+   REDUCED MOTION
+------------------------------------------------------- */
+@media (prefers-reduced-motion: reduce) {
+    .filter-group,
+    .filter-chevron,
+    .filter-inline,
+    .filter-pill,
+    .filter-icon-btn {
+        transition: none !important;
+    }
+}

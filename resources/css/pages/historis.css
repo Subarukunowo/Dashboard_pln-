@@ -1,0 +1,759 @@
+/* ══════════════════════════════════════════════════════════
+   historis.css — Data Historis PLN Batam
+   ══════════════════════════════════════════════════════════ */
+
+/* ─── FONT ───────────────────────────────────────────────── */
+.dash-header,
+.dash-header *,
+.historis-container,
+.historis-container * {
+    font-family: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+}
+
+/* ─── DASH-HEADER ────────────────────────────────────────── */
+.dash-header {
+    display: flex;
+    align-items: center;
+    padding: 0 30px;
+    height: 56px;
+    background: #161616;
+    border-bottom: 1px solid #222;
+    position: sticky;
+    top: 48px;
+    z-index: 100;
+}
+
+.dash-header__left {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.dash-header__title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #f0f0f0;
+    margin: 0;
+    letter-spacing: 0.5px;
+    text-transform: uppercase;
+}
+
+.dash-header__sub {
+    font-size: 0.68rem;
+    color: #555;
+    margin: 0;
+}
+
+/* ─── MAIN CONTAINER ─────────────────────────────────────── */
+.historis-container {
+    padding: 20px 30px;
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+    max-width: none;
+    margin: 0 auto;
+    width: 100%;
+    box-sizing: border-box;
+}
+
+/* ─── CARD BASE ──────────────────────────────────────────── */
+.card {
+    background: #1e1e1e;
+    border: 1px solid #2a2a2a;
+    border-radius: 12px;
+    padding: 20px 24px;
+}
+
+/* ─── SECTION HISTORIS ───────────────────────────────────── */
+.section-historis .section-header {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 18px;
+    padding-bottom: 14px;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.section-historis .icon-accent {
+    font-size: 1rem;
+    color: #ff9800;
+    flex-shrink: 0;
+}
+
+.section-historis .section-info {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.section-historis .card-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #888;
+    margin: 0;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+}
+
+.section-historis .text-muted {
+    font-size: 0.68rem;
+    color: #555;
+}
+
+/* ─── FILTER CONTROLS ────────────────────────────────────── */
+.filter-controls {
+    display: flex;
+    align-items: flex-end;
+    gap: 10px;
+    flex-wrap: wrap;
+}
+
+.filter-group {
+    display: flex;
+    flex-direction: column;
+    gap: 5px;
+    min-width: 110px;
+}
+
+.filter-group--wide {
+    min-width: 220px;
+    flex: 1 1 auto;
+}
+
+.hist-label {
+    display: block;
+    font-size: 0.62rem;
+    font-weight: 700;
+    color: #555;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+}
+
+.hist-select {
+    width: 100%;
+    padding: 0 10px;
+    background: #161616;
+    border: 1px solid #2a2a2a;
+    border-radius: 7px;
+    color: #ccc;
+    font-size: 0.82rem;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+    box-sizing: border-box;
+    height: 36px;
+    appearance: auto;
+}
+
+.hist-select:focus {
+    outline: none;
+    border-color: #ff9800;
+    background: #1c1c1c;
+}
+
+/* ── Generate Button ── */
+.hist-btn-primary {
+    display: inline-flex;
+    align-items: center;
+    gap: 7px;
+    height: 36px;
+    padding: 0 20px;
+    background: #ff9800;
+    color: #000;
+    border: none;
+    border-radius: 7px;
+    font-size: 0.82rem;
+    font-weight: 700;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    cursor: pointer;
+    transition: background 0.15s, transform 0.1s;
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.hist-btn-primary:hover  { background: #ffb74d; }
+.hist-btn-primary:active { transform: scale(0.97); }
+
+.hist-btn-primary.green {
+    background: #00c853;
+    color: #000;
+}
+.hist-btn-primary.green:hover { background: #00e676; }
+
+#histBtnGenerate {
+    align-self: flex-end;
+}
+
+/* ── Small Buttons ── */
+.hist-btn-sm {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 5px 12px;
+    height: 30px;
+    background: #252525;
+    border: 1px solid #333;
+    border-radius: 6px;
+    color: #888;
+    font-size: 0.75rem;
+    font-weight: 600;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    cursor: pointer;
+    transition: all 0.15s;
+    white-space: nowrap;
+}
+
+.hist-btn-sm:hover  { background: #2e2e2e; color: #ccc; border-color: #444; }
+.hist-btn-sm.active { background: #2e2e2e; color: #ff9800; border-color: #ff9800; }
+
+/* ─── WARNING BOX ────────────────────────────────────────── */
+#histWarning {
+    margin-top: 12px;
+    border-radius: 7px;
+    padding: 8px 14px;
+    font-size: 0.78rem;
+    display: none;
+}
+
+/* ─── GOLONGAN SECTION ───────────────────────────────────── */
+.section-golongan {
+    padding: 14px 24px;
+}
+
+.section-golongan .section-actions {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 12px;
+}
+
+.section-golongan .action-buttons {
+    display: flex;
+    gap: 6px;
+}
+
+.golongan-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 8px;
+}
+
+/* ── Chip base ── */
+.hist-gol-chip {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    padding: 6px 14px;
+    border-radius: 50px;
+    cursor: pointer;
+    transition: all 0.15s ease;
+    font-size: 0.78rem;
+    font-weight: 500;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+    color: #555;
+    background: #161616;
+    border: 1.5px solid #2a2a2a;
+    user-select: none;
+    position: relative;
+}
+
+.hist-gol-chip input[type="checkbox"] { display: none; }
+
+/* Dot indicator */
+.chip-indicator {
+    width: 7px;
+    height: 7px;
+    border-radius: 50%;
+    background: currentColor;
+    opacity: 0;
+    transition: opacity 0.15s;
+    flex-shrink: 0;
+}
+
+.hist-gol-chip.checked .chip-indicator { opacity: 1; }
+
+.hist-gol-chip:hover {
+    border-color: #444;
+    color: #999;
+    background: #1e1e1e;
+}
+
+/* ── Warna per golongan saat AKTIF ── */
+
+/* Sosial — teal */
+.hist-gol-chip.gol-sosial.checked {
+    background: rgba(0, 188, 212, 0.1);
+    border-color: rgba(0, 188, 212, 0.6);
+    color: #00bcd4;
+}
+
+/* Rumah Tangga — hijau */
+.hist-gol-chip.gol-rumah.checked {
+    background: rgba(0, 200, 83, 0.1);
+    border-color: rgba(0, 200, 83, 0.6);
+    color: #00c853;
+}
+
+/* Bisnis — orange */
+.hist-gol-chip.gol-bisnis.checked {
+    background: rgba(255, 152, 0, 0.1);
+    border-color: rgba(255, 152, 0, 0.6);
+    color: #ff9800;
+}
+
+/* Industri — merah */
+.hist-gol-chip.gol-industri.checked {
+    background: rgba(244, 67, 54, 0.1);
+    border-color: rgba(244, 67, 54, 0.6);
+    color: #f44336;
+}
+
+/* Publik — ungu */
+.hist-gol-chip.gol-publik.checked {
+    background: rgba(156, 39, 176, 0.12);
+    border-color: rgba(156, 39, 176, 0.6);
+    color: #ce93d8;
+}
+
+/* Multiguna — pink/magenta */
+.hist-gol-chip.gol-multiguna.checked {
+    background: rgba(233, 30, 99, 0.1);
+    border-color: rgba(233, 30, 99, 0.6);
+    color: #f06292;
+}
+
+/* Total — kuning emas */
+.hist-gol-chip.gol-total.checked {
+    background: rgba(255, 193, 7, 0.1);
+    border-color: rgba(255, 193, 7, 0.6);
+    color: #ffc107;
+}
+
+/* Fallback */
+.hist-gol-chip.checked {
+    background: rgba(255, 152, 0, 0.1);
+    border-color: rgba(255, 152, 0, 0.5);
+    color: #ff9800;
+}
+
+/* ─── CHART SECTION ──────────────────────────────────────── */
+.section-chart {
+    padding: 20px 24px;
+}
+
+.section-chart .chart-header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    flex-wrap: wrap;
+    gap: 10px;
+    margin-bottom: 16px;
+    padding-bottom: 12px;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.chart-info .card-title {
+    font-size: 0.82rem;
+    font-weight: 700;
+    color: #e0e0e0;
+    margin: 0 0 3px;
+}
+
+.chart-info .text-muted {
+    font-size: 0.7rem;
+    color: #555;
+}
+
+.chart-controls {
+    display: flex;
+    gap: 6px;
+    flex-shrink: 0;
+    align-items: center;
+}
+
+#histChartWrap {
+    position: relative;
+    height: 340px;
+    width: 100%;
+}
+
+#histChartWrap canvas {
+    width: 100% !important;
+    height: 100% !important;
+}
+
+/* ─── TABLE SECTION — muncul di bawah chart, bukan menggantikan ── */
+.section-table {
+    padding: 20px 24px;
+    width: 100%;
+}
+
+.section-table .table-header {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 14px;
+    padding-bottom: 10px;
+    border-bottom: 1px solid #2a2a2a;
+}
+
+.section-table .card-title {
+    font-size: 0.72rem;
+    font-weight: 700;
+    color: #888;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin: 0;
+}
+
+.table-wrapper {
+    width: 100%;
+    overflow-x: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #ff9800 #1a1a1a;
+    border-radius: 8px;
+    max-height: 420px;
+    overflow-y: auto;
+}
+
+.table-wrapper::-webkit-scrollbar       { width: 5px; height: 5px; }
+.table-wrapper::-webkit-scrollbar-track { background: #1a1a1a; border-radius: 10px; }
+.table-wrapper::-webkit-scrollbar-thumb { background: #ff9800; border-radius: 10px; }
+
+/* ─── INFO / ERROR BOXES ─────────────────────────────────── */
+.hist-info-box {
+    display: flex;
+    align-items: flex-start;
+    gap: 10px;
+    padding: 10px 14px;
+    background: rgba(33, 150, 243, 0.07);
+    border: 1px solid rgba(33, 150, 243, 0.2);
+    border-radius: 8px;
+    font-size: 0.78rem;
+    color: #90caf9;
+    margin-bottom: 14px;
+}
+
+.hist-error-box {
+    padding: 10px 14px;
+    background: rgba(244, 67, 54, 0.08);
+    border: 1px solid rgba(244, 67, 54, 0.25);
+    border-radius: 8px;
+    font-size: 0.78rem;
+    color: #ef9a9a;
+}
+
+.hist-warning-box {
+    border-radius: 7px;
+    padding: 8px 14px;
+    font-size: 0.78rem;
+}
+
+/* ─── ENTRY SECTION ──────────────────────────────────────── */
+.section-entry { border-left: 3px solid #00ff88; }
+
+.entry-toggle {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    cursor: pointer;
+    padding: 2px 0;
+    background: none;
+    border: none;
+    width: 100%;
+    text-align: left;
+    color: inherit;
+    font: inherit;
+}
+
+.entry-toggle:hover .toggle-info h3 { color: #fff; }
+
+.toggle-content {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+
+.toggle-info h3 {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #f0f0f0;
+    margin: 0;
+}
+
+.toggle-info .text-muted {
+    font-size: 0.7rem;
+    color: #555;
+    display: block;
+    margin-top: 2px;
+}
+
+.toggle-icon {
+    color: #555;
+    transition: transform 0.2s;
+    font-size: 0.85rem;
+}
+
+.toggle-icon.open { transform: rotate(180deg); }
+
+.icon-accent {
+    color: #ff9800;
+    font-size: 0.95rem;
+}
+
+.entry-panel {
+    margin-top: 16px;
+    border-top: 1px solid #222;
+    padding-top: 16px;
+}
+
+.entry-panel[hidden] { display: none; }
+
+.entry-controls {
+    display: flex;
+    gap: 10px;
+    flex-wrap: wrap;
+    align-items: flex-end;
+    margin-bottom: 14px;
+}
+
+.entry-status {
+    padding: 8px 14px;
+    border-radius: 7px;
+    font-size: 0.78rem;
+    margin-bottom: 10px;
+}
+
+.entry-actions {
+    display: flex;
+    gap: 8px;
+    margin-top: 12px;
+}
+
+/* ─── RESPONSIVE ─────────────────────────────────────────── */
+@media (max-width: 900px) {
+    .dash-header        { padding: 0 16px; }
+    .historis-container { padding: 16px; }
+}
+
+@media (max-width: 768px) {
+    .dash-header__sub   { display: none; }
+    .filter-controls    { flex-direction: column; align-items: stretch; }
+    .filter-group,
+    .filter-group--wide { min-width: unset; flex: 1 1 auto; }
+    .hist-btn-primary   { width: 100%; justify-content: center; }
+    .historis-container { padding: 12px; }
+    #histChartWrap      { height: 260px; }
+}
+/* ══════════════════════════════════════════════════════════
+   TAMBAHAN ke historis.css
+   Paste di bagian BAWAH file historis.css yang sudah ada
+   ══════════════════════════════════════════════════════════ */
+
+/* ─── BUTTON: Download Template (hijau outline) ───────────── */
+.hist-btn-primary.hist-btn-template {
+    background: transparent;
+    color: #28a745;
+    border: 1.5px solid #28a745;
+}
+.hist-btn-primary.hist-btn-template:hover {
+    background: rgba(40, 167, 69, 0.12);
+    color: #4cbb6a;
+    border-color: #4cbb6a;
+}
+
+/* ─── BUTTON: Import Excel (biru outline) ─────────────────── */
+.hist-btn-primary.hist-btn-import {
+    background: transparent;
+    color: #2196f3;
+    border: 1.5px solid #2196f3;
+}
+.hist-btn-primary.hist-btn-import:hover {
+    background: rgba(33, 150, 243, 0.12);
+    color: #64b5f6;
+    border-color: #64b5f6;
+}
+/* Saat panel import terbuka */
+.hist-btn-primary.hist-btn-import.active {
+    background: rgba(33, 150, 243, 0.18);
+    color: #90caf9;
+    border-color: #90caf9;
+}
+
+/* ─── BUTTON: Proses Import (biru solid) ──────────────────── */
+.hist-btn-primary.hist-btn-process {
+    background: #2196f3;
+    color: #fff;
+    border: none;
+}
+.hist-btn-primary.hist-btn-process:hover {
+    background: #42a5f5;
+}
+
+/* ─── IMPORT PANEL ────────────────────────────────────────── */
+.import-panel {
+    margin-top: 14px;
+    padding: 16px 18px;
+    background: rgba(33, 150, 243, 0.04);
+    border: 1px solid rgba(33, 150, 243, 0.25);
+    border-radius: 10px;
+    animation: importSlideDown 0.2s ease;
+}
+
+@keyframes importSlideDown {
+    from { opacity: 0; transform: translateY(-6px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+/* Header panel */
+.import-panel-head {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 4px;
+    margin-bottom: 14px;
+    position: relative;
+}
+.import-panel-title {
+    font-size: 0.88rem;
+    font-weight: 700;
+    color: #e0e0e0;
+    display: flex;
+    align-items: center;
+    gap: 7px;
+    width: 100%;
+}
+.import-panel-sub {
+    font-size: 0.72rem;
+    color: #555;
+    flex: 1;
+}
+.import-close-btn {
+    position: absolute;
+    top: 0;
+    right: 0;
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    padding: 3px 6px;
+    border-radius: 4px;
+    font-size: 0.82rem;
+    transition: color 0.15s, background 0.15s;
+}
+.import-close-btn:hover {
+    color: #ff4444;
+    background: rgba(255, 68, 68, 0.1);
+}
+
+/* Drop zone */
+.import-dropzone {
+    border: 2px dashed #2a2a2a;
+    border-radius: 8px;
+    padding: 28px 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: border-color 0.2s, background 0.2s;
+}
+.import-dropzone:hover,
+.import-dropzone.drag-over {
+    border-color: #2196f3;
+    background: rgba(33, 150, 243, 0.06);
+}
+.import-dropzone-label {
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 6px;
+    color: #888;
+    font-size: 0.8rem;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+.import-dropzone-label small {
+    font-size: 0.68rem;
+    color: #444;
+}
+.import-upload-icon {
+    font-size: 2rem;
+    color: #2196f3;
+    margin-bottom: 4px;
+}
+
+/* File preview */
+.import-file-preview {
+    margin-top: 10px;
+    padding: 9px 12px;
+    background: #161616;
+    border: 1px solid #2a2a2a;
+    border-radius: 6px;
+    display: flex;
+    align-items: center;
+    gap: 10px;
+}
+.import-file-name {
+    font-size: 0.78rem;
+    color: #ccc;
+    flex: 1;
+    word-break: break-all;
+}
+.import-remove-btn {
+    background: none;
+    border: none;
+    color: #555;
+    cursor: pointer;
+    padding: 2px 5px;
+    border-radius: 3px;
+    font-size: 0.8rem;
+    transition: color 0.15s;
+}
+.import-remove-btn:hover { color: #ff4444; }
+
+/* Action row */
+.import-action-row {
+    margin-top: 12px;
+    display: flex;
+    gap: 8px;
+    justify-content: flex-end;
+    flex-wrap: wrap;
+}
+
+/* Progress bar */
+.import-progress-track {
+    height: 4px;
+    background: #2a2a2a;
+    border-radius: 2px;
+    overflow: hidden;
+}
+.import-progress-fill {
+    height: 100%;
+    background: linear-gradient(90deg, #2196f3, #00ff88);
+    transition: width 0.3s ease;
+}
+.import-progress-text {
+    display: block;
+    color: #555;
+    font-size: 0.68rem;
+    margin-top: 5px;
+}
+
+/* Result messages */
+.import-result {
+    margin-top: 10px;
+    padding: 8px 12px;
+    border-radius: 6px;
+    font-size: 0.78rem;
+    font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
+}
+.import-result.success {
+    background: rgba(0, 200, 83, 0.08);
+    border: 1px solid rgba(0, 200, 83, 0.3);
+    color: #00c853;
+    display: block;
+}
+.import-result.error {
+    background: rgba(244, 67, 54, 0.08);
+    border: 1px solid rgba(244, 67, 54, 0.25);
+    color: #ef9a9a;
+    display: block;
+}

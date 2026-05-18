@@ -1,0 +1,244 @@
+    /* ============================================================
+    dashboard-components.css
+    Reusable UI pieces - Unified Dark/Light Theme
+    ============================================================ */
+
+    /* ===== DESIGN TOKENS ===== */
+    :root {
+        /* Base Backgrounds */
+        --bg-primary:      #121212;
+        --bg-secondary:    #1e1e1e;
+        --surface-hover:   #2a2a2a;
+        --row-hover-bg:    #252525;
+
+        /* Borders & Inputs */
+        --border-color:    #333333;
+        --input-border:    #444444;
+        --scrollbar-track: #1a1a1a;
+
+        /* Text Colors */
+        --text-primary:    #ffffff;
+        --text-secondary:  #888888;
+        --input-text:      #ffffff;
+
+        /* Accents */
+        --accent-orange:   #ff9800;
+        --accent-orange-hover: #ffb74d;
+        --accent-green:    #00ff88;
+        --accent-green-hover:  #69ffb0;
+
+        /* Layout */
+        --gap:             20px;
+        --radius:          12px;
+    }
+
+    /* ☀️ LIGHT MODE OVERRIDES */
+    body.light-mode {
+        --bg-primary:      #f0f2f5;
+        --bg-secondary:    #ffffff;
+        --surface-hover:   #f1f5f9;
+        --row-hover-bg:    #f8fafc;
+
+        --border-color:    #e2e8f0;
+        --input-border:    #cbd5e1;
+        --scrollbar-track: #f1f5f9;
+
+        --text-primary:    #1e293b;
+        --text-secondary:  #64748b;
+        --input-text:      #1e293b;
+
+        /* Warna accent sedikit lebih gelap agar kontras tetap WCAG AA di background putih */
+        --accent-orange:   #ea580c;
+        --accent-orange-hover: #c2410c;
+        --accent-green:    #16a34a;
+        --accent-green-hover:  #15803d;
+    }
+
+    /* ===== RESET MINIMAL ===== */
+    *, *::before, *::after {
+        box-sizing: border-box;
+        margin: 0;
+        padding: 0;
+    }
+
+    /* ===== BASE ===== */
+    body {
+        background: var(--bg-primary);
+        color: var(--text-primary);
+        font-family: 'Inter', 'Segoe UI', sans-serif;
+        line-height: 1.5;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    /* ===== GRID ===== */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: repeat(12, 1fr);
+        grid-auto-rows: minmax(180px, auto);
+        gap: var(--gap);
+        align-items: start;
+    }
+
+    .dashboard-grid > * { min-width: 0; }
+
+    .col-3         { grid-column: span 3; }
+    .col-4         { grid-column: span 4; }
+    .col-6         { grid-column: span 6; }
+    .col-8         { grid-column: span 8; }
+    .col-9         { grid-column: span 9; }
+    .col-12        { grid-column: span 12; }
+    .double-column { grid-column: span 8; }
+    .full-width    { grid-column: span 12; }
+
+    @media (max-width: 1200px) {
+        .dashboard-grid { grid-template-columns: repeat(8, 1fr); }
+        .col-12, .full-width, .col-9, .col-8, .double-column { grid-column: span 8; }
+        .col-6 { grid-column: span 4; }
+        .col-4, .col-3 { grid-column: span 4; }
+    }
+
+    @media (max-width: 768px) {
+        .dashboard-grid { grid-template-columns: 1fr; }
+        [class*="col-"], .double-column, .full-width { grid-column: span 1; }
+    }
+
+    /* ===== CARD ===== */
+    .card {
+        background: var(--bg-secondary);
+        border-radius: var(--radius);
+        padding: 20px;
+        border: 1px solid var(--border-color);
+        display: flex;
+        flex-direction: column;
+        height: 100%;
+        transition: background-color 0.3s ease, border-color 0.3s ease;
+    }
+
+    .card-title {
+        color: var(--text-secondary);
+        font-size: 0.75rem;
+        font-weight: 700;
+        margin-bottom: 15px;
+        text-transform: uppercase;
+        letter-spacing: 1px;
+        flex-shrink: 0;
+    }
+
+    .card:has(.stat-value) {
+        min-height: 140px;
+        contain: layout style;
+    }
+
+    /* ===== STATS ===== */
+    .stat-value  { font-size: 2.5rem; font-weight: 800; color: var(--accent-orange); transition: color 0.3s ease; }
+    .stat-change { font-size: 1.5rem; font-weight: 700; color: var(--accent-green); transition: color 0.3s ease; }
+
+    /* ===== CHART ===== */
+    .chart-wrapper,
+    .chart-container {
+        position: relative;
+        height: 300px;
+        min-height: 300px;
+        width: 100%;
+        contain: layout style paint;
+        /* Skeleton shimmer saat chart belum selesai render */
+        background: linear-gradient(
+            90deg,
+            var(--bg-secondary) 25%,
+            var(--surface-hover) 50%,
+            var(--bg-secondary) 75%
+        );
+        background-size: 200% 100%;
+        animation: chart-shimmer 1.5s infinite;
+    }
+
+    /* Stop shimmer setelah chart.js inject canvas */
+    .chart-wrapper.ready,
+    .chart-container.ready {
+        background: var(--bg-secondary);
+        animation: none;
+    }
+
+    @keyframes chart-shimmer {
+        0%   { background-position: 200% 0; }
+        100% { background-position: -200% 0; }
+    }
+
+    canvas {
+        display: block;
+        width: 100% !important;
+        height: 100% !important;
+        image-rendering: crisp-edges;
+        contain: layout style paint;
+    }
+
+    @media (max-width: 768px) {
+        .chart-wrapper,
+        .chart-container { height: 250px; min-height: 250px; }
+    }
+
+    /* ===== TABLE ===== */
+    table { width: 100%; border-collapse: collapse; font-size: 0.85rem; }
+
+    th {
+        background: var(--surface-hover);
+        color: var(--text-secondary);
+        padding: 10px 6px;
+        text-align: center;
+        font-weight: 600;
+        text-transform: uppercase;
+        font-size: 0.72rem;
+        position: sticky;
+        top: 0;
+        z-index: 1;
+        transition: background-color 0.3s ease, color 0.3s ease;
+    }
+
+    td {
+        padding: 7px 6px;
+        text-align: right;
+        border-bottom: 1px solid var(--surface-hover);
+        transition: border-color 0.3s ease;
+    }
+
+    td:first-child { text-align: left; color: var(--text-secondary); }
+    tr:hover { background: var(--row-hover-bg); transition: background-color 0.2s ease; }
+
+    /* ===== CUSTOM SCROLLBAR ===== */
+    .custom-scroll {
+        scrollbar-width: thin;
+        scrollbar-color: var(--accent-orange) var(--scrollbar-track);
+    }
+
+    .custom-scroll::-webkit-scrollbar        { width: 6px; height: 6px; }
+    .custom-scroll::-webkit-scrollbar-track  { background: var(--scrollbar-track); border-radius: 10px; }
+    .custom-scroll::-webkit-scrollbar-thumb  {
+        background: linear-gradient(180deg, var(--accent-orange), var(--accent-green));
+        border-radius: 10px;
+        border: 1px solid var(--scrollbar-track);
+    }
+    .custom-scroll::-webkit-scrollbar-thumb:hover {
+        background: linear-gradient(180deg, var(--accent-orange-hover), var(--accent-green-hover));
+    }
+    .custom-scroll::-webkit-scrollbar-corner { background: var(--scrollbar-track); }
+
+    /* ===== FILTERS ===== */
+    .filters { display: flex; gap: 10px; }
+
+    select {
+        background: var(--bg-secondary);
+        color: var(--input-text);
+        border: 1px solid var(--input-border);
+        padding: 8px 15px;
+        border-radius: 5px;
+        outline: none;
+        cursor: pointer;
+        transition: background-color 0.3s ease, color 0.3s ease, border-color 0.3s ease;
+    }
+
+    /* ===== REDUCED MOTION ===== */
+    @media (prefers-reduced-motion: reduce) {
+        .chart-wrapper,
+        .chart-container { animation: none; }
+        *, *::before, *::after { transition: none !important; }
+    }

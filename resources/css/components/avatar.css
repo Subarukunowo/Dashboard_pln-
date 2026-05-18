@@ -1,0 +1,73 @@
+/* ============================================================
+   avatar.css
+   Avatar component — Google OAuth URL di-inject via CSS
+   custom property --avatar-url langsung dari blade.
+   
+   Dipanggil dari: layouts/app.blade.php
+   Dipakai via   : <div class="avatar avatar--sm" style="--avatar-url: url('...')"></div>
+   ============================================================ */
+
+/* ===== BASE ===== */
+.avatar {
+    --avatar-url: none;      /* di-override dari blade via inline style */
+    --avatar-size: 32px;
+    --avatar-border-color: var(--accent-orange, #ff9800);
+
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+    width: var(--avatar-size);
+    height: var(--avatar-size);
+    border-radius: 50%;
+    border: 2px solid var(--avatar-border-color);
+    flex-shrink: 0;
+    overflow: hidden;
+    position: relative;
+
+    /* Foto Google via CSS background */
+    background-image: var(--avatar-url);
+    background-size: cover;
+    background-position: center;
+    background-color: #2a2a2a; /* placeholder warna kalau URL gagal */
+}
+
+/* ===== SIZES ===== */
+.avatar--xs { --avatar-size: 24px; font-size: 0.55rem; }
+.avatar--sm { --avatar-size: 28px; font-size: 0.6rem;  }
+.avatar--md { --avatar-size: 32px; font-size: 0.65rem; } /* default */
+.avatar--lg { --avatar-size: 40px; font-size: 0.8rem;  }
+.avatar--xl { --avatar-size: 56px; font-size: 1.1rem;  }
+
+/* ===== INITIALS FALLBACK ===== */
+/*
+   Initials ditaruh di ::after — akan tertutup oleh background-image
+   kalau URL berhasil dimuat. Kalau URL gagal/null, initials muncul.
+*/
+.avatar[data-initials]::after {
+    content: attr(data-initials);
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-weight: 700;
+    color: #fff;
+    letter-spacing: 0.5px;
+    line-height: 1;
+    font-size: inherit;
+    /* background diset per-user via --avatar-bg dari blade */
+    background-color: var(--avatar-bg, #e67e22);
+    /* Kalau background-image berhasil load, pseudo ini akan tertutup */
+    z-index: 0;
+}
+
+/* Kalau URL ada, ::after di-hide dengan z-index (bg-image ada di atas) */
+.avatar {
+    /* background-image selalu di atas pseudo element */
+    background-position: center;
+    background-size: cover;
+    background-repeat: no-repeat;
+}
+
+/* Pastikan img layer di atas initials */
+.avatar > * { position: relative; z-index: 1; }
