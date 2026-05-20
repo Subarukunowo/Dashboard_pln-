@@ -1,0 +1,118 @@
+/* ═══════════════════════════════════════════════════════════════
+   Language Dropdown
+   ═══════════════════════════════════════════════════════════════ */
+
+.lang-dropdown {
+    position: relative;
+}
+
+.lang-dropdown-btn {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    padding: 5px 8px;
+    border-radius: 8px;
+    border: none;
+    background: transparent;
+    color: inherit;
+    cursor: pointer;
+    font-size: 0.75rem;
+    font-weight: 600;
+    letter-spacing: 0.04em;
+    transition: background 0.2s ease;
+}
+
+.lang-dropdown-btn:hover {
+    background: rgba(255, 255, 255, 0.08);
+}
+
+.lang-dropdown-btn .fa-caret-down {
+    font-size: 0.65rem;
+    opacity: 0.55;
+    transition: transform 0.2s ease;
+}
+
+.lang-dropdown-btn[aria-expanded="true"] .fa-caret-down {
+    transform: rotate(180deg);
+}
+
+.lang-flag {
+    width: 20px;
+    height: 20px;
+    border-radius: 3px;
+    object-fit: cover;
+    display: block;
+    flex-shrink: 0;
+}
+
+.lang-dropdown-content {
+    display: none;
+    position: absolute;
+    top: calc(100% + 6px);
+    right: 0;
+    min-width: 145px;
+    background: #1e1e1e;
+    border: 1px solid #333;
+    border-radius: 10px;
+    padding: 4px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.45);
+    z-index: 200;
+}
+
+.lang-dropdown-content.show {
+    display: block;
+    animation: langFadeIn 0.15s ease;
+}
+
+@keyframes langFadeIn {
+    from { opacity: 0; transform: translateY(-5px); }
+    to   { opacity: 1; transform: translateY(0); }
+}
+
+.lang-option {
+    display: flex;
+    align-items: center;
+    gap: 9px;
+    padding: 8px 10px;
+    border-radius: 7px;
+    text-decoration: none;
+    color: #bbb;
+    font-size: 0.8rem;
+    transition: background 0.15s ease, color 0.15s ease;
+}
+
+.lang-option:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: #fff;
+}
+
+.lang-option.active {
+    color: #fff;
+    font-weight: 600;
+    background: rgba(255, 255, 255, 0.1);
+}
+
+/* ── Light mode ───────────────────────────────────────────────── */
+body.light-mode .lang-dropdown-btn:hover {
+    background: rgba(0, 0, 0, 0.05);
+}
+
+body.light-mode .lang-dropdown-content {
+    background: #ffffff;
+    border-color: #e2e8f0;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+}
+
+body.light-mode .lang-option {
+    color: #475569;
+}
+
+body.light-mode .lang-option:hover {
+    background: rgba(0, 0, 0, 0.04);
+    color: #0f172a;
+}
+
+body.light-mode .lang-option.active {
+    background: rgba(0, 0, 0, 0.06);
+    color: #0f172a;
+}

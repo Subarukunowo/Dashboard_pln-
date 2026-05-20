@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'umum'             => 'Umum',
+    'tampilkan_semua'  => 'Tampilkan Semua',
+    'produksi_biaya'   => 'Produksi & Biaya',
+    'bpp'              => 'BPP Rp/kWh',
+    'losses'           => 'Losses Jaringan',
+    'penjualan'        => 'Penjualan',
+    'kinerja_penjualan'=> 'Kinerja Penjualan',
+    'penjualan_kwh'    => 'Penjualan KWH',
+    'babin'            => 'BABIN & WRKR',
+    'jam_nyala'        => 'Jam Nyala',
+    'pendapatan'       => 'Pendapatan',
+    'goltarif'         => 'Golongan Tarif',
+    'pendapatan_batam' => 'Pendapatan Batam',
+    'rpkwh'            => 'RPKWH',
+    'pelanggan'        => 'Pelanggan',
+    'kva'              => 'KVA',
+    'keuangan'         => 'Keuangan',
+    'tunggakan'        => 'Tunggakan',
+    'p2tl'             => 'P2TL',
+    'analisis'         => 'Analisis',
+    'historis'         => 'Data Historis',
+];

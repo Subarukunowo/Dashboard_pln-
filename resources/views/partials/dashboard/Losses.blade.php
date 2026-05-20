@@ -1,35 +1,35 @@
+{{-- CARD 1: Produksi --}}
 <div class="card col-12">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
-        <div class="card-title">Losses Jaringan PLN Batam 2025</div>
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+        <div class="card-title">{{ __('losses.title') }}</div>
         <div style="display:flex; gap:5px;">
             <select id="filterEminLosses" style="font-size:0.7rem; padding:4px;">
-                <option value="with">Dengan EMIN</option>
-                <option value="without">Tanpa EMIN</option>
+                <option value="with">{{ __('losses.filter.dengan_emin') }}</option>
+                <option value="without">{{ __('losses.filter.tanpa_emin') }}</option>
             </select>
             <select id="filterBulanLosses" style="font-size:0.7rem; padding:4px;">
-                      <option value="all">Semua Bulan</option>
-                <option value="0">Januari</option><option value="1">Februari</option><option value="2">Maret</option>
-                <option value="3">April</option><option value="4">Mei</option><option value="5">Juni</option>
-                <option value="6">Juli</option><option value="7">Agustus</option><option value="8">September</option>
-                <option value="9">Oktober</option><option value="10">November</option><option value="11">Desember</option>
+                <option value="all">{{ __('losses.filter.semua') }}</option>
+                @foreach(range(0, 11) as $i)
+                    <option value="{{ $i }}">
+                        {{ \Carbon\Carbon::create()->month($i + 1)->translatedFormat('F') }}
+                    </option>
+                @endforeach
             </select>
         </div>
     </div>
 
-    {{-- Chart Produksi --}}
     <div class="chart-wrapper" style="width:100%; height:320px; margin-bottom:20px;">
         <canvas id="chartLossesProduksi"></canvas>
     </div>
 
-    {{-- Tabel Produksi --}}
-    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px;">
         <table style="width:100%; border-collapse:collapse;">
             <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-                <tr style="font-size:0.72rem;">
-                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
-                    <th style="padding:10px; text-align:center; color:#2196f3;">Prod Bruto</th>
-                    <th style="padding:10px; text-align:center; color:var(--accent-green);">Prod Netto</th>
-                    <th style="padding:10px; text-align:center; color:#ff9800;">Siap Salur</th>
+                <tr style="font-size:0.72rem; text-transform:uppercase;">
+                    <th style="padding:10px; color:#888;">{{ __('losses.table.bulan') }}</th>
+                    <th style="padding:10px; color:#2196f3;">{{ __('losses.table.prod_bruto') }}</th>
+                    <th style="padding:10px; color:var(--accent-green);">{{ __('losses.table.prod_netto') }}</th>
+                    <th style="padding:10px; color:#ff9800;">{{ __('losses.table.siap_salur') }}</th>
                 </tr>
             </thead>
             <tbody id="lossesSideTable"></tbody>
@@ -37,24 +37,23 @@
     </div>
 </div>
 
+{{-- CARD 2: Losses % --}}
 <div class="card col-12">
-    <div class="card-title">Losses % (Bulanan & Akumulasi)</div>
-    
-    {{-- Chart Losses % --}}
+    <div class="card-title">{{ __('losses.pct_title') }}</div>
+
     <div class="chart-wrapper" style="width:100%; height:280px; margin-bottom:20px;">
         <canvas id="chartLossesPct"></canvas>
     </div>
 
-    {{-- Tabel Losses % (NEW) --}}
-    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
+    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px;">
         <table style="width:100%; border-collapse:collapse;">
             <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-                <tr style="font-size:0.72rem;">
-                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
-                    <th style="padding:10px; text-align:center; color:#f44336;">Losses Trans Bln (%)</th>
-                    <th style="padding:10px; text-align:center; color:#ff9800;">Losses Trans Akum (%)</th>
-                    <th style="padding:10px; text-align:center; color:var(--accent-green);">Losses Jar Bln (%)</th>
-                    <th style="padding:10px; text-align:center; color:#9c27b0;">Losses Jar Akum (%)</th>
+                <tr style="font-size:0.72rem; text-transform:uppercase;">
+                    <th style="padding:10px; color:#888;">{{ __('losses.table.bulan') }}</th>
+                    <th style="padding:10px; color:#f44336;">{{ __('losses.table.losses_trans_bln') }}</th>
+                    <th style="padding:10px; color:#ff9800;">{{ __('losses.table.losses_trans_akum') }}</th>
+                    <th style="padding:10px; color:var(--accent-green);">{{ __('losses.table.losses_jar_bln') }}</th>
+                    <th style="padding:10px; color:#9c27b0;">{{ __('losses.table.losses_jar_akum') }}</th>
                 </tr>
             </thead>
             <tbody id="tabelLossesPct"></tbody>
@@ -62,23 +61,22 @@
     </div>
 </div>
 
+{{-- CARD 3: Losses kWh --}}
 <div class="card col-12">
-    <div class="card-title">Losses Transmisi, Distribusi & Jaringan (kWh)</div>
-    
-    {{-- Chart Losses kWh --}}
+    <div class="card-title">{{ __('losses.kwh_title') }}</div>
+
     <div class="chart-wrapper" style="width:100%; height:280px; margin-bottom:20px;">
         <canvas id="chartLossesKwh"></canvas>
     </div>
 
-    {{-- Tabel Losses kWh (NEW) --}}
     <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px;">
         <table style="width:100%; border-collapse:collapse;">
             <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-                <tr style="font-size:0.72rem;">
-                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
-                    <th style="padding:10px; text-align:center; color:#e91e63;">Losses Trans</th>
-                    <th style="padding:10px; text-align:center; color:#9c27b0;">Losses Dist</th>
-                    <th style="padding:10px; text-align:center; color:#f44336;">Losses Jar</th>
+                <tr style="font-size:0.72rem; text-transform:uppercase;">
+                    <th style="padding:10px; color:#888;">{{ __('losses.table.bulan') }}</th>
+                    <th style="padding:10px; color:#e91e63;">{{ __('losses.table.losses_trans') }}</th>
+                    <th style="padding:10px; color:#9c27b0;">{{ __('losses.table.losses_dist') }}</th>
+                    <th style="padding:10px; color:#f44336;">{{ __('losses.table.losses_jar') }}</th>
                 </tr>
             </thead>
             <tbody id="tabelLossesKwh"></tbody>
@@ -86,27 +84,28 @@
     </div>
 </div>
 
+{{-- CARD 4: Tabel Rincian Losses --}}
 <div class="card col-12">
-    <div class="card-title">Tabel Rincian Losses (jt kWh)</div>
-    <div class="custom-scroll" style="width:100%; overflow-x:auto; border:1px solid #333; border-radius:8px;">
-        <table style="width:100%; border-collapse:collapse; white-space:nowrap; font-size:0.75rem;">
+    <div class="card-title">{{ __('losses.detail_title') }}</div>
+    <div class="custom-scroll" style="overflow-x:auto; border:1px solid #333; border-radius:8px;">
+        <table style="width:100%; border-collapse:collapse; white-space:nowrap;">
             <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-                <tr style="font-size:0.72rem;">
-                    <th style="padding:10px; text-align:center; color:#888;">Bulan</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Prod Bruto</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Prod Netto</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Siap Salur</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Losses Trans</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Losses Bln (%)</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Losses Akum (%)</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Interkoneksi</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Losses Dist</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Losses Dist (%)</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Losses Dist Akum</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Losses Jar</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Losses Jar (%)</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">Losses Jar Akum</th>
-                    <th style="padding:10px; text-align:center; color:var(--accent-orange);">Target (%)</th>
+                <tr style="font-size:0.72rem; text-transform:uppercase;">
+                    <th style="padding:10px; color:#888;">{{ __('losses.table.bulan') }}</th>
+                    <th style="padding:10px; color:#aaa;">{{ __('losses.table.prod_bruto') }}</th>
+                    <th style="padding:10px; color:#aaa;">{{ __('losses.table.prod_netto') }}</th>
+                    <th style="padding:10px; color:#aaa;">{{ __('losses.table.siap_salur') }}</th>
+                    <th style="padding:10px; color:#aaa;">{{ __('losses.table.losses_trans') }}</th>
+                    <th style="padding:10px; color:#aaa;">{{ __('losses.table.losses_bln') }}</th>
+                    <th style="padding:10px; color:#aaa;">{{ __('losses.table.losses_akum') }}</th>
+                    <th style="padding:10px; color:#aaa;">{{ __('losses.table.interkoneksi') }}</th>
+                    <th style="padding:10px; color:#aaa;">{{ __('losses.table.losses_dist') }}</th>
+                    <th style="padding:10px; color:#aaa;">{{ __('losses.table.losses_dist_pct') }}</th>
+                    <th style="padding:10px; color:#aaa;">{{ __('losses.table.losses_dist_akum') }}</th>
+                    <th style="padding:10px; color:#aaa;">{{ __('losses.table.losses_jar') }}</th>
+                    <th style="padding:10px; color:#aaa;">{{ __('losses.table.losses_jar_pct') }}</th>
+                    <th style="padding:10px; color:#aaa;">{{ __('losses.table.losses_jar_akum') }}</th>
+                    <th style="padding:10px; color:var(--accent-orange);">{{ __('losses.table.target') }}</th>
                 </tr>
             </thead>
             <tbody id="tabelLosses"></tbody>

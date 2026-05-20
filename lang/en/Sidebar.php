@@ -1,0 +1,25 @@
+<?php
+
+return [
+    'umum'             => 'General',
+    'tampilkan_semua'  => 'Show All',
+    'produksi_biaya'   => 'Production & Cost',
+    'bpp'              => 'BPP Rp/kWh',
+    'losses'           => 'Network Losses',
+    'penjualan'        => 'Sales',
+    'kinerja_penjualan'=> 'Sales Performance',
+    'penjualan_kwh'    => 'KWH Sales',
+    'babin'            => 'BABIN & WRKR',
+    'jam_nyala'        => 'Burning Hours',
+    'pendapatan'       => 'Revenue',
+    'goltarif'         => 'Tariff Group',
+    'pendapatan_batam' => 'Batam Revenue',
+    'rpkwh'            => 'RPKWH',
+    'pelanggan'        => 'Customers',
+    'kva'              => 'KVA',
+    'keuangan'         => 'Finance',
+    'tunggakan'        => 'Overdue',
+    'p2tl'             => 'P2TL',
+    'analisis'         => 'Analysis',
+    'historis'         => 'Historical Data',
+];

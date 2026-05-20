@@ -8,20 +8,24 @@ return Application::configure(basePath: dirname(__DIR__))
     ->withRouting(
         web: __DIR__.'/../routes/web.php',
         commands: __DIR__.'/../routes/console.php',
-        api: __DIR__.'/../routes/api.php',  
+        api: __DIR__.'/../routes/api.php',
         health: '/up',
     )
     ->withMiddleware(function (Middleware $middleware) {
+
+        // ← INI YANG KURANG DARI TADI
+        $middleware->web(append: [
+            \App\Http\Middleware\SetLocale::class,
+        ]);
+
         $middleware->alias([
-            '2fa' => \App\Http\Middleware\TwoFactor::class,
-            'data_historis' => env('DATA_HISTORIS_URL'),
+            '2fa'   => \App\Http\Middleware\TwoFactor::class,
             'admin' => \App\Http\Middleware\AdminOnly::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
         //
     })
-    // ✅ TAMBAHKAN INI: Register custom commands
     ->withCommands([
         \App\Console\Commands\CacheUserAvatars::class,
     ])

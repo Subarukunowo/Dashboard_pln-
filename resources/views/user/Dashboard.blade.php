@@ -3,26 +3,19 @@
 @section('title', 'PLN Commercial Dashboard')
 
 @push('styles')
-    {{-- Favicon (tetap pakai asset() — tidak di-bundle Vite) --}}
     <link rel="icon"             type="image/png"     href="{{ asset('assets/favicons/favicon-96x96.png') }}?v={{ time() }}" sizes="96x96">
     <link rel="icon"             type="image/svg+xml" href="{{ asset('assets/favicons/favicon.svg') }}?v={{ time() }}">
     <link rel="shortcut icon"                         href="{{ asset('assets/favicons/favicon.ico') }}?v={{ time() }}">
     <link rel="apple-touch-icon" sizes="180x180"      href="{{ asset('assets/favicons/apple-touch-icon.png') }}?v={{ time() }}">
     <link rel="manifest"                              href="{{ asset('assets/favicons/site.webmanifest') }}?v={{ time() }}">
 
-    {{-- Dashboard CSS — di-serve Vite (hash otomatis, cache-busting gratis) --}}
     @vite([
         'resources/css/components/dashboard-components.css',
         'resources/css/pages/dashboard.css',
     ])
 
-    {{-- Non-critical CSS (async) — tetap pakai Vite tapi di-load async --}}
-    <link rel="stylesheet"
-          href="{{ Vite::asset('resources/css/components/chatbot.css') }}"
-          media="print" onload="this.media='all'">
-    <link rel="stylesheet"
-          href="{{ Vite::asset('resources/css/layouts/sidebar.css') }}"
-          media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="{{ Vite::asset('resources/css/components/chatbot.css') }}" media="print" onload="this.media='all'">
+    <link rel="stylesheet" href="{{ Vite::asset('resources/css/layouts/sidebar.css') }}"   media="print" onload="this.media='all'">
     <noscript>
         <link rel="stylesheet" href="{{ Vite::asset('resources/css/components/chatbot.css') }}">
         <link rel="stylesheet" href="{{ Vite::asset('resources/css/layouts/sidebar.css') }}">
@@ -35,18 +28,22 @@
     <div style="display:flex; align-items:center; gap:12px;">
         <button class="sidebar-toggle" id="sidebarToggle" aria-label="Toggle sidebar">☰</button>
         <div>
-            <div style="font-size:0.95rem; font-weight:700; color:#fff; letter-spacing:0.5px;">PLN COMMERCIAL DASHBOARD</div>
+            <div style="font-size:0.95rem; font-weight:700; color:var(--text-primary); letter-spacing:0.5px;">
+                {{ __('dashboard.title') }}
+            </div>
             <div id="clock" style="color:var(--text-muted); font-size:0.72rem;"></div>
         </div>
     </div>
     <div class="filters">
-        <select id="filterYear" aria-label="Filter tahun">
+        <select id="filterYear" aria-label="{{ __('dashboard.filter.tahun') }}">
             <option value="2025">2025</option>
         </select>
-        <select id="filterMonth" aria-label="Filter bulan">
-            <option value="all">Januari - Desember</option>
-            @foreach(['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember'] as $i => $bulan)
-                <option value="{{ $i }}">{{ $bulan }}</option>
+        <select id="filterMonth" aria-label="{{ __('dashboard.filter.bulan') }}">
+            <option value="all">{{ __('dashboard.filter.semua_bulan') }}</option>
+            @foreach(range(0, 11) as $i)
+                <option value="{{ $i }}">
+                    {{ \Carbon\Carbon::create()->month($i + 1)->translatedFormat('F') }}
+                </option>
             @endforeach
         </select>
     </div>
@@ -89,9 +86,6 @@
 @endsection
 
 @section('scripts')
-    {{-- Vite bundle dashboard — semua module/services/charts masuk 1 file --}}
     @vite('resources/js/Dashboard/pages/dashboard.js')
-
-    {{-- Sidebar tetap terpisah (dipakai di halaman lain juga) --}}
     <script src="{{ asset('js/sidebar.js') }}" defer></script>
 @endsection

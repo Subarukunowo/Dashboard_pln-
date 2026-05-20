@@ -227,14 +227,15 @@ class Dashboard {
         setInterval(() => this.updateClock(), 1000)
     }
 
-    updateClock() {
-        const el = document.getElementById('clock')
-        if (!el) return
-        const now = new Date()
-        el.textContent = now.toLocaleDateString('id-ID', {
-            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-        }) + ' | ' + now.toLocaleTimeString()
-    }
+ updateClock() {
+    const el = document.getElementById('clock')
+    if (!el) return
+    const now    = new Date()
+    const locale = document.documentElement.lang === 'en' ? 'en-US' : 'id-ID'
+    el.textContent = now.toLocaleDateString(locale, {
+        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+    }) + ' | ' + now.toLocaleTimeString(locale)
+}
 
     _initChatbotEvents() {
         const bubble   = document.getElementById('chat-bubble')

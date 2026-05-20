@@ -22,6 +22,7 @@ export default defineConfig({
 
                 // ── Dashboard components ───────────────────────────────────
                 'resources/js/Dashboard/components/Chatbot.js',
+                
                 // ── Dashboard CSS ─────────────────────────────────────────
                 'resources/css/layouts/navbar.css',
                 'resources/css/layouts/sidebar.css',
@@ -29,6 +30,7 @@ export default defineConfig({
                 'resources/css/pages/fact-entry.css',
                 'resources/css/components/dashboard-components.css',
                 'resources/css/components/chatbot.css',
+                'resources/css/components/app.css',
             ],
             refresh: [
                 'resources/views/**/*.blade.php',
