@@ -1,18 +1,18 @@
 {{-- SECTION 1: PIE CHART PER GOLONGAN --}}
 <div class="card col-12">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <div class="card-title" id="judulPie">{{ __('goltarif.pie_title') }}</div>
+        <div class="card-title" id="judulPie">{{ __('GolTarifBatam.pie_title') }}</div>
         <div style="display:flex; gap:5px;">
             <select id="filterTahunPie" style="font-size:0.7rem; padding:4px;">
-                <option value="2024">{{ __('goltarif.filter.tahun_lalu') }}</option>
-                <option value="2025" selected>{{ __('goltarif.filter.tahun_ini') }}</option>
+                <option value="2024">{{ __('GolTarifBatam.filter.tahun_lalu') }}</option>
+                <option value="2025" selected>{{ __('GolTarifBatam.filter.tahun_ini') }}</option>
             </select>
             <select id="filterViewPie" style="font-size:0.7rem; padding:4px;">
-                <option value="bulanan">{{ __('goltarif.filter.bulanan') }}</option>
-                <option value="akumulasi">{{ __('goltarif.filter.akumulasi') }}</option>
+                <option value="bulanan">{{ __('GolTarifBatam.filter.bulanan') }}</option>
+                <option value="akumulasi">{{ __('GolTarifBatam.filter.akumulasi') }}</option>
             </select>
             <select id="filterBulanPie" style="font-size:0.7rem; padding:4px;">
-                <option value="all">{{ __('goltarif.filter.semua_bulan') }}</option>
+                <option value="all">{{ __('GolTarifBatam.filter.semua_bulan') }}</option>
                 @foreach(range(0, 11) as $i)
                     <option value="{{ $i }}">
                         {{ \Carbon\Carbon::create()->month($i + 1)->translatedFormat('F') }}
@@ -30,8 +30,8 @@
         <table style="width:100%; border-collapse:collapse;">
             <thead style="position:sticky; top:0; background:#252525; z-index:1;">
                 <tr style="font-size:0.72rem;">
-                    <th style="padding:10px; text-align:center; color:#888;">{{ __('goltarif.table.golongan') }}</th>
-                    <th style="padding:10px; text-align:center; color:var(--accent-green);">{{ __('goltarif.table.nilai') }}</th>
+                    <th style="padding:10px; text-align:center; color:#888;">{{ __('GolTarifBatam.table.golongan') }}</th>
+                    <th style="padding:10px; text-align:center; color:var(--accent-green);">{{ __('GolTarifBatam.table.nilai') }}</th>
                     <th style="padding:10px; text-align:center; color:#aaa;">%</th>
                 </tr>
             </thead>
@@ -43,9 +43,9 @@
 {{-- SECTION 2: REALISASI PENDAPATAN THN INI --}}
 <div class="card col-12">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
-        <div class="card-title">{{ __('goltarif.realisasi_title') }}</div>
+        <div class="card-title">{{ __('GolTarifBatam.realisasi_title') }}</div>
         <select id="filterBulanRealisasiGol" style="font-size:0.7rem; padding:4px;">
-            <option value="all">{{ __('goltarif.filter.semua_bulan') }}</option>
+            <option value="all">{{ __('GolTarifBatam.filter.semua_bulan') }}</option>
             @foreach(range(0, 11) as $i)
                 <option value="{{ $i }}">
                     {{ \Carbon\Carbon::create()->month($i + 1)->translatedFormat('F') }}
@@ -61,18 +61,18 @@
         <table style="width:100%; border-collapse:collapse;">
             <thead style="position:sticky; top:0; background:#252525; z-index:1;">
                 <tr style="font-size:0.72rem;">
-                    <th style="padding:10px; text-align:center; color:#888;">{{ __('goltarif.table.bulan') }}</th>
-                    <th style="padding:10px; text-align:center; color:#ff9800;">{{ __('goltarif.table.target') }}</th>
-                    <th style="padding:10px; text-align:center; color:#00ff88;">{{ __('goltarif.table.realisasi') }}</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">{{ __('goltarif.table.selisih') }}</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">{{ __('goltarif.table.pct_capai') }}</th>
+                    <th style="padding:10px; text-align:center; color:#888;">{{ __('GolTarifBatam.table.bulan') }}</th>
+                    <th style="padding:10px; text-align:center; color:#ff9800;">{{ __('GolTarifBatam.table.target') }}</th>
+                    <th style="padding:10px; text-align:center; color:#00ff88;">{{ __('GolTarifBatam.table.realisasi') }}</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">{{ __('GolTarifBatam.table.selisih') }}</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">{{ __('GolTarifBatam.table.pct_capai') }}</th>
                 </tr>
             </thead>
             <tbody id="tabelRealisasi"></tbody>
         </table>
     </div>
 
-    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">{{ __('goltarif.delta_realisasi_title') }}</div>
+    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">{{ __('GolTarifBatam.delta_realisasi_title') }}</div>
     <div class="chart-wrapper" style="width:100%; height:250px; margin-bottom:20px;">
         <canvas id="chartDeltaRealisasi"></canvas>
     </div>
@@ -80,8 +80,8 @@
         <table style="width:100%; border-collapse:collapse;">
             <thead style="position:sticky; top:0; background:#252525; z-index:1;">
                 <tr style="font-size:0.72rem;">
-                    <th style="padding:10px; text-align:center; color:#888;">{{ __('goltarif.table.bulan') }}</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">{{ __('goltarif.table.selisih_juta') }}</th>
+                    <th style="padding:10px; text-align:center; color:#888;">{{ __('GolTarifBatam.table.bulan') }}</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">{{ __('GolTarifBatam.table.selisih_juta') }}</th>
                 </tr>
             </thead>
             <tbody id="tabelDeltaRealisasi"></tbody>
@@ -91,7 +91,7 @@
 
 {{-- SECTION 3: TOTAL THN LALU vs THN INI --}}
 <div class="card col-12">
-    <div class="card-title">{{ __('goltarif.total_title') }}</div>
+    <div class="card-title">{{ __('GolTarifBatam.total_title') }}</div>
 
     <div class="chart-wrapper" style="width:100%; height:300px; margin-bottom:20px;">
         <canvas id="chartTotal2024vs2025"></canvas>
@@ -100,20 +100,20 @@
         <table style="width:100%; border-collapse:collapse;">
             <thead style="position:sticky; top:0; background:#252525; z-index:1;">
                 <tr style="font-size:0.72rem;">
-                    <th style="padding:10px; text-align:center; color:#888;">{{ __('goltarif.table.bulan') }}</th>
-                    <th style="padding:10px; text-align:center; color:#555;">{{ __('goltarif.table.target_lalu') }}</th>
-                    <th style="padding:10px; text-align:center; color:#2196f3;">{{ __('goltarif.table.real_lalu') }}</th>
-                    <th style="padding:10px; text-align:center; color:#ff9800;">{{ __('goltarif.table.target_ini') }}</th>
-                    <th style="padding:10px; text-align:center; color:#00ff88;">{{ __('goltarif.table.real_ini') }}</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">{{ __('goltarif.table.selisih') }}</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">{{ __('goltarif.table.selisih_pct') }}</th>
+                    <th style="padding:10px; text-align:center; color:#888;">{{ __('GolTarifBatam.table.bulan') }}</th>
+                    <th style="padding:10px; text-align:center; color:#555;">{{ __('GolTarifBatam.table.target_lalu') }}</th>
+                    <th style="padding:10px; text-align:center; color:#2196f3;">{{ __('GolTarifBatam.table.real_lalu') }}</th>
+                    <th style="padding:10px; text-align:center; color:#ff9800;">{{ __('GolTarifBatam.table.target_ini') }}</th>
+                    <th style="padding:10px; text-align:center; color:#00ff88;">{{ __('GolTarifBatam.table.real_ini') }}</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">{{ __('GolTarifBatam.table.selisih') }}</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">{{ __('GolTarifBatam.table.selisih_pct') }}</th>
                 </tr>
             </thead>
             <tbody id="tabelTotal"></tbody>
         </table>
     </div>
 
-    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">{{ __('goltarif.delta_total_title') }}</div>
+    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">{{ __('GolTarifBatam.delta_total_title') }}</div>
     <div class="chart-wrapper" style="width:100%; height:250px; margin-bottom:20px;">
         <canvas id="chartTotalDelta"></canvas>
     </div>
@@ -121,15 +121,15 @@
         <table style="width:100%; border-collapse:collapse;">
             <thead style="position:sticky; top:0; background:#252525; z-index:1;">
                 <tr style="font-size:0.72rem;">
-                    <th style="padding:10px; text-align:center; color:#888;">{{ __('goltarif.table.bulan') }}</th>
-                    <th style="padding:10px; text-align:center; color:#aaa;">{{ __('goltarif.table.selisih_triliun') }}</th>
+                    <th style="padding:10px; text-align:center; color:#888;">{{ __('GolTarifBatam.table.bulan') }}</th>
+                    <th style="padding:10px; text-align:center; color:#aaa;">{{ __('GolTarifBatam.table.selisih_triliun') }}</th>
                 </tr>
             </thead>
             <tbody id="tabelDeltaTotal"></tbody>
         </table>
     </div>
 
-    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">{{ __('goltarif.pertumbuhan_title') }}</div>
+    <div class="card-title" style="margin-top:10px; margin-bottom:15px;">{{ __('GolTarifBatam.pertumbuhan_title') }}</div>
     <div class="chart-wrapper" style="width:100%; height:250px; margin-bottom:20px;">
         <canvas id="chartTotalPertumbuhan"></canvas>
     </div>
@@ -137,9 +137,9 @@
         <table style="width:100%; border-collapse:collapse;">
             <thead style="position:sticky; top:0; background:#252525; z-index:1;">
                 <tr style="font-size:0.72rem;">
-                    <th style="padding:10px; text-align:center; color:#888;">{{ __('goltarif.table.bulan') }}</th>
-                    <th style="padding:10px; text-align:center; color:#ff9800;">{{ __('goltarif.table.pct_target') }}</th>
-                    <th style="padding:10px; text-align:center; color:#00ff88;">{{ __('goltarif.table.pct_realisasi') }}</th>
+                    <th style="padding:10px; text-align:center; color:#888;">{{ __('GolTarifBatam.table.bulan') }}</th>
+                    <th style="padding:10px; text-align:center; color:#ff9800;">{{ __('GolTarifBatam.table.pct_target') }}</th>
+                    <th style="padding:10px; text-align:center; color:#00ff88;">{{ __('GolTarifBatam.table.pct_realisasi') }}</th>
                 </tr>
             </thead>
             <tbody id="tabelPertumbuhan"></tbody>

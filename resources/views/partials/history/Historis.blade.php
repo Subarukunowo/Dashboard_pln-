@@ -186,9 +186,10 @@
                     <label class="hist-label" for="inputTahun">Tahun</label>
                     <select id="inputTahun" class="hist-select">
                         @php
+                            $currentYear    = $currentYear ?? now()->year;
                             $tahunAvailable = ($tahunInputTersedia ?? collect())
                                 ->filter(fn($t) => $t >= $currentYear);
-                            $defaultTahun = $tahunAvailable->first() ?? $currentYear;
+                            $defaultTahun   = $tahunAvailable->first() ?? $currentYear;
                         @endphp
                         @forelse($tahunAvailable as $t)
                             <option value="{{ $t }}" @selected($t == $defaultTahun)>
@@ -301,7 +302,9 @@
 @push('scripts')
     <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
-    <script src="{{ asset('js/Dashboard/charts/HistorisChart.js') }}?v={{ filemtime(public_path('js/Dashboard/charts/HistorisChart.js')) }}" defer></script>
-    <script src="{{ asset('js/Dashboard/pages/HistorisEntry.js') }}?v={{ filemtime(public_path('js/Dashboard/pages/HistorisEntry.js')) }}" defer></script>
-    <script src="{{ asset('js/Dashboard/pages/HistorisImport.js') }}?v={{ filemtime(public_path('js/Dashboard/pages/HistorisImport.js')) }}" defer></script>
+    @vite([
+        'resources/js/Dashboard/charts/HistorisChart.js',
+        'resources/js/Dashboard/pages/HistorisEntry.js',
+        'resources/js/Dashboard/pages/HistorisImport.js',
+    ])
 @endpush

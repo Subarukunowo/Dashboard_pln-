@@ -20,9 +20,12 @@ export default defineConfig({
                 'resources/js/Dashboard/pages/profile.js',
                 'resources/js/Dashboard/pages/settings.js',
 
+                // ── Dashboard charts ──────────────────────────────────────
+                'resources/js/Dashboard/charts/HistorisChart.js',
+
                 // ── Dashboard components ───────────────────────────────────
                 'resources/js/Dashboard/components/Chatbot.js',
-                
+
                 // ── Dashboard CSS ─────────────────────────────────────────
                 'resources/css/layouts/navbar.css',
                 'resources/css/layouts/sidebar.css',
