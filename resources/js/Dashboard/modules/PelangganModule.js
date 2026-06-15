@@ -1,10 +1,21 @@
-const LABELS = ["Jan","Feb","Mar","Apr","Mei","Jun","Jul","Agu","Sep","Okt","Nov","Des"]
+import { renderEditTable, upsert, deleteByFilter, TAHUN_INI } from '../utils/CrudHelper.js'
+
+const LABELS     = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
+const API        = '/api/v1/fact/pelanggan'
 
 export default class PelangganModule {
-    constructor(chart) { this.chart = chart }
+    constructor(chart, service) {
+        this.chart   = chart
+        this.service = service
+        this._tahun  = TAHUN_INI
+    }
 
     render(data, state) {
         if (!data) return
+        this._tahun = data.tahun_efektif ?? TAHUN_INI
+
+        const warning = document.getElementById('pelangganWarning')
+        if (warning) warning.style.display = data.is_fallback ? 'inline-block' : 'none'
 
         const r  = data.rencanaData[state.tarif]   || new Array(12).fill(0)
         const rl = data.realisasiData[state.tarif] || new Array(12).fill(0)
@@ -14,20 +25,20 @@ export default class PelangganModule {
             { label: "Realisasi", data: rl, backgroundColor: "#00ff88" },
         ])
 
-        const delta = rl.map((v, i) => v - r[i])
+        const delta = rl.map((v, i) => v - (r[i] || 0))
         this.chart.make("chartPelangganDelta", "bar", LABELS, [
             { label: "Delta", data: delta, backgroundColor: delta.map(v => v >= 0 ? "#00ff88" : "#f44336") }
         ])
 
         const pieLabels = data.golongan.map(g => g.replace(/ \(.\) ?/, ''))
-        const pieData   = data.golongan.map(g => data.targetGolAkum[g][state.bulan] || 0)
-        const pieTarget = data.golongan.map(g => data.targetGolAkum[g][state.bulan])
-        const pieReal24 = data.golongan.map(g => data.realisasiGolAkum[g][state.bulan])
+        const pieData   = data.golongan.map(g => (data.targetGolAkum[g] || [])[state.bulan] || 0)
+        const pieTarget = data.golongan.map(g => (data.targetGolAkum[g] || [])[state.bulan] || 0)
+        const pieReal24 = data.golongan.map(g => (data.realisasiGolAkum[g] || [])[state.bulan] || 0)
 
         this.chart.pie("chartPelangganPie", pieLabels, pieData)
         this.chart.make("chartPelangganGol", "bar", pieLabels, [
-            { label: "Target 2025",    data: pieTarget, backgroundColor: "#ff9800" },
-            { label: "Realisasi 2024", data: pieReal24, backgroundColor: "#2196f3" },
+            { label: "Target Tahun Ini",  data: pieTarget, backgroundColor: "#ff9800" },
+            { label: "Realisasi Lalu",    data: pieReal24, backgroundColor: "#2196f3" },
         ])
 
         this.#populateTarif(data, state.tarif)
@@ -36,11 +47,82 @@ export default class PelangganModule {
         this.#renderPieTable(pieLabels, pieData)
         this.#renderGolTable(pieLabels, pieTarget, pieReal24)
         this.#renderRkapTable(data)
+        this.#renderEditTable(data, state)
     }
 
     initFilters(state, onChange) {
-        document.getElementById("filterTarifPelanggan")?.addEventListener("change", e => { state.tarif = e.target.value;        onChange() })
-        document.getElementById("filterBulanPelanggan")?.addEventListener("change", e => { state.bulan = parseInt(e.target.value); onChange() })
+        document.getElementById('filterTarifPelanggan')?.addEventListener('change', e => { state.tarif = e.target.value;          onChange() })
+        document.getElementById('filterBulanPelanggan')?.addEventListener('change', e => { state.bulan = parseInt(e.target.value); onChange() })
+        this.#initCrud(state, onChange)
+    }
+
+    #initCrud(state, onChange) {
+        const btnMuat    = document.getElementById('btnMuatPelanggan')
+        const btnHapus   = document.getElementById('btnHapusPelanggan')
+        const modalMuat  = document.getElementById('modalMuatPelanggan')
+        const modalHapus = document.getElementById('modalHapusPelanggan')
+
+        if (btnMuat && !btnMuat._bound) {
+            btnMuat._bound = true
+            btnMuat.addEventListener('click', () => { modalMuat.style.display = 'flex' })
+            document.getElementById('btnBatalMuatPelanggan')?.addEventListener('click', () => { modalMuat.style.display = 'none' })
+            document.getElementById('btnKonfirmasiMuatPelanggan')?.addEventListener('click', async () => {
+                const tahun = document.getElementById('muatTahunPelanggan').value
+                const tipe  = document.getElementById('muatTipePelanggan').value
+                try {
+                    await this.service.muatData(tahun, tipe)
+                    modalMuat.style.display = 'none'
+                    this._tahun = parseInt(tahun)
+                    state.tahun = parseInt(tahun)
+                    onChange()
+                } catch { alert('Gagal memuat data') }
+            })
+        }
+
+        if (btnHapus && !btnHapus._bound) {
+            btnHapus._bound = true
+            btnHapus.addEventListener('click', () => { modalHapus.style.display = 'flex' })
+            document.getElementById('btnBatalHapusPelanggan')?.addEventListener('click', () => { modalHapus.style.display = 'none' })
+            document.getElementById('btnKonfirmasiHapusPelanggan')?.addEventListener('click', async () => {
+                const tahun = document.getElementById('hapusTahunPelanggan').value
+                const tipe  = document.getElementById('hapusTipePelanggan').value
+                if (!confirm('Hapus data pelanggan tahun ' + tahun + ' (' + tipe + ')? Tidak dapat dibatalkan.')) return
+                try {
+                    await this.service.hapusData(tahun, tipe)
+                    modalHapus.style.display = 'none'
+                    onChange()
+                } catch { alert('Gagal menghapus data') }
+            })
+        }
+
+        const modalBuat = document.getElementById('modalBuatPelanggan')
+        const btnBuat   = document.getElementById('btnBuatPelanggan')
+        if (btnBuat && !btnBuat._bound) {
+            btnBuat._bound = true
+            btnBuat.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'flex' })
+            document.getElementById('btnBatalBuatPelanggan')?.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'none' })
+            document.getElementById('btnKonfirmasiBuatPelanggan')?.addEventListener('click', async () => {
+                const tahun = parseInt(document.getElementById('buatTahunPelanggan')?.value)
+                const tipe  = document.getElementById('buatTipePelanggan')?.value
+                if (modalBuat) modalBuat.style.display = 'none'
+                const csrf  = document.querySelector('meta[name="csrf-token"]')?.content
+                const heads = { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }
+                let ok = true
+                for (let bulan = 1; bulan <= 12; bulan++) {
+                    try {
+                        const res = await fetch(API, {
+                            method: 'POST', headers: heads,
+                            body: JSON.stringify({ tahun, bulan, tipe, golongan_kode: 'TOTAL', sub_golongan_kode: 'JUMLAH', is_triwulan: 0, is_akumulasi: 0, sumber: 'manual', nilai_pelanggan: 0 }),
+                        })
+                        if (!res.ok) ok = false
+                    } catch { ok = false }
+                }
+                alert(ok ? `Data Pelanggan tahun ${tahun} berhasil dibuat.` : 'Sebagian data gagal dibuat.')
+                this._tahun = tahun
+                state.tahun = tahun
+                onChange()
+            })
+        }
     }
 
     #populateTarif(data, currentTarif) {
@@ -51,7 +133,7 @@ export default class PelangganModule {
                 opt.value = t; opt.textContent = t
                 sel.appendChild(opt)
             })
-            sel.value = currentTarif
+            if (data.tarif.includes(currentTarif)) sel.value = currentTarif
         }
     }
 
@@ -66,7 +148,7 @@ export default class PelangganModule {
                 <td>${bln}</td>
                 <td style="color:#ff9800;">${(r[i] || 0).toLocaleString('id-ID')}</td>
                 <td style="color:var(--accent-green);">${(rl[i] || 0).toLocaleString('id-ID')}</td>
-                <td style="color:${color}; font-weight:600;">${d >= 0 ? "+" : ""}${(d || 0).toLocaleString('id-ID')}</td>
+                <td style="color:${color}; font-weight:600;">${d >= 0 ? "+" : ""}${d.toLocaleString('id-ID')}</td>
             </tr>`
         }).join("")
     }
@@ -112,24 +194,78 @@ export default class PelangganModule {
     }
 
     #renderRkapTable(data) {
-        const tbody = document.getElementById("tabelRkapPelanggan")
+        const tbody = document.getElementById('tabelRkapPelanggan')
         if (!tbody || !data.rkapData) return
 
-        tbody.innerHTML = data.rkapData.map(d => `<tr>
-            <td style="border-right:1px solid #444;">${d.golongan}</td>
-            <td>${d.targetTw1}</td>
-            <td>${d.targetTw2}</td>
-            <td>${d.targetTw3}</td>
-            <td>${d.targetTw4}</td>
-            <td style="border-right:1px solid #444;">${d.targetTotal}</td>
-            <td style="border-left:1px solid #444;">${d.realTw1}</td>
-            <td>${d.realTw2}</td>
-            <td>${d.realTw3}</td>
-            <td>${d.realTw4}</td>
-            <td>${d.realTotal}</td>
-            <td style="color:${d.pencapaian >= 1 ? "#00ff88" : "#f44336"}; font-weight:600;">
-                ${(d.pencapaian * 100).toFixed(2)}%
-            </td>
-        </tr>`).join("")
+        tbody.innerHTML = data.rkapData.map(d =>
+            '<tr>' +
+            '<td style="border-right:1px solid #444;">' + d.golongan + '</td>' +
+            '<td>' + d.targetTw1.toLocaleString('id-ID') + '</td>' +
+            '<td>' + d.targetTw2.toLocaleString('id-ID') + '</td>' +
+            '<td>' + d.targetTw3.toLocaleString('id-ID') + '</td>' +
+            '<td>' + d.targetTw4.toLocaleString('id-ID') + '</td>' +
+            '<td style="border-right:1px solid #444;">' + d.targetTotal.toLocaleString('id-ID') + '</td>' +
+            '<td style="border-left:1px solid #444;">' + d.realTw1.toLocaleString('id-ID') + '</td>' +
+            '<td>' + d.realTw2.toLocaleString('id-ID') + '</td>' +
+            '<td>' + d.realTw3.toLocaleString('id-ID') + '</td>' +
+            '<td>' + d.realTw4.toLocaleString('id-ID') + '</td>' +
+            '<td>' + d.realTotal.toLocaleString('id-ID') + '</td>' +
+            '<td style="color:' + (d.pencapaian >= 1 ? '#00ff88' : '#f44336') + ';font-weight:600;">' +
+            (d.pencapaian * 100).toFixed(2) + '%</td>' +
+            '</tr>'
+        ).join('')
+    }
+
+    #renderEditTable(data, state) {
+        const isReadOnly = this._tahun < TAHUN_INI
+        const tarif      = state.tarif
+        const r          = data.rencanaData?.[tarif]   ?? new Array(12).fill(null)
+        const rl         = data.realisasiData?.[tarif] ?? new Array(12).fill(null)
+
+        const rows = LABELS.map((bln, i) => ({
+            label: bln,
+            fields: [
+                { key: 'nilai_target',    value: r[i]  ?? '', color: '#ff9800' },
+                { key: 'nilai_realisasi', value: rl[i] ?? '', color: '#00ff88' },
+            ],
+        }))
+
+        const golKode = tarif?.charAt(0) ?? 'S'
+
+        renderEditTable(
+            'pelangganEditContainer',
+            rows,
+            isReadOnly,
+            async (ri, values) => {
+                const bulan = ri + 1
+                const base  = { tahun: this._tahun, bulan, golongan_kode: golKode, sub_golongan_kode: tarif, is_triwulan: 0, is_akumulasi: 0, sumber: 'manual', nilai_pelanggan: 0 }
+                if (values.nilai_target !== null)
+                    await upsert(API, { tahun: this._tahun, bulan, sub_golongan_kode: tarif, tipe: 'target', is_triwulan: 0, is_akumulasi: 0 },
+                        { ...base, tipe: 'target', nilai_pelanggan: values.nilai_target })
+                if (values.nilai_realisasi !== null)
+                    await upsert(API, { tahun: this._tahun, bulan, sub_golongan_kode: tarif, tipe: 'realisasi', is_triwulan: 0, is_akumulasi: 0 },
+                        { ...base, tipe: 'realisasi', nilai_pelanggan: values.nilai_realisasi })
+            },
+            ['Bulan', 'Target', 'Realisasi'],
+            // ── Live-recalc ──────────────────────────────────────────────────
+            (ri, values) => {
+                if (values.nilai_target    !== null) r[ri]  = values.nilai_target
+                if (values.nilai_realisasi !== null) rl[ri] = values.nilai_realisasi
+
+                const delta = rl.map((v, i) => (v ?? 0) - (r[i] ?? 0))
+                this.#renderBarTable(r, rl)
+                this.#renderDeltaTable(LABELS, delta)
+                this.chart.make('chartPelangganBar', 'bar', LABELS, [
+                    { label: 'Rencana',   data: r,  backgroundColor: '#ff9800' },
+                    { label: 'Realisasi', data: rl, backgroundColor: '#00ff88' },
+                ])
+                this.chart.make('chartPelangganDelta', 'bar', LABELS, [
+                    { label: 'Delta', data: delta, backgroundColor: delta.map(v => v >= 0 ? '#00ff88' : '#f44336') }
+                ])
+            }
+        )
+
+        const w = document.getElementById('pelangganEditWarning')
+        if (w) w.style.display = isReadOnly ? 'inline-block' : 'none'
     }
 }

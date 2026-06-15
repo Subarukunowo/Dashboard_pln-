@@ -24,9 +24,7 @@ class RtFactJamNyalaController extends BaseApiController
     {
         $record = $this->service->findById($id);
 
-        return $record
-            ? $this->success($record)
-            : $this->notFound();
+        return $record ? $this->success($record) : $this->notFound();
     }
 
     public function store(StoreRtFactJamNyalaRequest $request): JsonResponse
@@ -49,4 +47,25 @@ class RtFactJamNyalaController extends BaseApiController
 
         return $this->noContent();
     }
+
+    public function chart(Request $request): JsonResponse
+    {
+        $tahun = $request->integer('tahun', now()->year);
+        $tipe  = $request->input('tipe', 'realisasi');
+
+        return $this->success($this->service->getChartData($tahun, $tipe));
+    }
+    public function destroyByFilter(Request $request): JsonResponse
+{
+    $tahun  = $request->integer('tahun');
+    $tipe   = $request->input('tipe');
+
+    $query = $this->service->getModel()->where('tahun', $tahun);
+    if ($tipe && $tipe !== 'semua') {
+        $query->where('tipe', $tipe);
+    }
+    $deleted = $query->delete();
+
+    return $this->success(['deleted' => $deleted], 'Data berhasil dihapus');
+}
 }

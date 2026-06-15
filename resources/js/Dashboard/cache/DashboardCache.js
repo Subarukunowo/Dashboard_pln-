@@ -10,13 +10,13 @@
  */
 
 const DB_NAME    = 'pln_dashboard_cache'
-const DB_VERSION = 3                          // bump → hapus cache lama otomatis
+const DB_VERSION = 4 // bump → hapus cache lama otomatis
 const STORE_NAME = 'cache_store'
 
 const DEFAULTS = {
     REFRESH_INTERVAL_MS : 10 * 60 * 1000,    // 10 menit
     TTL_MS              : 10 * 60 * 1000,    // 10 menit — sinkron dengan SheetsService
-    VERSION             : '3.0.0',
+    VERSION             : '4.0.0',
 }
 
 // ─── Hash ringan (djb2) ───────────────────────────────────────────────────────

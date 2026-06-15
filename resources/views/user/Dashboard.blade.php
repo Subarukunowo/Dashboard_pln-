@@ -61,7 +61,6 @@
             @foreach([
                 'bpp'        => 'Bpp',
                 'penjualan'  => 'Penjualan',
-                'kwh'        => 'PenjualanKwh',
                 'goltarif'   => 'GolTarifBatam',
                 'pendapatan' => 'PendapatanBatam',
                 'rpkwh'      => 'Rpkwh',

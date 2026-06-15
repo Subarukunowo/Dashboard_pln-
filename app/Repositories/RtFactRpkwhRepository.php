@@ -1,52 +1,26 @@
 <?php
 
-namespace App\Http\Controllers;
+namespace App\Repositories;
 
-use App\Http\Requests\Rpkwh\StoreRtFactRpkwhRequest;
-use App\Http\Requests\Rpkwh\UpdateRtFactRpkwhRequest;
-use App\Services\RtFactRpkwhService;
-use Illuminate\Http\JsonResponse;
-use Illuminate\Http\Request;
+use App\Models\RtFactRpkwh;
 
-class RtFactRpkwhController extends BaseApiController
+class RtFactRpkwhRepository extends BaseRepository
 {
-    public function __construct(private readonly RtFactRpkwhService $service) {}
-
-    public function index(Request $request): JsonResponse
+    public function __construct(RtFactRpkwh $model)
     {
-        $filters = $request->only(['tahun', 'bulan', 'tipe', 'sumber', 'golongan_kode', 'sub_golongan_kode', 'is_triwulan', 'is_akumulasi']);
-        $data    = $this->service->getPaginated($request->integer('per_page', 15), $filters);
-
-        return $this->success($data);
+        parent::__construct($model);
     }
 
-    public function show(int $id): JsonResponse
+    protected function applyFilters($query, array $filters)
     {
-        $record = $this->service->findById($id);
-
-        return $record
-            ? $this->success($record)
-            : $this->notFound();
-    }
-
-    public function store(StoreRtFactRpkwhRequest $request): JsonResponse
-    {
-        $record = $this->service->create($request->validated());
-
-        return $this->created($record);
-    }
-
-    public function update(UpdateRtFactRpkwhRequest $request, int $id): JsonResponse
-    {
-        $record = $this->service->update($id, $request->validated());
-
-        return $this->success($record, 'Data berhasil diperbarui');
-    }
-
-    public function destroy(int $id): JsonResponse
-    {
-        $this->service->delete($id);
-
-        return $this->noContent();
+        return $query
+            ->when(isset($filters['tahun']), fn ($q) => $q->where('tahun', $filters['tahun']))
+            ->when(isset($filters['bulan']), fn ($q) => $q->where('bulan', $filters['bulan']))
+            ->when(isset($filters['tipe']), fn ($q) => $q->where('tipe', $filters['tipe']))
+            ->when(isset($filters['sumber']), fn ($q) => $q->where('sumber', $filters['sumber']))
+            ->when(isset($filters['golongan_kode']), fn ($q) => $q->where('golongan_kode', $filters['golongan_kode']))
+            ->when(isset($filters['sub_golongan_kode']), fn ($q) => $q->where('sub_golongan_kode', $filters['sub_golongan_kode']))
+            ->when(isset($filters['is_triwulan']), fn ($q) => $q->where('is_triwulan', $filters['is_triwulan']))
+            ->when(isset($filters['is_akumulasi']), fn ($q) => $q->where('is_akumulasi', $filters['is_akumulasi']));
     }
 }

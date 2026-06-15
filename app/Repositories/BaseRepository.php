@@ -50,7 +50,10 @@ abstract class BaseRepository implements BaseRepositoryInterface
 
         return $record->delete();
     }
-
+    public function getModel(): Model
+    {
+    return $this->model;
+    }
     /**
      * Override in child repositories to add model-specific filter logic.
      */
@@ -58,4 +61,5 @@ abstract class BaseRepository implements BaseRepositoryInterface
     {
         return $query;
     }
+    
 }

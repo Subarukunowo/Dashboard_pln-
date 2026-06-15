@@ -2,13 +2,12 @@
 
 namespace App\Services;
 
-class RtDimSubGolonganService
+use App\Repositories\RtDimSubGolonganRepository;
+
+class RtDimSubGolonganService extends BaseService
 {
-    /**
-     * Create a new class instance.
-     */
-    public function __construct()
+    public function __construct(RtDimSubGolonganRepository $repository)
     {
-        //
+        parent::__construct($repository);
     }
 }

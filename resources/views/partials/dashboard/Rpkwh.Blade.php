@@ -1,8 +1,22 @@
 {{-- CARD 1: Rencana vs Realisasi RPKWH --}}
 <div class="card col-12">
-    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
         <div class="card-title">{{ __('rpkwh.title') }}</div>
-        <select id="filterTarifRpkwh" style="font-size:0.7rem; padding:4px;"></select>
+        <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
+            <select id="filterTarifRpkwh" style="font-size:0.7rem; padding:4px;"></select>
+            <button id="btnMuatRpkwh"
+                style="font-size:0.7rem; padding:4px 10px; border-radius:6px; border:1px solid #2196f3; background:rgba(33,150,243,0.1); color:#2196f3; cursor:pointer; white-space:nowrap;">
+                ＋ Muat Data
+            </button>
+            <button id="btnBuatRpkwh"
+                style="font-size:0.7rem; padding:4px 10px; border-radius:6px; border:1px solid #00ff88; background:rgba(0,255,136,0.08); color:#00ff88; cursor:pointer; white-space:nowrap;">
+                ✚ Buat Data
+            </button>
+            <button id="btnHapusRpkwh"
+                style="font-size:0.7rem; padding:4px 10px; border-radius:6px; border:1px solid #f44336; background:rgba(244,67,54,0.1); color:#f44336; cursor:pointer; white-space:nowrap;">
+                🗑 Hapus Data
+            </button>
+        </div>
     </div>
 
     <div class="chart-wrapper" style="width:100%; height:300px; margin-bottom:20px;">
@@ -39,6 +53,15 @@
             <tbody id="tabelRpkwhDelta"></tbody>
         </table>
     </div>
+
+    {{-- Tabel Edit --}}
+    <div style="display:flex; align-items:center; gap:10px; margin:16px 0 8px;">
+        <div class="card-title" style="margin:0;">Edit Data</div>
+        <span id="rpkwhEditWarning" style="display:none; font-size:0.7rem; padding:3px 8px; border-radius:10px; background:rgba(255,152,0,0.12); border:1px solid rgba(255,152,0,0.3); color:#ff9800;">
+            🔒 Data tahun lalu — hanya bisa dilihat
+        </span>
+    </div>
+    <div id="rpkwhEditContainer" class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.15); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:420px;"></div>
 </div>
 
 {{-- CARD 2: Distribusi Golongan RPKWH --}}
@@ -209,5 +232,86 @@
             </thead>
             <tbody id="tabelAnalisa"></tbody>
         </table>
+    </div>
+</div>
+
+{{-- Modal Muat Data --}}
+<div id="modalMuatRpkwh" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;">
+    <div style="background:#1e1e1e; border:1px solid #333; border-radius:12px; padding:24px; width:320px;">
+        <div style="font-size:0.95rem; font-weight:600; margin-bottom:16px; color:#fff;">Muat Data RPKWH</div>
+        <div style="margin-bottom:12px;">
+            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:4px;">Tahun</label>
+            <select id="muatTahunRpkwh" style="width:100%; padding:6px; border-radius:6px; border:1px solid #333; background:#252525; color:#fff; font-size:0.8rem;">
+                @foreach(range(date('Y'), 2020) as $y)
+                    <option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div style="margin-bottom:16px;">
+            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:4px;">Tipe</label>
+            <select id="muatTipeRpkwh" style="width:100%; padding:6px; border-radius:6px; border:1px solid #333; background:#252525; color:#fff; font-size:0.8rem;">
+                <option value="realisasi">Realisasi</option>
+                <option value="target">Target</option>
+            </select>
+        </div>
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <button id="btnBatalMuatRpkwh" style="padding:6px 14px; border-radius:6px; border:1px solid #444; background:transparent; color:#aaa; cursor:pointer; font-size:0.8rem;">Batal</button>
+            <button id="btnKonfirmasiMuatRpkwh" style="padding:6px 14px; border-radius:6px; border:none; background:#2196f3; color:#fff; cursor:pointer; font-size:0.8rem;">Muat</button>
+        </div>
+    </div>
+</div>
+
+{{-- Modal Buat Data --}}
+<div id="modalBuatRpkwh" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;">
+    <div style="background:#1e1e1e; border:1px solid #333; border-radius:12px; padding:24px; width:320px;">
+        <div style="font-size:0.95rem; font-weight:600; margin-bottom:8px; color:#fff;">Buat Data RPKWH</div>
+        <div style="font-size:0.72rem; color:#666; margin-bottom:16px;">Membuat 12 baris data kosong (nilai = 0) untuk tahun yang dipilih.</div>
+        <div style="margin-bottom:12px;">
+            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:4px;">Tahun</label>
+            <select id="buatTahunRpkwh" style="width:100%; padding:6px; border-radius:6px; border:1px solid #333; background:#252525; color:#fff; font-size:0.8rem;">
+                @foreach(range(date('Y') + 3, 2020) as $y)
+                    <option value="{{ $y }}" {{ $y == date('Y') + 1 ? 'selected' : '' }}>{{ $y }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div style="margin-bottom:16px;">
+            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:4px;">Tipe</label>
+            <select id="buatTipeRpkwh" style="width:100%; padding:6px; border-radius:6px; border:1px solid #333; background:#252525; color:#fff; font-size:0.8rem;">
+                <option value="target">Target</option>
+                <option value="realisasi">Realisasi</option>
+            </select>
+        </div>
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <button id="btnBatalBuatRpkwh" style="padding:6px 14px; border-radius:6px; border:1px solid #444; background:transparent; color:#aaa; cursor:pointer; font-size:0.8rem;">Batal</button>
+            <button id="btnKonfirmasiBuatRpkwh" style="padding:6px 14px; border-radius:6px; border:none; background:#00ff88; color:#000; cursor:pointer; font-size:0.8rem; font-weight:600;">Buat</button>
+        </div>
+    </div>
+</div>
+
+{{-- Modal Hapus Data --}}
+<div id="modalHapusRpkwh" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:999; align-items:center; justify-content:center;">
+    <div style="background:#1e1e1e; border:1px solid #333; border-radius:12px; padding:24px; width:320px;">
+        <div style="font-size:0.95rem; font-weight:600; margin-bottom:8px; color:#fff;">Hapus Data RPKWH</div>
+        <div style="font-size:0.78rem; color:#aaa; margin-bottom:16px;">Pilih tahun dan tipe data yang ingin dihapus. Tindakan ini tidak dapat dibatalkan.</div>
+        <div style="margin-bottom:12px;">
+            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:4px;">Tahun</label>
+            <select id="hapusTahunRpkwh" style="width:100%; padding:6px; border-radius:6px; border:1px solid #333; background:#252525; color:#fff; font-size:0.8rem;">
+                @foreach(range(date('Y'), 2020) as $y)
+                    <option value="{{ $y }}">{{ $y }}</option>
+                @endforeach
+            </select>
+        </div>
+        <div style="margin-bottom:16px;">
+            <label style="font-size:0.75rem; color:#888; display:block; margin-bottom:4px;">Tipe</label>
+            <select id="hapusTipeRpkwh" style="width:100%; padding:6px; border-radius:6px; border:1px solid #333; background:#252525; color:#fff; font-size:0.8rem;">
+                <option value="realisasi">Realisasi</option>
+                <option value="target">Target</option>
+                <option value="semua">Semua</option>
+            </select>
+        </div>
+        <div style="display:flex; gap:8px; justify-content:flex-end;">
+            <button id="btnBatalHapusRpkwh" style="padding:6px 14px; border-radius:6px; border:1px solid #444; background:transparent; color:#aaa; cursor:pointer; font-size:0.8rem;">Batal</button>
+            <button id="btnKonfirmasiHapusRpkwh" style="padding:6px 14px; border-radius:6px; border:none; background:#f44336; color:#fff; cursor:pointer; font-size:0.8rem;">Hapus</button>
+        </div>
     </div>
 </div>

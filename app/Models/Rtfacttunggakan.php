@@ -3,34 +3,26 @@
 namespace App\Models;
 
 use Illuminate\Database\Eloquent\Model;
-use Illuminate\Database\Eloquent\Relations\BelongsTo;
 
-class RtImportLogs extends Model
+class RtFactTunggakan extends Model
 {
-    protected $table = 'rt_import_logs';
+    protected $table = 'rt_fact_tunggakan';
 
     protected $fillable = [
-        'filename',
-        'sheet_name',
-        'tahun',
-        'bulan',
-        'rows_inserted',
-        'rows_updated',
-        'rows_skipped',
-        'catatan',
-        'user_id',
+        'tahun', 'bulan', 'pal_berjalan', 'pal_tunggakan',
+        'ts_berjalan', 'ts_tunggakan', 'jumlah_tunggakan',
+        'pendapatan', 'ratio_tunggakan_pct', 'sumber',
     ];
 
     protected $casts = [
-        'tahun'         => 'integer',
-        'bulan'         => 'integer',
-        'rows_inserted' => 'integer',
-        'rows_updated'  => 'integer',
-        'rows_skipped'  => 'integer',
+        'tahun' => 'integer',
+        'bulan' => 'integer',
+        'pal_berjalan' => 'float',
+        'pal_tunggakan' => 'float',
+        'ts_berjalan' => 'float',
+        'ts_tunggakan' => 'float',
+        'jumlah_tunggakan' => 'float',
+        'pendapatan' => 'float',
+        'ratio_tunggakan_pct' => 'float',
     ];
-
-    public function user(): BelongsTo
-    {
-        return $this->belongsTo(User::class)->withDefault();
-    }
 }

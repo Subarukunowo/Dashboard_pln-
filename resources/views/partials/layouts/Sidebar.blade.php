@@ -30,12 +30,6 @@
         </svg>
         {{ __('sidebar.kinerja_penjualan') }}
     </div>
-    <div class="sidebar-item" data-section="kwh">
-        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
-            <path d="M18 20V10M12 20V4M6 20v-6"/>
-        </svg>
-        {{ __('sidebar.penjualan_kwh') }}
-    </div>
     <div class="sidebar-item" data-section="babin">
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>

@@ -49,4 +49,11 @@ class RtFactBabinController extends BaseApiController
 
         return $this->noContent();
     }
+    public function chart(Request $request): JsonResponse
+{
+    $tahun  = $request->integer('tahun', now()->year);
+    $metrik = $request->input('metrik', 'kwh'); // 'kwh' atau 'rp'
+
+    return $this->success($this->service->getAllChartData($tahun, $metrik));
+}
 }

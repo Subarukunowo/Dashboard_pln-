@@ -20,6 +20,7 @@ class StoreRtFactLossesRequest extends FormRequest
             'is_akumulasi' => ['required', 'boolean'],
             'tipe_losses'  => ['required', 'string', 'max:50'],
             'tipe'         => ['required', 'string', 'max:50'],
+           'kategori' => ['sometimes', 'required', 'in:transmisi,distribusi,jaringan'],
             'nilai_pct'    => ['nullable', 'numeric'],
             'nilai_kwh'    => ['nullable', 'numeric', 'min:0'],
             'sumber'       => ['nullable', 'string', 'max:100'],

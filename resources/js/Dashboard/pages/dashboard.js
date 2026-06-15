@@ -1,174 +1,114 @@
-import SheetsService        from '../services/SheetsService.js'
-import BppModule            from '../modules/BppModule.js'
-import PenjualanModule      from '../modules/PenjualanModule.js'
-import RealisasiKWHService  from '../services/RealisasiKWHService.js'
+import BppModule             from '../modules/BppModule.js'
+import PenjualanModule       from '../modules/PenjualanModule.js'
 import PendapatanBatamService from '../services/PendapatanBatamService.js'
-import GolTarifBatamService from '../services/GolTarifBatamService.js'
-import RpkwhService         from '../services/RpkwhService.js'
-import PelangganService     from '../services/PelangganService.js'
-import KvaService           from '../services/KvaService.js'
-import BabinService         from '../services/BabinService.js'
-import JamNyalaService      from '../services/JamNyalaService.js'
-import LossesService        from '../services/LossesService.js'
-import TunggakanService     from '../services/TunggakanService.js'
-import P2tlService          from '../services/P2tlService.js'
+import GolTarifBatamService  from '../services/GolTarifBatamService.js'
+import RpkwhService          from '../services/RpkwhService.js'
+import PelangganService      from '../services/PelangganService.js'
+import KvaService            from '../services/KvaService.js'
+import BabinService          from '../services/BabinService.js'
+import JamNyalaService       from '../services/JamNyalaService.js'
+import LossesService         from '../services/LossesService.js'
+import TunggakanService      from '../services/TunggakanService.js'
+import P2tlService           from '../services/P2tlService.js'
 
-import KwhModule            from '../modules/KwhModule.js'
 import PendapatanBatamModule from '../modules/PendapatanBatamModule.js'
-import GolTarifBatamModule  from '../modules/GolTarifBatamModule.js'
-import RpkwhModule          from '../modules/RpkwhModule.js'
-import PelangganModule      from '../modules/PelangganModule.js'
-import KvaModule            from '../modules/KvaModule.js'
-import BabinModule          from '../modules/BabinModule.js'
-import JamNyalaModule       from '../modules/JamNyalaModule.js'
-import LossesModule         from '../modules/LossesModule.js'
-import TunggakanModule      from '../modules/TunggakanModule.js'
-import P2tlModule           from '../modules/P2tlModule.js'
-import ChatbotModule        from '../modules/ChatbotModule.js'
+import GolTarifBatamModule   from '../modules/GolTarifBatamModule.js'
+import RpkwhModule           from '../modules/RpkwhModule.js'
+import PelangganModule       from '../modules/PelangganModule.js'
+import KvaModule             from '../modules/KvaModule.js'
+import BabinModule           from '../modules/BabinModule.js'
+import JamNyalaModule        from '../modules/JamNyalaModule.js'
+import LossesModule          from '../modules/LossesModule.js'
+import TunggakanModule       from '../modules/TunggakanModule.js'
+import P2tlModule            from '../modules/P2tlModule.js'
+import ChatbotModule         from '../modules/ChatbotModule.js'
 
-import PenjualanKwhChart    from '../charts/PenjualankwhChart.js'
-import PendapatanBatamChart from '../charts/PendapatanBatamChart.js'
-import GolTarifBatamChart   from '../charts/GolTarifBatamChart.js'
-import RpkwhChart           from '../charts/RpkwhChart.js'
-import PelangganChart       from '../charts/PelangganChart.js'
-import KvaChart             from '../charts/KvaChart.js'
-import BabinChart           from '../charts/BabinChart.js'
-import JamNyalaChart        from '../charts/JamNyalaChart.js'
-import LossesChart          from '../charts/LossesChart.js'
-import TunggakanChart       from '../charts/TunggakanChart.js'
-import P2tlChart            from '../charts/P2tlChart.js'
-import ScreenshotProtection from '../utils/ScreenshotProtection.js'
-import { initStats }        from '../layout/UpdateStats.js'
+import PendapatanBatamChart  from '../charts/PendapatanBatamChart.js'
+import GolTarifBatamChart    from '../charts/GolTarifBatamChart.js'
+import RpkwhChart            from '../charts/RpkwhChart.js'
+import PelangganChart        from '../charts/PelangganChart.js'
+import KvaChart              from '../charts/KvaChart.js'
+import BabinChart            from '../charts/BabinChart.js'
+import JamNyalaChart         from '../charts/JamNyalaChart.js'
+import LossesChart           from '../charts/LossesChart.js'
+import TunggakanChart        from '../charts/TunggakanChart.js'
+import P2tlChart             from '../charts/P2tlChart.js'
+import ScreenshotProtection  from '../utils/ScreenshotProtection.js'
+import { initStats }         from '../layout/UpdateStats.js'
 
-import DashboardCache, { CacheManager } from '../cache/DashboardCache.js'
-
-// ─────────────────────────────────────────────────────────────────────────────
-const SCRIPT_URL          = document.querySelector('meta[name="gas-data-url"]')?.content ?? ''
-const REFRESH_INTERVAL_MS = 10 * 60 * 1000
+const CURRENT_YEAR = new Date().getFullYear()
 
 class Dashboard {
     constructor() {
-        const sheets = new SheetsService(SCRIPT_URL)
         const labels = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
 
-        this.bppModule       = new BppModule(sheets, labels)
-        this.penjualanModule = new PenjualanModule(sheets, labels)
+        this.bppModule       = new BppModule()
+        this.penjualanModule = new PenjualanModule(null, labels)
 
-        this.kwhService        = new RealisasiKWHService(sheets)
-        this.pendapatanService = new PendapatanBatamService(sheets)
-        this.golTarifService   = new GolTarifBatamService(sheets)
-        this.rpkwhService      = new RpkwhService(sheets)
-        this.pelangganService  = new PelangganService(sheets)
-        this.kvaService        = new KvaService(sheets)
-        this.babinService      = new BabinService(sheets)
-        this.jamNyalaService   = new JamNyalaService(sheets)
-        this.lossesService     = new LossesService(sheets)
-        this.tunggakanService  = new TunggakanService(sheets)
-        this.p2tlService       = new P2tlService(sheets)
+        this.pendapatanService = new PendapatanBatamService()
+        this.golTarifService   = new GolTarifBatamService()
+        this.rpkwhService      = new RpkwhService()
+        this.pelangganService  = new PelangganService()
+        this.kvaService        = new KvaService()
+        this.babinService      = new BabinService()
+        this.jamNyalaService   = new JamNyalaService()
+        this.lossesService     = new LossesService()
+        this.tunggakanService  = new TunggakanService()
+        this.p2tlService       = new P2tlService()
 
-        this.kwhModule        = new KwhModule(new PenjualanKwhChart())
         this.pendapatanModule = new PendapatanBatamModule(new PendapatanBatamChart())
         this.golTarifModule   = new GolTarifBatamModule(new GolTarifBatamChart())
-        this.rpkwhModule      = new RpkwhModule(new RpkwhChart())
-        this.pelangganModule  = new PelangganModule(new PelangganChart())
+        this.rpkwhModule      = new RpkwhModule(new RpkwhChart(), this.rpkwhService)
+        this.pelangganModule  = new PelangganModule(new PelangganChart(), this.pelangganService)
         this.kvaModule        = new KvaModule(new KvaChart())
         this.babinModule      = new BabinModule(new BabinChart())
         this.jamNyalaModule   = new JamNyalaModule(new JamNyalaChart())
         this.lossesModule     = new LossesModule(new LossesChart())
-        this.tunggakanModule  = new TunggakanModule(new TunggakanChart())
+        this.tunggakanModule  = new TunggakanModule(new TunggakanChart(), this.tunggakanService)
         this.p2tlModule       = new P2tlModule(new P2tlChart())
 
         this.state = {
-            global     : { month: 'all', year: '2025' },
-            bpp        : { type: 'BPP PEMBANGKIT', month: 'all' },
-            penjualan  : { view: 'bulanan', tarif: 'JUMLAH', month: 'all' },
-            kwh        : { view: 'bulanan', bulan: 'all' },
-            pendapatan : { view: 'bulanan', tarif: 'JUMLAH', bulan: 'all' },
-            golTarif   : { tahun: '2025', view: 'bulanan', bulan: '11', bulanRealisasi: 'all' },
-            rpkwh      : { tarif: 'JUMLAH', view: 'bulanan', bulan: '11', tahun: '2025' },
-            pelanggan  : { tarif: 'JUMLAH', bulan: 11 },
-            kva        : { tarif: 'JUMLAH', bulan: 11, view: 'bulanan' },
-            babin      : { view: 'bulanan', section: 'babin', tahun: '2025', bulan: 'all' },
-            jamNyala   : { tarif: 'ALL', bulan: 'all' },
-            losses     : { emin: 'with' },
-            tunggakan  : {},
-            p2tl       : { bulan: 'all' },
+            global    : { month: 'all', year: String(CURRENT_YEAR) },
+            bpp       : { type: 'BPP PEMBANGKIT', month: 'all', year: CURRENT_YEAR },
+            penjualan : { view: 'bulanan', tarif: 'JUMLAH', month: 'all' },
+            pendapatan: { view: 'bulanan', tarif: 'JUMLAH', bulan: 'all' },
+            golTarif  : { tahun: String(CURRENT_YEAR), view: 'bulanan', bulan: '11', bulanRealisasi: 'all' },
+            rpkwh     : { tarif: null, view: 'bulanan', bulan: '11', tahun: String(CURRENT_YEAR), kwhBulan: 'all', kwhView: 'bulanan' },
+            pelanggan : { tarif: 'JUMLAH', bulan: 11 },
+            kva       : { tarif: 'JUMLAH', bulan: 11, view: 'bulanan' },
+            babin     : { view: 'bulanan', section: 'babin', tahun: CURRENT_YEAR, bulan: 'all' },
+            jamNyala  : { tarif: 'ALL', bulan: 'all' },
+            losses    : { emin: 'with' },
+            tunggakan : {},
+            p2tl      : { bulan: 'all' },
         }
 
-        this.labels       = labels
-        this.chatbot      = new ChatbotModule()
-        this.cacheManager = new CacheManager()
+        this.chatbot = new ChatbotModule()
     }
 
     async init() {
-        try {
-            console.log('[Dashboard] Init...')
-            ScreenshotProtection.init()
-            this._initChatbotEvents()
-            this._initClock()
-            this._initGlobalFilters()
+        ScreenshotProtection.init()
+        this._initChatbotEvents()
+        this._initClock()
+        this._initGlobalFilters()
 
-            await Promise.all([this.bppModule.load(), this.penjualanModule.load()])
-            this.bppModule.render(this.state.bpp)
-            this.penjualanModule.render(this.state.penjualan)
-            this.bppModule.initFilters(this.state.bpp, () => this.bppModule.render(this.state.bpp))
-            this.penjualanModule.initFilters(this.state.penjualan, () => this.penjualanModule.render(this.state.penjualan))
-
-            await this._loadDashboardData()
-
-            if (document.readyState === 'complete') {
-                this._finalizeInit()
-            } else {
-                window.addEventListener('load', () => {
-                    requestAnimationFrame(() => requestAnimationFrame(() => this._finalizeInit()))
-                })
-            }
-
-            console.log('[Dashboard] Fully Loaded.')
-        } catch (err) {
-            console.error('[Dashboard] Init Error:', err)
-        }
-    }
-
-    _finalizeInit() {
         document.getElementById('dashboardLayout')?.classList.add('loaded')
-        this._initChartsSafe()
-    }
 
-    _initChartsSafe() {
-        document.querySelectorAll('.chart-wrapper').forEach(wrapper => {
-            const canvas = wrapper.querySelector('canvas')
-            if (!canvas) return
-            if (wrapper.offsetWidth > 0) {
-                this._initChartOnCanvas(canvas)
-            } else {
-                const observer = new ResizeObserver(entries => {
-                    if (entries[0]?.contentRect.width > 0) {
-                        observer.disconnect()
-                        this._initChartOnCanvas(canvas)
-                    }
-                })
-                observer.observe(wrapper)
-            }
+        this.bppModule.load(this.state.bpp.year).then(() => {
+            this.bppModule.render(this.state.bpp)
+            this.bppModule.initFilters(this.state.bpp, () => this.bppModule.render(this.state.bpp))
         })
+
+        this.penjualanModule.load(CURRENT_YEAR).then(() => {
+            this.penjualanModule.render(this.state.penjualan)
+            this.penjualanModule.initFilters(this.state.penjualan, () => this.penjualanModule.render(this.state.penjualan))
+        })
+
+        this._loadAllModules()
     }
 
-    _initChartOnCanvas(canvas) {
-        if (canvas._chartInitialized) return
-        canvas._chartInitialized = true
-    }
-
-    // ── Helper: validasi data sebelum render ──────────────────────────────────
-    _isValidData(data) {
-        if (data === undefined || data === null) return false
-        if (Array.isArray(data) && data.length === 0) return false
-        if (typeof data === 'object' && Object.keys(data).length === 0) return false
-        return true
-    }
-
-    async _loadDashboardData() {
+    _loadAllModules() {
         const configs = [
-            { key: 'kwhData',        fetcher: () => this.kwhService.getData(),        module: this.kwhModule,        state: this.state.kwh },
             { key: 'pendapatanData', fetcher: () => this.pendapatanService.getData(), module: this.pendapatanModule, state: this.state.pendapatan },
             { key: 'golTarifData',   fetcher: () => this.golTarifService.getData(),   module: this.golTarifModule,   state: this.state.golTarif },
             { key: 'rpkwhData',      fetcher: () => this.rpkwhService.getData(),      module: this.rpkwhModule,      state: this.state.rpkwh },
@@ -181,45 +121,22 @@ class Dashboard {
             { key: 'p2tlData',       fetcher: () => this.p2tlService.getData(),       module: this.p2tlModule,       state: this.state.p2tl },
         ]
 
-        const inits = configs.map(cfg => {
-            const cache = new DashboardCache(cfg.key, cfg.fetcher, {
-                refreshIntervalMs : REFRESH_INTERVAL_MS,
-                onUpdate: (freshData) => {
-                    if (!this._isValidData(freshData)) return
-                    console.info(`[Dashboard] Live update: ${cfg.key}`)
-                    this[cfg.key] = freshData
-                    cfg.module.render(freshData, cfg.state)
-                },
-            })
-            this.cacheManager.register(cfg.key, cache)
-            return cache.init().then(data => ({ cfg, data }))
-        })
-
-        const results = await Promise.allSettled(inits)
-
-        results.forEach(result => {
-            if (result.status === 'fulfilled') {
-                const { cfg, data } = result.value
-
-                // ── Guard: jangan render kalau data tidak valid ───────────────
-                if (!this._isValidData(data)) {
-                    console.warn(`[Dashboard] Data tidak valid untuk "${cfg.key}", skip render`)
-                    return
-                }
-
-                this[cfg.key] = data
-                cfg.module.render(data, cfg.state)
-                cfg.module.initFilters(cfg.state, () => cfg.module.render(this[cfg.key], cfg.state))
-            } else {
-                console.warn('[Dashboard] Gagal memuat:', result.reason)
-            }
+        configs.forEach(cfg => {
+            cfg.fetcher()
+                .then(data => {
+                    if (!data || (Array.isArray(data) && !data.length)) {
+                        console.warn(`[Dashboard] Tidak ada data: ${cfg.key}`)
+                        return
+                    }
+                    this[cfg.key] = data
+                    cfg.module.render(data, cfg.state)
+                    cfg.module.initFilters(cfg.state, () => cfg.module.render(this[cfg.key], cfg.state))
+                })
+                .catch(err => console.warn(`[Dashboard] Gagal load ${cfg.key}:`, err))
         })
 
         const now = new Date()
-        initStats(this.pelangganService, {
-            year  : now.getFullYear(),
-            month : now.getMonth() + 1,
-        })
+        initStats(this.pelangganService, { year: now.getFullYear(), month: now.getMonth() + 1 })
     }
 
     _initClock() {
@@ -227,15 +144,15 @@ class Dashboard {
         setInterval(() => this.updateClock(), 1000)
     }
 
- updateClock() {
-    const el = document.getElementById('clock')
-    if (!el) return
-    const now    = new Date()
-    const locale = document.documentElement.lang === 'en' ? 'en-US' : 'id-ID'
-    el.textContent = now.toLocaleDateString(locale, {
-        weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
-    }) + ' | ' + now.toLocaleTimeString(locale)
-}
+    updateClock() {
+        const el = document.getElementById('clock')
+        if (!el) return
+        const now    = new Date()
+        const locale = document.documentElement.lang === 'en' ? 'en-US' : 'id-ID'
+        el.textContent = now.toLocaleDateString(locale, {
+            weekday: 'long', day: 'numeric', month: 'long', year: 'numeric',
+        }) + ' | ' + now.toLocaleTimeString(locale)
+    }
 
     _initChatbotEvents() {
         const bubble   = document.getElementById('chat-bubble')
@@ -258,8 +175,13 @@ class Dashboard {
             this.bppModule.render(this.state.bpp)
             this.penjualanModule.render(this.state.penjualan)
         })
-        document.getElementById('filterYear')?.addEventListener('change', e => {
-            this.state.global.year = e.target.value
+
+        document.getElementById('filterYear')?.addEventListener('change', async e => {
+            const year = parseInt(e.target.value)
+            this.state.global.year = String(year)
+            this.state.bpp.year    = year
+
+            await this.bppModule.load(year)
             this.bppModule.render(this.state.bpp)
             this.penjualanModule.render(this.state.penjualan)
         })

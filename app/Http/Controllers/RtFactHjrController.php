@@ -49,4 +49,10 @@ class RtFactHjrController extends BaseApiController
 
         return $this->noContent();
     }
+    public function chart(Request $request): JsonResponse
+{
+    $tahun = $request->integer('tahun', now()->year);
+
+    return $this->success($this->service->getAvgByTegangan($tahun));
+}
 }

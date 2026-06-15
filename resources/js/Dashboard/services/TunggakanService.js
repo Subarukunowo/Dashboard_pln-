@@ -1,32 +1,44 @@
 export default class TunggakanService {
-    constructor(sheetsService) { this.sheets = sheetsService }
+    constructor() {
+        this.baseUrl = '/api/chart/tunggakan';
+    }
 
-    async getData() {
+    async getData(tahun = new Date().getFullYear()) {
         try {
-            const sheet = await this.sheets.getSheet("KINERJA TUNGGAKAN")
-
-            const data = sheet.slice(4, 16).map(row => ({
-                bulan:          row[1],
-                palBerjalan:    this.p(row[2]),
-                palTunggakan:   this.p(row[3]),
-                tsBerjalan:     this.p(row[4]),
-                tsTunggakan:    this.p(row[5]),
-                jumlahTunggakan:this.p(row[6]),
-                pendapatan:     this.p(row[7]),
-                ratioTunggakan: this.p(row[8]),
-                ratioTarget:    this.p(row[14]),
-            }))
-
-            return { data }
-        } catch (err) {
-            console.error("Gagal load Tunggakan:", err)
-            return null
+            const response = await fetch(`${this.baseUrl}?tahun=${tahun}`);
+            const result   = await response.json();
+            return result.data;
+        } catch (error) {
+            console.error("Gagal memuat data Tunggakan dari MySQL:", error);
+            return null;
         }
     }
 
-    p(v) {
-        if (typeof v === 'number') return v
-        if (!v || v === "-" || v === "") return 0
-        return parseFloat(v.toString().replace(/\./g, '').replace(',', '.')) || 0
+    async updateRow(id, payload) {
+        const response = await fetch(`/api/rt-fact-tunggakan/${id}`, {
+            method: 'PUT',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify(payload),
+        });
+        return response.json();
+    }
+
+    async createTahun(tahun) {
+        const bulanNama = ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER'];
+        const promises  = bulanNama.map((_, i) =>
+            fetch('/api/rt-fact-tunggakan', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ tahun, bulan: i + 1, sumber: 'manual' }),
+            })
+        );
+        return Promise.all(promises);
+    }
+
+    async hapusData(tahun) {
+        const response = await fetch(`/api/rt-fact-tunggakan-by-filter?tahun=${tahun}`, {
+            method: 'DELETE',
+        });
+        return response.json();
     }
 }

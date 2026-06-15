@@ -49,4 +49,10 @@ class RtFactBppController extends BaseApiController
 
         return $this->noContent();
     }
+   public function chart(Request $request): JsonResponse
+{
+    $tahun = $request->integer('tahun', now()->year);
+
+    return $this->success($this->service->getAllChartData($tahun));
+}
 }

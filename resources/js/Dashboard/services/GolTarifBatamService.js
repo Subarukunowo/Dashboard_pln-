@@ -1,82 +1,72 @@
 export default class GolTarifBatamService {
-    constructor(sheetsService) {
-        this.sheets = sheetsService;
+    constructor() {
+        this.baseUrl = '/api/chart/pendapatan'
     }
 
-    async getData() {
+    async getData(tahun = new Date().getFullYear()) {
         try {
-            const realisasiTarif = await this.sheets.getSheet("REALISASI PENDAPATAN TARIF");
-            const targetTarif    = await this.sheets.getSheet("TARGET PENDAPATAN TARIF");
-            const realisasi      = await this.sheets.getSheet("REALISASI ");
-            const totalRealisasi = await this.sheets.getSheet("TOTAL REALISASI");
+            const res    = await fetch(`${this.baseUrl}?tahun=${tahun}`)
+            const result = await res.json()
+            const d      = result.data
 
-            const GOLONGAN = ["Sosial (S)", "Rumah Tangga (R)", "Bisnis (B)", "Industri (I)", "Publik (P)", "Multiguna (M)"]
-            const BULAN_IDX = 12 // kolom 1-12 = Jan-Des
+            // Transform ke format yang diharapkan GolTarifBatamModule
+            const GOLONGAN = ['S', 'R', 'B', 'I', 'P', 'M']
+            const golLabels = {
+                S: 'Sosial (S)', R: 'Rumah Tangga (R)', B: 'Bisnis (B)',
+                I: 'Industri (I)', P: 'Publik (P)', M: 'Multiguna (M)',
+            }
 
-            // Helper ambil row per golongan
-            const getRow = (sheet, keyword) =>
-                sheet.find(r => r[0] && r[0].toString().trim().replace(/\s+/g, ' ') === keyword)
-
-            // REALISASI TARIF 2024 - akumulasi (col 1-12) dan bulanan (col 15-26)
             const realisasi2024Akum = {}
             const realisasi2024Bul  = {}
+            const target2025Akum    = {}
+            const target2025Bul     = {}
+
             GOLONGAN.forEach(g => {
-                const row = getRow(realisasiTarif, g)
-                realisasi2024Akum[g] = row ? row.slice(1, 13).map(v => this.p(v)) : new Array(12).fill(0)
-                realisasi2024Bul[g]  = row ? row.slice(15, 27).map(v => this.p(v)) : new Array(12).fill(0)
+                const label = golLabels[g]
+                const gData = d.golongan[g]
+
+                // Untuk GolTarifBatamModule, 2024 = tahun lalu, 2025 = tahun ini
+                // Kita pakai realisasi sebagai "2024" dan target sebagai "2025"
+                realisasi2024Bul[label]  = gData?.realisasi ?? new Array(12).fill(0)
+                realisasi2024Akum[label] = gData?.realisasi ?? new Array(12).fill(0)
+                target2025Bul[label]     = gData?.target    ?? new Array(12).fill(0)
+                target2025Akum[label]    = gData?.target    ?? new Array(12).fill(0)
             })
 
-            // TARGET TARIF 2025 - akumulasi (col 1-12) dan bulanan (col 15-26)
-            const target2025Akum = {}
-            const target2025Bul  = {}
-            GOLONGAN.forEach(g => {
-                const row = getRow(targetTarif, g)
-                target2025Akum[g] = row ? row.slice(1, 13).map(v => this.p(v)) : new Array(12).fill(0)
-                target2025Bul[g]  = row ? row.slice(15, 27).map(v => this.p(v)) : new Array(12).fill(0)
-            })
-
-            // REALISASI bulanan 2025 — row 3-14, col: Bln, Target, Realisasi, Delta, %Pencapaian
-            const realisasiBulanan = realisasi.slice(3, 15).map(row => ({
-                bulan:       row[0],
-                target:      this.p(row[1]),
-                realisasi:   this.p(row[2]),
-                delta:       this.p(row[3]),
-                pencapaian:  this.p(row[4]),
+            const realisasiBulanan = d.realisasiBulanan.map(r => ({
+                bulan:      r.bulan,
+                target:     r.target,
+                realisasi:  r.realisasi,
+                delta:      r.delta,
+                pencapaian: r.pencapaian,
             }))
 
-            // TOTAL REALISASI — row 3-14
-            const total = totalRealisasi.slice(3, 15).map(row => ({
-                bulan:           row[0],
-                target2024:      this.p(row[1]),
-                akum2024:        this.p(row[2]),
-                realisasi2024:   this.p(row[3]),
-                realisasiAkum2024: this.p(row[4]),
-                target2025:      this.p(row[5]),
-                akum2025:        this.p(row[6]),
-                realisasi2025:   this.p(row[7]),
-                realisasiAkum2025: this.p(row[8]),
-                deltaKwh:        this.p(row[9]),
-                deltaPct:        this.p(row[10]),
-                deltaAkumKwh:    this.p(row[11]),
-                deltaAkumPct:    this.p(row[12]),
+            // Total perbandingan (gunakan JUMLAH target vs realisasi)
+            const jumlahData = d.data['JUMLAH']
+            const total = Array.from({ length: 12 }, (_, i) => ({
+                bulan:          i + 1,
+                target2024:     jumlahData?.rencana[i]    ?? 0,
+                realisasi2024:  jumlahData?.realisasi[i]  ?? 0,
+                target2025:     jumlahData?.rencanaAkum[i] ?? 0,
+                realisasi2025:  jumlahData?.realisasiAkum[i] ?? 0,
+                deltaKwh:       (jumlahData?.realisasi[i] ?? 0) - (jumlahData?.rencana[i] ?? 0),
+                deltaPct:       (jumlahData?.rencana[i] ?? 0) > 0
+                    ? (jumlahData?.realisasi[i] ?? 0) / (jumlahData?.rencana[i] ?? 0)
+                    : 1,
             }))
 
             return {
-                golongan: GOLONGAN,
-                realisasi2024Akum, realisasi2024Bul,
-                target2025Akum,    target2025Bul,
+                golongan: GOLONGAN.map(g => golLabels[g]),
+                realisasi2024Akum,
+                realisasi2024Bul,
+                target2025Akum,
+                target2025Bul,
                 realisasiBulanan,
-                total
+                total,
             }
         } catch (err) {
-            console.error("Gagal load PendapatanTarif:", err)
+            console.error('Gagal load GolTarifBatam:', err)
             return null
         }
-    }
-
-    p(v) {
-        if (typeof v === 'number') return v;
-        if (!v || v === "-" || v === "") return 0;
-        return parseFloat(v.toString().replace(/\./g, '').replace(',', '.')) || 0;
     }
 }

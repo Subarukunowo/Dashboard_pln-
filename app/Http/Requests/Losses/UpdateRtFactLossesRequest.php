@@ -20,6 +20,7 @@ class UpdateRtFactLossesRequest extends FormRequest
             'is_akumulasi' => ['sometimes', 'boolean'],
             'tipe_losses'  => ['sometimes', 'string', 'max:50'],
             'tipe'         => ['sometimes', 'string', 'max:50'],
+             'kategori' => ['sometimes', 'required', 'in:transmisi,distribusi,jaringan'],
             'nilai_pct'    => ['nullable', 'numeric'],
             'nilai_kwh'    => ['nullable', 'numeric', 'min:0'],
             'sumber'       => ['nullable', 'string', 'max:100'],
