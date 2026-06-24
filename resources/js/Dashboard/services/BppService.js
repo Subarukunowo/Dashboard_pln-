@@ -1,26 +1,29 @@
+import { apiFetch } from '@/Dashboard/utils/apiClient'
+
 export default class BppService {
     constructor() {
-        this.baseUrl = '/api/chart/bpp';
+        this.baseUrl = '/api/chart/bpp'
     }
 
     async getAllBpp(tahun = new Date().getFullYear()) {
         try {
-            const response = await fetch(`${this.baseUrl}?tahun=${tahun}`);
-            const result = await response.json();
-            return result.data; 
+            const res    = await apiFetch(`${this.baseUrl}?tahun=${tahun}`)
+            const result = await res.json()
+            return result.data
         } catch (error) {
-            console.error("Gagal memuat data BPP dari MySQL:", error);
-            return null;
+            console.error('Gagal memuat data BPP dari MySQL:', error)
+            return null
         }
     }
+
     async getHjrAvg(tahun = new Date().getFullYear()) {
-    try {
-        const response = await fetch(`/api/chart/hjr?tahun=${tahun}`);
-        const result   = await response.json();
-        return result.data;
-    } catch (error) {
-        console.error("Gagal memuat data HJR:", error);
-        return null;
+        try {
+            const res    = await apiFetch(`/api/chart/hjr?tahun=${tahun}`)
+            const result = await res.json()
+            return result.data
+        } catch (error) {
+            console.error('Gagal memuat data HJR:', error)
+            return null
+        }
     }
-}
 }

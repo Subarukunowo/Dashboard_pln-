@@ -6,20 +6,21 @@ use Illuminate\Support\Facades\Schema;
 
 return new class extends Migration
 {
-    /**
-     * Run the migrations.
-     */
     public function up(): void
     {
         Schema::create('rt_fact_hjr', function (Blueprint $table) {
             $table->id();
+            $table->smallInteger('tahun');
+            $table->tinyInteger('bulan');
+            $table->boolean('is_akumulasi')->default(0);
+            $table->enum('tipe', ['target', 'realisasi']);
+            $table->string('tarif_kode', 50);
+            $table->decimal('nilai_rpkwh', 25, 6)->default(0);
+            $table->enum('sumber', ['spreadsheet', 'manual'])->default('spreadsheet');
             $table->timestamps();
         });
     }
 
-    /**
-     * Reverse the migrations.
-     */
     public function down(): void
     {
         Schema::dropIfExists('rt_fact_hjr');

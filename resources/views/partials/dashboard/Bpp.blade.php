@@ -1,4 +1,4 @@
-<div class="card col-12">
+<div class="card col-12 preview-card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px; flex-wrap:wrap; gap:8px;">
         <div style="display:flex; align-items:center; gap:10px; flex-wrap:wrap;">
             <div class="card-title">{{ __('bpp.title') }}</div>
@@ -57,7 +57,7 @@
     </div>
 
     {{-- Edit Data BPP --}}
-    <div style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
+    <div class="edit-section-label" style="display:flex; align-items:center; gap:10px; margin-bottom:8px;">
         <div class="card-title" style="margin:0;">Edit Data BPP</div>
         <span id="bppEditWarning" style="display:none; font-size:0.7rem; padding:3px 8px; border-radius:10px; background:rgba(255,152,0,0.12); border:1px solid rgba(255,152,0,0.3); color:#ff9800;">
             🔒 Data tahun lalu — hanya bisa dilihat
@@ -66,7 +66,7 @@
     <div id="bppEditBppContainer" class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.15); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:420px; margin-bottom:20px;"></div>
 
     {{-- Edit Data HJR --}}
-    <div class="card-title" style="margin-bottom:8px;">Edit Data HJR Rata-rata</div>
+    <div class="edit-section-label card-title" style="margin-bottom:8px;">Edit Data HJR Rata-rata</div>
     <div id="bppEditHjrContainer" class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.15); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:420px;"></div>
 </div>
 

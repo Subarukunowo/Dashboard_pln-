@@ -1,5 +1,5 @@
 {{-- CARD 1: Pendapatan --}}
-<div class="card col-12">
+<div class="card col-12 preview-card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div style="display:flex; align-items:center; gap:10px;">
             <div class="card-title">{{ __('tunggakan.pendapatan_title') }}</div>
@@ -46,7 +46,7 @@
 </div>
 
 {{-- CARD 2: Ratio --}}
-<div class="card col-12">
+<div class="card col-12 preview-card">
     <div class="card-title">{{ __('tunggakan.ratio_title') }}</div>
 
     <div class="chart-wrapper" style="width:100%; height:250px; margin-bottom:20px;">

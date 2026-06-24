@@ -1,5 +1,6 @@
 import PenjualanService from '../services/PenjualanService.js'
 import { TAHUN_INI } from '../utils/CrudHelper.js'
+import { chartColors, getChartDefaults, onThemeChange } from '../utils/ThemeChart.js'
 
 const BULAN_LABELS = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
 
@@ -17,6 +18,16 @@ export default class PenjualanModule {
         const warning = document.getElementById('penjualanWarning')
         if (warning) {
             warning.style.display = this.data?.is_fallback ? 'inline-block' : 'none'
+        }
+
+        // Re-render chart saat tema berubah
+        if (!this._themeUnsubscribe) {
+            this._themeUnsubscribe = onThemeChange(() => {
+                if (this._lastState) this._renderChart(
+                    this._lastTarget, this._lastRealisasi,
+                    this._lastLabels,  this._lastView, this._lastIsPersen
+                )
+            })
         }
     }
 
@@ -70,7 +81,6 @@ export default class PenjualanModule {
         this._renderTable(displayLabels, displayTarget, displayRealisasi, isPersen)
         this._renderEditTable(tarif, this.data.tahun_efektif ?? new Date().getFullYear())
     }
-
     initFilters(state, onChange) {
         document.getElementById('filterViewPenjualan')?.addEventListener('change',  e => { state.view  = e.target.value; onChange() })
         document.getElementById('filterTarif')?.addEventListener('change',          e => { state.tarif = e.target.value; onChange() })
@@ -155,7 +165,17 @@ export default class PenjualanModule {
         if (!ctx) return
         if (this._chart) { this._chart.destroy(); this._chart = null }
 
-        const isLine = view === 'akumulasi' || view === 'persenAkumulasi'
+        // Simpan state untuk re-render saat tema berubah
+        this._lastTarget    = target
+        this._lastRealisasi = realisasi
+        this._lastLabels    = labels
+        this._lastView      = view
+        this._lastIsPersen  = isPersen
+
+        const isLine   = view === 'akumulasi' || view === 'persenAkumulasi'
+        const c        = chartColors()
+        const yFmt     = isPersen ? v => v.toFixed(1) + '%' : undefined
+        const defaults = getChartDefaults(yFmt)
 
         this._chart = new Chart(ctx, {
             type: isLine ? 'line' : 'bar',
@@ -183,14 +203,26 @@ export default class PenjualanModule {
                 ],
             },
             options: {
-                responsive:          true,
-                maintainAspectRatio: false,
-                scales: {
-                    y: {
-                        grid:  { color: '#333' },
-                        ticks: { color: '#888', callback: isPersen ? v => v.toFixed(1) + '%' : undefined },
+                ...defaults,
+                plugins: {
+                    ...defaults.plugins,
+                    // Penjualan: tampilkan angka ringkas di atas bar/titik semua dataset
+                    datalabels: {
+                        display: true,
+                        color:   chartColors().datalabel,
+                        font:    { size: 8, weight: '600' },
+                        anchor:  isLine ? 'top' : 'end',
+                        align:   isLine ? 'top' : 'end',
+                        offset:  2,
+                        formatter: (v) => {
+                            if (v == null) return ''
+                            if (isPersen) return v.toFixed(1) + '%'
+                            const abs = Math.abs(v)
+                            if (abs >= 1_000_000_000) return (v / 1_000_000_000).toFixed(1) + 'M'
+                            if (abs >= 1_000_000)     return (v / 1_000_000).toFixed(0) + 'jt'
+                            return Number(v).toLocaleString('id-ID')
+                        },
                     },
-                    x: { grid: { display: false }, ticks: { color: '#888' } },
                 },
             },
         })

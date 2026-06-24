@@ -1,5 +1,5 @@
 {{-- CARD 1: Pemeriksaan & Temuan --}}
-<div class="card col-12">
+<div class="card col-12 preview-card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div class="card-title">{{ __('p2tl.title') }}</div>
         <div style="display:flex; gap:5px; align-items:center;">
@@ -46,7 +46,7 @@
 </div>
 
 {{-- CARD 2: Temuan kWh --}}
-<div class="card col-12">
+<div class="card col-12 preview-card">
     <div class="card-title">{{ __('p2tl.kwh_title') }}</div>
 
     <div class="chart-wrapper" style="width:100%; height:280px; margin-bottom:20px;">

@@ -57,6 +57,10 @@ class RtFactTunggakanController extends BaseApiController
 
     public function destroyByFilter(Request $request): JsonResponse
     {
+        $request->validate([
+            'tahun' => 'required|integer|min:2000|max:2100',
+        ]);
+
         $tahun   = $request->integer('tahun');
         $deleted = $this->service->getModel()->where('tahun', $tahun)->delete();
 

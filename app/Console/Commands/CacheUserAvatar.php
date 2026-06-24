@@ -6,7 +6,7 @@ use App\Models\User;
 use Illuminate\Support\Facades\Http;
 use Illuminate\Support\Facades\Storage;
 
-class CacheUserAvatars extends Command
+class CacheUserAvatar extends Command
 {
     protected $signature = 'avatars:cache';
     protected $description = 'Download and cache user avatars locally';

@@ -56,16 +56,21 @@ class RtFactJamNyalaController extends BaseApiController
         return $this->success($this->service->getChartData($tahun, $tipe));
     }
     public function destroyByFilter(Request $request): JsonResponse
-{
-    $tahun  = $request->integer('tahun');
-    $tipe   = $request->input('tipe');
+    {
+        $request->validate([
+            'tahun' => 'required|integer|min:2000|max:2100',
+            'tipe'  => 'nullable|in:realisasi,target,semua',
+        ]);
 
-    $query = $this->service->getModel()->where('tahun', $tahun);
-    if ($tipe && $tipe !== 'semua') {
-        $query->where('tipe', $tipe);
+        $tahun = $request->integer('tahun');
+        $tipe  = $request->input('tipe');
+
+        $query = $this->service->getModel()->where('tahun', $tahun);
+        if ($tipe && $tipe !== 'semua') {
+            $query->where('tipe', $tipe);
+        }
+        $deleted = $query->delete();
+
+        return $this->success(['deleted' => $deleted], 'Data berhasil dihapus');
     }
-    $deleted = $query->delete();
-
-    return $this->success(['deleted' => $deleted], 'Data berhasil dihapus');
-}
 }

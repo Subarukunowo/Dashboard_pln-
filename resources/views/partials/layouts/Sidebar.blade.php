@@ -34,7 +34,7 @@
         <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
             <circle cx="12" cy="12" r="10"/><line x1="2" y1="12" x2="22" y2="12"/>
             <path d="M12 2a15.3 15.3 0 0 1 4 10 15.3 15.3 0 0 1-4 10 15.3 15.3 0 0 1-4-10 15.3 15.3 0 0 1 4-10z"/>
-        </svg>
+        </svg>a
         {{ __('sidebar.babin') }}
     </div>
     <div class="sidebar-item" data-section="jamnyala">
@@ -110,6 +110,16 @@
             <path d="M3 3v18h18"/><path d="M7 16l4-4 4 4 4-6"/>
         </svg>
         {{ __('sidebar.historis') }}
+    </a>
+    <a href="{{ route('stats') }}"
+       class="sidebar-item {{ Request::is('stats*') ? 'active' : '' }}"
+       style="text-decoration:none; color:inherit;">
+        <svg width="14" height="14" fill="none" viewBox="0 0 24 24" stroke="currentColor" stroke-width="2">
+            <line x1="18" y1="20" x2="18" y2="10"/>
+            <line x1="12" y1="20" x2="12" y2="4"/>
+            <line x1="6"  y1="20" x2="6"  y2="14"/>
+        </svg>
+        Database Stats
     </a>
 
 </nav>

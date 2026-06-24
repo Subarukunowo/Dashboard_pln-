@@ -15,6 +15,6 @@ class RtDimSubGolonganRepository extends BaseRepository
     {
         return $query
             ->when(isset($filters['golongan_kode']), fn ($q) => $q->where('golongan_kode', $filters['golongan_kode']))
-            ->when(isset($filters['search']),        fn ($q) => $q->where('nama', 'like', "%{$filters['search']}%"));
+            ->when(isset($filters['search']),        fn ($q) => $q->where('nama', 'like', '%' . addcslashes($filters['search'], '%_\\') . '%'));
     }
 }

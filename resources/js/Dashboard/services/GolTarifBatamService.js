@@ -1,3 +1,5 @@
+import { apiFetch } from '@/Dashboard/utils/apiClient'
+
 export default class GolTarifBatamService {
     constructor() {
         this.baseUrl = '/api/chart/pendapatan'
@@ -5,12 +7,11 @@ export default class GolTarifBatamService {
 
     async getData(tahun = new Date().getFullYear()) {
         try {
-            const res    = await fetch(`${this.baseUrl}?tahun=${tahun}`)
+            const res    = await apiFetch(`${this.baseUrl}?tahun=${tahun}`)
             const result = await res.json()
             const d      = result.data
 
-            // Transform ke format yang diharapkan GolTarifBatamModule
-            const GOLONGAN = ['S', 'R', 'B', 'I', 'P', 'M']
+            const GOLONGAN  = ['S', 'R', 'B', 'I', 'P', 'M']
             const golLabels = {
                 S: 'Sosial (S)', R: 'Rumah Tangga (R)', B: 'Bisnis (B)',
                 I: 'Industri (I)', P: 'Publik (P)', M: 'Multiguna (M)',
@@ -24,9 +25,6 @@ export default class GolTarifBatamService {
             GOLONGAN.forEach(g => {
                 const label = golLabels[g]
                 const gData = d.golongan[g]
-
-                // Untuk GolTarifBatamModule, 2024 = tahun lalu, 2025 = tahun ini
-                // Kita pakai realisasi sebagai "2024" dan target sebagai "2025"
                 realisasi2024Bul[label]  = gData?.realisasi ?? new Array(12).fill(0)
                 realisasi2024Akum[label] = gData?.realisasi ?? new Array(12).fill(0)
                 target2025Bul[label]     = gData?.target    ?? new Array(12).fill(0)
@@ -41,16 +39,15 @@ export default class GolTarifBatamService {
                 pencapaian: r.pencapaian,
             }))
 
-            // Total perbandingan (gunakan JUMLAH target vs realisasi)
             const jumlahData = d.data['JUMLAH']
             const total = Array.from({ length: 12 }, (_, i) => ({
-                bulan:          i + 1,
-                target2024:     jumlahData?.rencana[i]    ?? 0,
-                realisasi2024:  jumlahData?.realisasi[i]  ?? 0,
-                target2025:     jumlahData?.rencanaAkum[i] ?? 0,
-                realisasi2025:  jumlahData?.realisasiAkum[i] ?? 0,
-                deltaKwh:       (jumlahData?.realisasi[i] ?? 0) - (jumlahData?.rencana[i] ?? 0),
-                deltaPct:       (jumlahData?.rencana[i] ?? 0) > 0
+                bulan:         i + 1,
+                target2024:    jumlahData?.rencana[i]         ?? 0,
+                realisasi2024: jumlahData?.realisasi[i]       ?? 0,
+                target2025:    jumlahData?.rencanaAkum[i]     ?? 0,
+                realisasi2025: jumlahData?.realisasiAkum[i]   ?? 0,
+                deltaKwh:      (jumlahData?.realisasi[i] ?? 0) - (jumlahData?.rencana[i] ?? 0),
+                deltaPct:      (jumlahData?.rencana[i] ?? 0) > 0
                     ? (jumlahData?.realisasi[i] ?? 0) / (jumlahData?.rencana[i] ?? 0)
                     : 1,
             }))

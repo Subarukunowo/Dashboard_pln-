@@ -56,7 +56,10 @@
     <main class="dash-content" id="mainContent">
         <div class="dashboard-grid">
 
-            @include('partials.widgets.Stats')
+            {{-- Stats container — di-swap JS saat sidebar diklik --}}
+            <div class="stats-row" id="statsContainer">
+                @include('dashboard.partials.stats.bpp')
+            </div>
 
             @foreach([
                 'bpp'        => 'Bpp',
@@ -72,7 +75,7 @@
                 'tunggakan'  => 'Tunggakan',
                 'p2tl'       => 'P2tl',
             ] as $section => $partial)
-                <div class="dash-section {{ $loop->first || $loop->index === 1 ? 'active' : '' }}"
+                <div class="dash-section {{ $loop->first ? 'active' : '' }}"
                      data-section-content="{{ $section }}">
                     @include("partials.dashboard.{$partial}")
                 </div>
@@ -87,4 +90,6 @@
 @section('scripts')
     @vite('resources/js/Dashboard/pages/dashboard.js')
     <script src="{{ asset('js/sidebar.js') }}" defer></script>
+    {{-- Mode "Tampilkan Semua" aktif saat load awal --}}
+    <script>document.body.classList.add('all-mode')</script>
 @endsection

@@ -1,3 +1,5 @@
+import { apiFetch } from '@/Dashboard/utils/apiClient'
+
 export default class BabinService {
     constructor() {
         this.baseUrl = '/api/chart/babin'
@@ -5,7 +7,7 @@ export default class BabinService {
 
     async getData(tahun = new Date().getFullYear(), metrik = 'kwh') {
         try {
-            const res    = await fetch(`${this.baseUrl}?tahun=${tahun}&metrik=${metrik}`)
+            const res    = await apiFetch(`${this.baseUrl}?tahun=${tahun}&metrik=${metrik}`)
             const result = await res.json()
             return result.data
         } catch (err) {

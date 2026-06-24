@@ -118,6 +118,81 @@
 .dash-section        { display: none; min-height: 200px; }
 .dash-section.active { display: contents; }
 
+/*
+ * Mode "Tampilkan Semua" — body.all-mode ditambahkan via JS saat
+ * sidebar "Tampilkan Semua" diklik (atau saat load awal).
+ *
+ * Hanya .preview-card yang ditampilkan per section.
+ * Semua card non-preview disembunyikan.
+ * Tabel, edit container, dan konten verbose di dalam preview-card
+ * juga disembunyikan — hanya chart yang tampil.
+ */
+
+/* 1. Sembunyikan semua card yang bukan preview */
+body.all-mode .dash-section > .card:not(.preview-card) {
+    display: none !important;
+}
+
+/* 2. Sembunyikan card col-6 (delta/pie kecil) yang bukan preview */
+body.all-mode .dash-section > .card.col-6:not(.preview-card) {
+    display: none !important;
+}
+
+/* 3. Preview card tetap tampil */
+body.all-mode .dash-section > .card.preview-card {
+    display: flex !important;
+}
+
+/* 4. Di dalam preview-card: sembunyikan tabel ringkasan, edit container, tabel detail */
+body.all-mode .card.preview-card .custom-scroll {
+    display: none !important;
+}
+body.all-mode .card.preview-card table {
+    display: none !important;
+}
+
+/* 5. Sembunyikan section edit dan label-nya di mode all */
+body.all-mode .card.preview-card [id$="EditContainer"],
+body.all-mode .card.preview-card [id$="EditBppContainer"],
+body.all-mode .card.preview-card [id$="EditHjrContainer"],
+body.all-mode .card.preview-card [id$="EditRealisasiContainer"],
+body.all-mode .card.preview-card [id$="TableBody"],
+body.all-mode .card.preview-card [id$="SideTable"],
+body.all-mode .card.preview-card [id$="PieTable"],
+body.all-mode .card.preview-card .edit-section-label {
+    display: none !important;
+}
+
+/* 6. Sembunyikan tombol CRUD (Muat, Buat, Hapus) di mode all */
+body.all-mode [id^="btnMuat"],
+body.all-mode [id^="btnBuat"],
+body.all-mode [id^="btnHapus"],
+body.all-mode [id^="btnBuatTahun"] {
+    display: none !important;
+}
+
+/* 7. Sembunyikan stats container di mode all */
+body.all-mode #statsContainer {
+    display: none !important;
+}
+
+/* 6. Sembunyikan sub-judul (card-title sebagai section sub-header) */
+body.all-mode .card.preview-card .card-title ~ .chart-wrapper {
+    /* chart-wrapper setelah card-title sub — tetap tampil, tapi kita
+       sembunyikan card-title itu sendiri agar lebih bersih */
+}
+
+/* 7. Chart lebih kecil di mode all */
+body.all-mode .card.preview-card .chart-wrapper {
+    height: 180px !important;
+    min-height: 180px !important;
+}
+
+/* 8. Modals tidak ikut disembunyikan (fixed position, diluar flow) */
+body.all-mode [id^="modal"] {
+    /* modals pakai display:none via JS, biarkan JS yang kontrol */
+}
+
 /* ===== SIDEBAR TOGGLE (mobile) ===== */
 .sidebar-toggle {
     display: none;

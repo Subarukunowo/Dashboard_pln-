@@ -1,0 +1,172 @@
+/* ================================================================
+   custom-select.css
+   Styling untuk CustomSelect.js — menggantikan native <select>
+   ================================================================ */
+
+/* Wrapper — sama lebar dengan trigger */
+.cs-wrapper {
+    position: relative;
+    display: inline-flex;
+    flex-shrink: 0;
+}
+
+/* Trigger button — tampak seperti select lama */
+.cs-trigger {
+    display: inline-flex;
+    align-items: center;
+    gap: 5px;
+    padding: 4px 8px 4px 6px;
+    font-size: 0.7rem;
+    border-radius: 4px;
+    border: 1px solid #444;
+    background: #1e1e1e;
+    color: #ccc;
+    cursor: pointer;
+    white-space: nowrap;
+    min-width: 80px;
+    max-width: 180px;
+    transition: border-color 0.15s, background 0.15s;
+    line-height: 1.4;
+}
+
+.cs-trigger:hover {
+    border-color: #666;
+    background: #252525;
+}
+
+.cs-trigger[aria-expanded="true"] {
+    border-color: var(--accent-orange, #ff9800);
+    background: #252525;
+}
+
+.cs-trigger-label {
+    flex: 1;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+    text-align: left;
+}
+
+.cs-arrow {
+    font-size: 0.6rem;
+    color: #666;
+    flex-shrink: 0;
+    transition: transform 0.15s;
+}
+
+.cs-trigger[aria-expanded="true"] .cs-arrow {
+    transform: rotate(180deg);
+    color: var(--accent-orange, #ff9800);
+}
+
+/* Dropdown panel */
+.cs-dropdown {
+    position: absolute;
+    left: 0;
+    z-index: 9999;
+    min-width: 100%;
+    width: max-content;
+    max-width: 260px;
+    background: #1e1e1e;
+    border: 1px solid #444;
+    border-radius: 6px;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.5);
+    overflow-y: auto;
+    scrollbar-width: thin;
+    scrollbar-color: #444 transparent;
+}
+
+.cs-dropdown::-webkit-scrollbar {
+    width: 5px;
+}
+.cs-dropdown::-webkit-scrollbar-track {
+    background: transparent;
+}
+.cs-dropdown::-webkit-scrollbar-thumb {
+    background: #444;
+    border-radius: 3px;
+}
+
+/* Group label (optgroup) */
+.cs-group-label {
+    padding: 6px 10px 3px;
+    font-size: 0.62rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--accent-orange, #ff9800);
+    border-top: 1px solid #2a2a2a;
+    pointer-events: none;
+    height: 30px;
+    display: flex;
+    align-items: center;
+}
+
+.cs-group-label:first-child {
+    border-top: none;
+}
+
+/* Item */
+.cs-item {
+    padding: 0 12px 0 16px;
+    font-size: 0.72rem;
+    color: #bbb;
+    cursor: pointer;
+    height: 30px;
+    display: flex;
+    align-items: center;
+    transition: background 0.1s, color 0.1s;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.cs-item:hover {
+    background: rgba(255, 255, 255, 0.06);
+    color: #fff;
+}
+
+.cs-item.cs-selected {
+    color: var(--accent-orange, #ff9800);
+    background: rgba(255, 152, 0, 0.08);
+}
+
+.cs-item.cs-selected::before {
+    content: '✓';
+    margin-right: 6px;
+    font-size: 0.65rem;
+    flex-shrink: 0;
+}
+
+/* Light mode support */
+body.light-mode .cs-trigger {
+    background: #f5f5f5;
+    border-color: #ccc;
+    color: #333;
+}
+
+body.light-mode .cs-trigger:hover,
+body.light-mode .cs-trigger[aria-expanded="true"] {
+    background: #ebebeb;
+    border-color: #999;
+}
+
+body.light-mode .cs-dropdown {
+    background: #fff;
+    border-color: #ddd;
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.15);
+}
+
+body.light-mode .cs-item {
+    color: #444;
+}
+
+body.light-mode .cs-item:hover {
+    background: rgba(0, 0, 0, 0.05);
+    color: #111;
+}
+
+body.light-mode .cs-group-label {
+    color: #e67e00;
+    border-top-color: #eee;
+}

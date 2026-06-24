@@ -1,40 +1,42 @@
-import BppModule             from '../modules/BppModule.js'
-import PenjualanModule       from '../modules/PenjualanModule.js'
+import BppModule              from '../modules/BppModule.js'
+import PenjualanModule        from '../modules/PenjualanModule.js'
 import PendapatanBatamService from '../services/PendapatanBatamService.js'
-import GolTarifBatamService  from '../services/GolTarifBatamService.js'
-import RpkwhService          from '../services/RpkwhService.js'
-import PelangganService      from '../services/PelangganService.js'
-import KvaService            from '../services/KvaService.js'
-import BabinService          from '../services/BabinService.js'
-import JamNyalaService       from '../services/JamNyalaService.js'
-import LossesService         from '../services/LossesService.js'
-import TunggakanService      from '../services/TunggakanService.js'
-import P2tlService           from '../services/P2tlService.js'
+import GolTarifBatamService   from '../services/GolTarifBatamService.js'
+import RpkwhService           from '../services/RpkwhService.js'
+import PelangganService       from '../services/PelangganService.js'
+import KvaService             from '../services/KvaService.js'
+import BabinService           from '../services/BabinService.js'
+import JamNyalaService        from '../services/JamNyalaService.js'
+import LossesService          from '../services/LossesService.js'
+import TunggakanService       from '../services/TunggakanService.js'
+import P2tlService            from '../services/P2tlService.js'
 
-import PendapatanBatamModule from '../modules/PendapatanBatamModule.js'
-import GolTarifBatamModule   from '../modules/GolTarifBatamModule.js'
-import RpkwhModule           from '../modules/RpkwhModule.js'
-import PelangganModule       from '../modules/PelangganModule.js'
-import KvaModule             from '../modules/KvaModule.js'
-import BabinModule           from '../modules/BabinModule.js'
-import JamNyalaModule        from '../modules/JamNyalaModule.js'
-import LossesModule          from '../modules/LossesModule.js'
-import TunggakanModule       from '../modules/TunggakanModule.js'
-import P2tlModule            from '../modules/P2tlModule.js'
-import ChatbotModule         from '../modules/ChatbotModule.js'
+import PendapatanBatamModule  from '../modules/PendapatanBatamModule.js'
+import GolTarifBatamModule    from '../modules/GolTarifBatamModule.js'
+import RpkwhModule            from '../modules/RpkwhModule.js'
+import PelangganModule        from '../modules/PelangganModule.js'
+import KvaModule              from '../modules/KvaModule.js'
+import BabinModule            from '../modules/BabinModule.js'
+import JamNyalaModule         from '../modules/JamNyalaModule.js'
+import LossesModule           from '../modules/LossesModule.js'
+import TunggakanModule        from '../modules/TunggakanModule.js'
+import P2tlModule             from '../modules/P2tlModule.js'
+import ChatbotModule          from '../modules/ChatbotModule.js'
 
-import PendapatanBatamChart  from '../charts/PendapatanBatamChart.js'
-import GolTarifBatamChart    from '../charts/GolTarifBatamChart.js'
-import RpkwhChart            from '../charts/RpkwhChart.js'
-import PelangganChart        from '../charts/PelangganChart.js'
-import KvaChart              from '../charts/KvaChart.js'
-import BabinChart            from '../charts/BabinChart.js'
-import JamNyalaChart         from '../charts/JamNyalaChart.js'
-import LossesChart           from '../charts/LossesChart.js'
-import TunggakanChart        from '../charts/TunggakanChart.js'
-import P2tlChart             from '../charts/P2tlChart.js'
-import ScreenshotProtection  from '../utils/ScreenshotProtection.js'
-import { initStats }         from '../layout/UpdateStats.js'
+import PendapatanBatamChart   from '../charts/PendapatanBatamChart.js'
+import GolTarifBatamChart     from '../charts/GolTarifBatamChart.js'
+import RpkwhChart             from '../charts/RpkwhChart.js'
+import PelangganChart         from '../charts/PelangganChart.js'
+import KvaChart               from '../charts/KvaChart.js'
+import BabinChart             from '../charts/BabinChart.js'
+import JamNyalaChart          from '../charts/JamNyalaChart.js'
+import LossesChart            from '../charts/LossesChart.js'
+import TunggakanChart         from '../charts/TunggakanChart.js'
+import P2tlChart              from '../charts/P2tlChart.js'
+import ScreenshotProtection   from '../utils/ScreenshotProtection.js'
+import { initStats }          from '../layout/UpdateStats.js'
+import { onThemeChange }      from '../utils/ThemeChart.js'
+import CustomSelect           from '../components/CustomSelect.js'
 
 const CURRENT_YEAR = new Date().getFullYear()
 
@@ -92,6 +94,9 @@ class Dashboard {
         this._initClock()
         this._initGlobalFilters()
 
+        // Upgrade semua <select> ke custom dropdown
+        CustomSelect.initAll()
+
         document.getElementById('dashboardLayout')?.classList.add('loaded')
 
         this.bppModule.load(this.state.bpp.year).then(() => {
@@ -135,8 +140,66 @@ class Dashboard {
                 .catch(err => console.warn(`[Dashboard] Gagal load ${cfg.key}:`, err))
         })
 
-        const now = new Date()
-        initStats(this.pelangganService, { year: now.getFullYear(), month: now.getMonth() + 1 })
+        const now           = new Date()
+        const activeSection = document.querySelector('.sidebar-item.active')?.dataset?.section ?? 'bpp'
+        initStats(activeSection, { year: now.getFullYear(), month: now.getMonth() + 1 })
+
+        this._initStatsSwap()
+        this._initThemeRerender()
+    }
+
+    _initThemeRerender() {
+        // Re-render semua chart aktif saat tema light/dark berubah
+        onThemeChange(() => {
+            // BPP
+            this.bppModule.render(this.state.bpp)
+
+            // Module-module dengan data
+            const rerenderMap = [
+                { key: 'pendapatanData', module: this.pendapatanModule, state: this.state.pendapatan },
+                { key: 'golTarifData',   module: this.golTarifModule,   state: this.state.golTarif   },
+                { key: 'rpkwhData',      module: this.rpkwhModule,      state: this.state.rpkwh      },
+                { key: 'pelangganData',  module: this.pelangganModule,  state: this.state.pelanggan  },
+                { key: 'kvaData',        module: this.kvaModule,        state: this.state.kva        },
+                { key: 'babinData',      module: this.babinModule,      state: this.state.babin      },
+                { key: 'jamNyalaData',   module: this.jamNyalaModule,   state: this.state.jamNyala   },
+                { key: 'lossesData',     module: this.lossesModule,     state: this.state.losses     },
+                { key: 'tunggakanData',  module: this.tunggakanModule,  state: this.state.tunggakan  },
+                { key: 'p2tlData',       module: this.p2tlModule,       state: this.state.p2tl       },
+            ]
+
+            rerenderMap.forEach(({ key, module, state }) => {
+                const data = this[key]
+                if (data) {
+                    try { module.render(data, state) } catch (e) { /* modul mungkin belum siap */ }
+                }
+            })
+
+            // Penjualan — pakai state internal module
+            if (this.penjualanModule.data) {
+                try { this.penjualanModule.render(this.state.penjualan) } catch (e) { /**/ }
+            }
+        })
+    }
+
+    _initStatsSwap() {
+        document.querySelectorAll('.sidebar-item[data-section]').forEach(item => {
+            item.addEventListener('click', () => {
+                const section = item.dataset.section
+                const now     = new Date()
+
+                // Mode "all" — stats tidak ditampilkan
+                if (section === 'all') return
+
+                fetch(`/dashboard/stats-partial/${section}`)
+                    .then(r => r.text())
+                    .then(html => {
+                        document.getElementById('statsContainer').innerHTML = html
+                        initStats(section, { year: now.getFullYear(), month: now.getMonth() + 1 })
+                    })
+                    .catch(err => console.warn(`[Stats] Gagal swap ${section}:`, err))
+            })
+        })
     }
 
     _initClock() {

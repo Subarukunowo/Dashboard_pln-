@@ -9,7 +9,11 @@ class ChatbotController extends Controller
 {
     public function ask(Request $request)
     {
-        $question   = $request->input('question');
+        $request->validate([
+            'question' => 'required|string|max:1000',
+        ]);
+
+        $question   = strip_tags(trim($request->input('question')));
         $pythonPath = env('PYTHON_BIN_PATH');
         $scriptPath = base_path('python/chatbot_logic.py');
 

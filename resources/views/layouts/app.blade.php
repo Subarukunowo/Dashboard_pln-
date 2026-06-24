@@ -6,6 +6,75 @@
         <meta name="csrf-token" content="{{ csrf_token() }}">
         <meta name="description" content="{{ __('app.meta.description') }}">
         <meta name="author" content="Sandy Mulia Kesuma">
+        @php [$_apiToken, $_apiTs] = \App\Helpers\InternalApiToken::generate(); @endphp
+        <meta name="api-token"     content="{{ $_apiToken }}">
+        <meta name="api-timestamp" content="{{ $_apiTs }}">
+
+        {{-- ================================================================
+             INTERNAL API FETCH INTERCEPTOR
+             Patch window.fetch SEBELUM semua script lain load.
+             Setiap request ke /api/* otomatis mendapat HMAC header.
+             Token di-refresh via /api/internal/token-refresh tiap 50 detik.
+             ================================================================ --}}
+        <script>
+        (function () {
+            var _secret_ts = '{{ $_apiTs }}';
+            var _token     = document.querySelector('meta[name="api-token"]').content;
+            var _csrf      = document.querySelector('meta[name="csrf-token"]').content;
+
+            // generate() menghasilkan [token, timestamp] yang SATU PASANG.
+            // Kita simpan pasangan terakhir yang valid.
+            var _currentPair = { token: _token, ts: _secret_ts };
+
+            // Refresh pasangan token+timestamp dari server tiap 50 detik
+            setInterval(function () {
+                fetch('/api/internal/token-refresh', {
+                    credentials: 'same-origin',
+                    headers: { 'Accept': 'application/json', 'X-CSRF-TOKEN': _csrf }
+                })
+                .then(function (r) { return r.ok ? r.json() : null; })
+                .then(function (j) {
+                    if (!j) return;
+                    _currentPair = { token: j.token, ts: j.timestamp };
+                    var tMeta  = document.querySelector('meta[name="api-token"]');
+                    var tsMeta = document.querySelector('meta[name="api-timestamp"]');
+                    if (tMeta)  tMeta.setAttribute('content', j.token);
+                    if (tsMeta) tsMeta.setAttribute('content', j.timestamp);
+                });
+            }, 50000);
+
+            // Patch fetch global — inject header HMAC pada setiap request ke /api/*
+            var _origFetch = window.fetch;
+            window.fetch = function (input, init) {
+                var url = (typeof input === 'string') ? input
+                        : (input && input.url ? input.url : '');
+
+                if (url && url.indexOf('/api/') !== -1 && url.indexOf('/token-refresh') === -1) {
+                    init = init || {};
+                    var headers = new Headers(init.headers || {});
+
+                    // Gunakan PASANGAN token+ts yang sama — JANGAN generate ts baru
+                    headers.set('X-Api-Token',     _currentPair.token);
+                    headers.set('X-Api-Timestamp', _currentPair.ts);
+
+                    if (!headers.has('Accept')) {
+                        headers.set('Accept', 'application/json');
+                    }
+
+                    var method = (init.method || 'GET').toUpperCase();
+                    if (['POST','PUT','PATCH','DELETE'].indexOf(method) !== -1) {
+                        if (!headers.has('X-CSRF-TOKEN')) {
+                            headers.set('X-CSRF-TOKEN', _csrf);
+                        }
+                    }
+
+                    init = Object.assign({}, init, { headers: headers, credentials: 'same-origin' });
+                }
+
+                return _origFetch.call(this, input, init);
+            };
+        })();
+        </script>
 
         <title>@yield('title', __('app.meta.title'))</title>
 
@@ -23,6 +92,7 @@
             'resources/css/pages/fact-entry.css',
             'resources/css/components/chatbot.css',
             'resources/css/components/app.css',
+            'resources/css/components/custom-select.css',
         ])
 
         @stack('styles')
@@ -171,6 +241,15 @@
         @endif
 
         <script src="https://cdn.jsdelivr.net/npm/chart.js" defer></script>
+        <script src="https://cdn.jsdelivr.net/npm/chartjs-plugin-datalabels@2.2.0/dist/chartjs-plugin-datalabels.min.js" defer></script>
+        {{-- Register datalabels plugin secara global setelah kedua script di atas load --}}
+        <script>
+        window.addEventListener('load', function () {
+            if (window.Chart && window.ChartDataLabels) {
+                Chart.register(ChartDataLabels)
+            }
+        })
+        </script>
         <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11" defer></script>
 
         @yield('scripts')

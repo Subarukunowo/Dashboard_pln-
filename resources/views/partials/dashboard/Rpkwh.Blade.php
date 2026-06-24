@@ -1,5 +1,5 @@
 {{-- CARD 1: Rencana vs Realisasi RPKWH --}}
-<div class="card col-12">
+<div class="card col-12 preview-card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
         <div class="card-title">{{ __('rpkwh.title') }}</div>
         <div style="display:flex; gap:5px; flex-wrap:wrap; align-items:center;">
@@ -65,7 +65,7 @@
 </div>
 
 {{-- CARD 2: Distribusi Golongan RPKWH --}}
-<div class="card col-12">
+<div class="card col-12 preview-card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div class="card-title" id="judulPieRpkwh">{{ __('rpkwh.pie_title') }}</div>
         <div style="display:flex; gap:5px;">

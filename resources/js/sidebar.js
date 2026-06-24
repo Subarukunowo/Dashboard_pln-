@@ -27,14 +27,15 @@ document.addEventListener('DOMContentLoaded', function () {
 
             if (target === 'all') {
                 sections.forEach(s => s.classList.add('active'))
+                document.body.classList.add('all-mode')
             } else {
                 sections.forEach(s => {
                     s.classList.toggle('active', s.dataset.sectionContent === target)
                 })
+                document.body.classList.remove('all-mode')
             }
 
             if (window.innerWidth <= 900) sidebar.classList.remove('open')
             content?.scrollTo({ top: 0, behavior: 'smooth' })
         })
-    })
-})
+    })})

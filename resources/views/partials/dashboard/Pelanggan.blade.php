@@ -1,5 +1,5 @@
 {{-- CARD 1: Rencana vs Realisasi Penambahan Pelanggan --}}
-<div class="card col-12">
+<div class="card col-12 preview-card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div class="card-title">{{ __('pelanggan.title') }}</div>
         <div style="display:flex; gap:5px; align-items:center;">
@@ -63,7 +63,7 @@
 </div>
 
 {{-- CARD 2: Distribusi Golongan Pelanggan --}}
-<div class="card col-12">
+<div class="card col-12 preview-card">
     <div class="card-title">{{ __('pelanggan.distribusi_title') }}</div>
 
     <div class="chart-wrapper" style="width:100%; height:280px; margin-bottom:20px;">

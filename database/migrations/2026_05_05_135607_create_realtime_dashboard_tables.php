@@ -161,25 +161,20 @@ return new class extends Migration
         // ─────────────────────────────────────────────────────────────
         // 8. FACT: Kinerja Tunggakan
         // ─────────────────────────────────────────────────────────────
-        Schema::create('rt_fact_tunggakan', function (Blueprint $table) {
-            $table->id();
-            $table->smallInteger('tahun');
-            $table->tinyInteger('bulan');
-            $table->enum('tipe', ['target', 'realisasi']);
-
-            $table->decimal('pal', 25, 6)->default(0);
-            $table->decimal('tagihan_susulan', 25, 6)->default(0);
-            $table->decimal('jumlah_tunggakan', 25, 6)->default(0);
-            $table->decimal('pendapatan', 25, 6)->default(0);
-            $table->decimal('ratio_pct', 10, 6)->nullable();
-
-            $table->enum('sumber', ['spreadsheet', 'manual'])->default('spreadsheet');
-            $table->timestamps();
-
-            $table->unique(['tahun', 'bulan', 'tipe'], 'rt_tunggakan_unique');
-            $table->index(['tahun', 'bulan']);
-        });
-
+   Schema::create('rt_fact_tunggakan', function (Blueprint $table) {
+    $table->id();
+    $table->smallInteger('tahun');
+    $table->tinyInteger('bulan');
+    $table->decimal('pal_berjalan', 25, 6)->default(0);
+    $table->decimal('pal_tunggakan', 25, 6)->default(0);
+    $table->decimal('ts_berjalan', 25, 6)->default(0);
+    $table->decimal('ts_tunggakan', 25, 6)->default(0);
+    $table->decimal('jumlah_tunggakan', 25, 6)->default(0);
+    $table->decimal('pendapatan', 25, 6)->default(0);
+    $table->decimal('ratio_tunggakan_pct', 10, 6)->default(0);
+    $table->enum('sumber', ['spreadsheet', 'manual'])->default('spreadsheet');
+    $table->timestamps();
+});
         // ─────────────────────────────────────────────────────────────
         // 9. FACT: Jam Nyala
         // ─────────────────────────────────────────────────────────────

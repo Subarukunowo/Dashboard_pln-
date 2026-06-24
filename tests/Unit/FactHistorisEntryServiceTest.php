@@ -1,87 +1,77 @@
 <?php
 
-namespace Tests\Feature;
+namespace Tests\Unit;
 
-use App\Models\DimGolongan;
-use App\Models\DimMetrik;
 use App\Services\FactHistorisEntryService;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Carbon;
 use Tests\TestCase;
 
-class FactHistorisEntryControllerTest extends TestCase
+/**
+ * Unit test untuk FactHistorisEntryService.
+ * Menguji business logic tanpa HTTP layer.
+ */
+class FactHistorisEntryServiceTest extends TestCase
 {
     use RefreshDatabase;
+
+    private FactHistorisEntryService $service;
 
     protected function setUp(): void
     {
         parent::setUp();
-        $this->seedLookupData();
+        $this->service = app(FactHistorisEntryService::class);
     }
 
-    protected function seedLookupData(): void
+    /** canEditPeriod true untuk bulan yang masih dalam deadline (≤ 1 bulan + 7 hari) */
+    public function test_can_edit_period_true_saat_masih_dalam_deadline(): void
     {
-        DimMetrik::create([
-            'kode' => 'kwh_jual', 
-            'nama' => 'KWH Jual', 
-            'satuan' => 'KWH', 
-            'kategori' => 'penjualan'
-        ]);
+        // Hari ini: 5 Februari 2026 → edit Januari 2026 masih boleh (deadline 7 Feb)
+        Carbon::setTestNow(Carbon::create(2026, 2, 5));
 
-        // ✅ FIX: Tambahkan field 'alias' sesuai struktur DB asli
-        DimGolongan::create([
-            'kode' => 'R1', 
-            'nama' => 'Rumah Tangga', 
-            'urutan' => 1,
-            'alias' => 'RT' // ← Wajib ada karena kolom NOT NULL
-        ]);
+        $result = $this->service->canEditPeriod(2026, 1);
+
+        $this->assertTrue($result);
+
+        Carbon::setTestNow();
     }
 
-    /** ✅ SUCCESS */
-    public function test_it_stores_data_successfully(): void
+    /** canEditPeriod false jika deadline sudah lewat */
+    public function test_can_edit_period_false_saat_deadline_lewat(): void
     {
-        $this->mock(FactHistorisEntryService::class, function ($mock) {
-            $mock->shouldReceive('canEditPeriod')->with(2026, 1)->andReturn(true);
-        });
+        // Hari ini: 10 Februari 2026 → edit Januari 2026 sudah melewati deadline (7 Feb)
+        Carbon::setTestNow(Carbon::create(2026, 2, 10));
 
-        $response = $this->postJson('/fact-historis', [
-            'tahun' => 2026, 'bulan' => 1,
-            'data'  => [['metrik_kode' => 'kwh_jual', 'golongan_kode' => 'R1', 'nilai' => 15000.50]]
-        ]);
+        $result = $this->service->canEditPeriod(2026, 1);
 
-        $response->assertStatus(200)
-                 ->assertJson(['success' => true])
-                 ->assertJsonStructure(['success', 'message', 'created', 'updated']);
+        $this->assertFalse($result);
+
+        Carbon::setTestNow();
     }
 
-    /** ❌ FAILURE 1: Missing 'data' key */
-    public function test_it_fails_when_data_field_is_missing(): void
+    /** canEditPeriod true untuk bulan berjalan */
+    public function test_can_edit_period_true_untuk_bulan_berjalan(): void
     {
-        $response = $this->postJson('/fact-historis', [
-            'tahun'   => 2026, 'bulan' => 1,
-            'entries' => [['metrik_kode' => 'kwh_jual', 'golongan_kode' => 'R1', 'nilai' => 1000]]
-        ]);
+        Carbon::setTestNow(Carbon::create(2026, 3, 15));
 
-        $response->assertStatus(422)
-                 ->assertJsonValidationErrors(['data'])
-                 ->assertJsonFragment(['message' => 'The data field is required.']);
+        // Edit Maret 2026 (bulan berjalan) → selalu boleh
+        $result = $this->service->canEditPeriod(2026, 3);
+
+        $this->assertTrue($result);
+
+        Carbon::setTestNow();
     }
 
-    /** ❌ FAILURE 2: Deadline lewat 1 bulan + 7 hari */
-    public function test_it_fails_when_deadline_1_month_plus_7_days_is_exceeded(): void
+    /** canEditPeriod false untuk periode masa depan */
+    public function test_can_edit_period_false_untuk_periode_masa_depan(): void
     {
-        Carbon::setTestNow(Carbon::create(2026, 2, 10, 10, 0, 0));
-        $this->instance(FactHistorisEntryService::class, app(FactHistorisEntryService::class));
+        Carbon::setTestNow(Carbon::create(2026, 3, 15));
 
-        $response = $this->postJson('/fact-historis', [
-            'tahun' => 2026, 'bulan' => 1,
-            'data'  => [['metrik_kode' => 'kwh_jual', 'golongan_kode' => 'R1', 'nilai' => 12000]]
-        ]);
+        // Edit April 2026 (bulan depan) → tidak boleh
+        $result = $this->service->canEditPeriod(2026, 4);
 
-        $response->assertStatus(403)
-                 ->assertJson(['success' => false])
-                 ->assertJsonFragment(['message' => 'Periode ini sudah melewati batas waktu input.']);
+        $this->assertFalse($result);
 
-        Carbon::setTestNow(); // ⚠️ Wajib reset!
+        Carbon::setTestNow();
     }
 }

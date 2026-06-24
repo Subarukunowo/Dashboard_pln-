@@ -1,8 +1,14 @@
 import { defineConfig } from 'vite';
 import laravel          from 'laravel-vite-plugin';
 import tailwindcss      from '@tailwindcss/vite';
+import path             from 'path';
 
 export default defineConfig({
+    resolve: {
+        alias: {
+            '@': path.resolve(__dirname, 'resources/js'),
+        },
+    },
     plugins: [
         laravel({
             input: [
@@ -34,6 +40,7 @@ export default defineConfig({
                 'resources/css/components/dashboard-components.css',
                 'resources/css/components/chatbot.css',
                 'resources/css/components/app.css',
+                'resources/css/components/custom-select.css',
             ],
             refresh: [
                 'resources/views/**/*.blade.php',

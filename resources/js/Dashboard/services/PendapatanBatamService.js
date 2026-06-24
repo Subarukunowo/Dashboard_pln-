@@ -1,3 +1,5 @@
+import { apiFetch } from '@/Dashboard/utils/apiClient'
+
 export default class PendapatanBatamService {
     constructor() {
         this.baseUrl = '/api/chart/pendapatan'
@@ -5,7 +7,7 @@ export default class PendapatanBatamService {
 
     async getData(tahun = new Date().getFullYear()) {
         try {
-            const res    = await fetch(`${this.baseUrl}?tahun=${tahun}`)
+            const res    = await apiFetch(`${this.baseUrl}?tahun=${tahun}`)
             const result = await res.json()
             return result.data
         } catch (err) {

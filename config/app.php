@@ -121,4 +121,17 @@ return [
         'store' => env('APP_MAINTENANCE_STORE', 'database'),
     ],
 
+    /*
+    |--------------------------------------------------------------------------
+    | Internal API Secret
+    |--------------------------------------------------------------------------
+    |
+    | Key yang digunakan untuk HMAC-SHA256 signing pada semua internal API
+    | endpoint. Wajib di-set di .env. Generate dengan:
+    |   php artisan tinker --execute="echo bin2hex(random_bytes(32));"
+    |
+    */
+
+    'internal_api_secret' => env('INTERNAL_API_SECRET', ''),
+
 ];

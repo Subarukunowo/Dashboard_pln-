@@ -4,25 +4,19 @@
  * Pola: cek existing record by unique key → PUT jika ada, POST jika tidak.
  * Data tahun lalu → input disabled + row semi-transparent.
  */
-const CSRF = () => document.querySelector('meta[name="csrf-token"]')?.content
+import { apiFetch } from '@/Dashboard/utils/apiClient'
+
+const CSRF      = () => document.querySelector('meta[name="csrf-token"]')?.content
 const TAHUN_INI = new Date().getFullYear()
 
 /**
  * Render container tabel edit generik.
- * @param {string}   containerId  - id elemen container (div)
- * @param {Array}    rows         - array baris: [{ label, fields: [{key,value,color}] }]
- * @param {boolean}  isReadOnly   - jika true, semua input disabled
- * @param {Function} onSave       - async (rowIndex, fieldValues) => void
- * @param {string[]} headers      - header kolom
- * @param {Function} [onAfterSave] - (rowIndex, fieldValues) => void — dipanggil setelah save berhasil, untuk live-update kalkulasi
  */
 export function renderEditTable(containerId, rows, isReadOnly, onSave, headers = [], onAfterSave = null) {
     const container = document.getElementById(containerId)
     if (!container) return
 
-    const disabledStyle = isReadOnly
-        ? 'opacity:0.45; pointer-events:none;'
-        : ''
+    const disabledStyle = isReadOnly ? 'opacity:0.45; pointer-events:none;' : ''
 
     const headHtml = headers.length
         ? `<thead style="position:sticky;top:0;background:#252525;z-index:1;">
@@ -34,7 +28,7 @@ export function renderEditTable(containerId, rows, isReadOnly, onSave, headers =
         : ''
 
     const bodyHtml = rows.map((row, ri) => {
-        const cells = row.fields.map((f, fi) => `
+        const cells = row.fields.map((f) => `
             <td style="padding:4px 6px;">
                 <input
                     type="number"
@@ -75,7 +69,6 @@ export function renderEditTable(containerId, rows, isReadOnly, onSave, headers =
 
     if (isReadOnly) return
 
-    // Pasang event listener simpan per baris
     rows.forEach((row, ri) => {
         const btn = document.getElementById(`btnSaveRow_${containerId}_${ri}`)
         if (!btn) return
@@ -108,28 +101,23 @@ export function renderEditTable(containerId, rows, isReadOnly, onSave, headers =
 
 /**
  * Upsert satu record: GET dulu → PUT jika ada, POST jika tidak.
- * @param {string} endpoint      - base API path, e.g. '/api/v1/fact/p2tl'
- * @param {object} uniqueParams  - query params untuk lookup, e.g. { tahun, bulan, tipe }
- * @param {object} payload       - data untuk store/update
- * @param {string} [idField='id'] - nama field ID di response
  */
 export async function upsert(endpoint, uniqueParams, payload) {
-    const qs     = new URLSearchParams({ ...uniqueParams, per_page: 1 }).toString()
-    const csrf   = CSRF()
-    const heads  = { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }
+    const qs    = new URLSearchParams({ ...uniqueParams, per_page: 1 }).toString()
+    const heads = { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': CSRF() }
 
-    const checkRes = await fetch(`${endpoint}?${qs}`, { headers: { Accept: 'application/json' } })
+    const checkRes = await apiFetch(`${endpoint}?${qs}`)
     const check    = await checkRes.json()
     const existing = check.data?.data?.[0] ?? check.data?.[0]
 
     if (existing?.id) {
-        const res = await fetch(`${endpoint}/${existing.id}`, {
+        const res = await apiFetch(`${endpoint}/${existing.id}`, {
             method: 'PUT', headers: heads, body: JSON.stringify(payload),
         })
         if (!res.ok) throw new Error(`PUT failed: ${res.status}`)
         return res.json()
     } else {
-        const res = await fetch(endpoint, {
+        const res = await apiFetch(endpoint, {
             method: 'POST', headers: heads, body: JSON.stringify(payload),
         })
         if (!res.ok) throw new Error(`POST failed: ${res.status}`)
@@ -139,15 +127,12 @@ export async function upsert(endpoint, uniqueParams, payload) {
 
 /**
  * Delete by filter params.
- * @param {string} endpoint  - e.g. '/api/v1/fact/p2tl'
- * @param {object} params    - { tahun, tipe?, ... }
  */
 export async function deleteByFilter(endpoint, params) {
-    const qs   = new URLSearchParams(params).toString()
-    const csrf = CSRF()
-    const res  = await fetch(`${endpoint}?${qs}`, {
+    const qs  = new URLSearchParams(params).toString()
+    const res = await apiFetch(`${endpoint}?${qs}`, {
         method:  'DELETE',
-        headers: { Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
+        headers: { Accept: 'application/json', 'X-CSRF-TOKEN': CSRF() },
     })
     if (!res.ok) throw new Error(`DELETE failed: ${res.status}`)
     return res.status === 204 ? null : res.json()
@@ -155,7 +140,6 @@ export async function deleteByFilter(endpoint, params) {
 
 /**
  * Bind tombol modal standard (Muat + Hapus) ke elemen DOM.
- * @param {object} cfg - { muatBtn, hapusBtn, modalMuat, modalHapus, onMuat, onHapus }
  */
 export function bindCrudModal({ muatBtnId, hapusBtnId, modalMuatId, modalHapusId, onMuat, onHapus }) {
     const btnMuat    = document.getElementById(muatBtnId)
@@ -182,16 +166,13 @@ export function bindCrudModal({ muatBtnId, hapusBtnId, modalMuatId, modalHapusId
 
 /**
  * Batch create 12 record kosong untuk satu tahun.
- * @param {string}   endpoint  - API base path
- * @param {Function} makeRow   - (bulan: number) => object payload
  */
 export async function batchCreate(endpoint, makeRow) {
-    const csrf  = CSRF()
-    const heads = { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }
+    const heads   = { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': CSRF() }
     const results = []
     for (let bulan = 1; bulan <= 12; bulan++) {
         try {
-            const res = await fetch(endpoint, {
+            const res = await apiFetch(endpoint, {
                 method: 'POST', headers: heads,
                 body: JSON.stringify(makeRow(bulan)),
             })

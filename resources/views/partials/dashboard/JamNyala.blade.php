@@ -1,4 +1,4 @@
-<div class="card col-12">
+<div class="card col-12 preview-card">
     {{-- Header + Filters --}}
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div style="display:flex; align-items:center; gap:10px;">

@@ -1,4 +1,4 @@
-<div class="card col-12">
+<div class="card col-12 preview-card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:15px; border-bottom:1px solid #333; padding-bottom:10px;">
         <div class="card-title">{{ __('PendapatanBatam.title') }}</div>
         <div style="display:flex; gap:5px;">
@@ -37,7 +37,7 @@
     </div>
 </div>
 
-<div class="card col-12">
+<div class="card col-12 preview-card">
     <div class="card-title" style="margin-bottom:15px;">{{ __('PendapatanBatam.delta_title') }}</div>
 
     <div class="chart-wrapper" style="width:100%; height:280px; margin-bottom:20px;">

@@ -1,5 +1,5 @@
 {{-- SECTION 1: PIE CHART PER GOLONGAN --}}
-<div class="card col-12">
+<div class="card col-12 preview-card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div style="display:flex; align-items:center; gap:10px;">
             <div class="card-title" id="judulPie">{{ __('GolTarifBatam.pie_title') }}</div>
@@ -43,7 +43,7 @@
 </div>
 
 {{-- SECTION 2: REALISASI PENDAPATAN THN INI --}}
-<div class="card col-12">
+<div class="card col-12 preview-card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div class="card-title">{{ __('GolTarifBatam.realisasi_title') }}</div>
         <div style="display:flex; gap:5px; align-items:center;">

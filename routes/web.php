@@ -10,12 +10,23 @@ use App\Http\Controllers\DeviceController;
 use App\Http\Controllers\HistorisController;
 use App\Http\Controllers\FactHistorisEntryController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\StatsController;
 
 // ===== PUBLIC API =====
 Route::get('/api/dashboard/bpp', [DashboardController::class, 'bpp']);
 Route::post('/api/chatbot', [ChatbotController::class, 'ask']);
 
-// ===== LANGUAGE SWITCH (public, no auth required) =====
+// ===== STATS API =====
+Route::get('/api/stats/{section}', [StatsController::class, 'show']);
+
+// ===== API TOKEN REFRESH (session-auth required, returns fresh HMAC token) =====
+// Dipanggil JS setiap ~50 detik untuk memperbarui token sebelum expired (TTL=60s)
+Route::middleware('auth')->get('/api/internal/token-refresh', function () {
+    [$token, $ts] = \App\Helpers\InternalApiToken::generate();
+    return response()->json(['token' => $token, 'timestamp' => $ts]);
+})->name('api.token.refresh');
+
+// ===== LANGUAGE SWITCH =====
 Route::get('/language/{locale}', function ($locale) {
     if (in_array($locale, ['id', 'en'])) {
         session(['locale' => $locale]);
@@ -66,11 +77,22 @@ Route::middleware('auth')->group(function () {
 Route::middleware(['auth', '2fa'])->group(function () {
     Route::get('/',          fn() => view('user.dashboard'));
     Route::get('/dashboard', fn() => view('user.dashboard'))->name('dashboard');
+    Route::get('/stats',     [StatsController::class, 'index'])->name('stats');
     Route::get('/realisasi-penjualan', fn() => view('user.realisasi-penjualan'));
     Route::get('/penjualan-kwh',       fn() => view('user.penjualan-kwh'));
 
     Route::get('/profile',  [UserController::class, 'profile'])->name('profile');
     Route::get('/settings', [UserController::class, 'settings'])->name('settings');
+
+    Route::get('/dashboard/stats-partial/{section}', function (string $section) {
+        $allowed = [
+            'bpp', 'losses', 'penjualan', 'babin', 'jamnyala',
+            'goltarif', 'pendapatan', 'rpkwh', 'pelanggan',
+            'kva', 'tunggakan', 'p2tl',
+        ];
+        abort_if(!in_array($section, $allowed, true), 404);
+        return view("dashboard.partials.stats.{$section}");
+    });
 });
 
 // ===== AUTH + 2FA + ADMIN — Admin Panel =====
@@ -104,10 +126,4 @@ Route::middleware(['auth'])->group(function () {
 });
 
 // ===== DEBUG (hapus di production!) =====
-Route::get('/debug', function () {
-    return [
-        'MAIL_MAILER (raw env)' => env('MAIL_MAILER'),
-        'mail.default (config)' => config('mail.default'),
-        '.env loaded?'          => file_exists(base_path('.env')) ? 'YES' : 'NO',
-    ];
-});
+// Route::get('/debug', ...) — DIHAPUS demi keamanan

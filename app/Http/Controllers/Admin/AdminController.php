@@ -107,8 +107,13 @@ class AdminController extends Controller
     // ===== LOGS =====
     public function logs(Request $request)
     {
+        $request->validate([
+            'user_id' => 'nullable|integer|exists:users,id',
+            'action'  => 'nullable|string|max:100|alpha_dash',
+        ]);
+
         $logs = ActivityLog::with('user')
-            ->when($request->user_id, fn($q) => $q->where('user_id', $request->user_id))
+            ->when($request->user_id, fn($q) => $q->where('user_id', (int) $request->user_id))
             ->when($request->action,  fn($q) => $q->where('action', $request->action))
             ->latest()
             ->paginate(20);

@@ -1,5 +1,5 @@
 {{-- CARD 1: Rencana vs Realisasi Penambahan KVA --}}
-<div class="card col-12">
+<div class="card col-12 preview-card">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div style="display:flex; align-items:center; gap:10px;">
             <div class="card-title">{{ __('kva.title') }}</div>
@@ -72,7 +72,7 @@
 </div>
 
 {{-- CARD 2: Distribusi Golongan KVA --}}
-<div class="card col-12">
+<div class="card col-12 preview-card">
     <div class="card-title">{{ __('kva.distribusi_title') }}</div>
 
     <div class="chart-wrapper" style="width:100%; height:280px; margin-bottom:20px;">

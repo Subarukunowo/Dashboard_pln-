@@ -21,11 +21,5 @@ class RtFactBabinRepository extends BaseRepository
             ->when(isset($filters['sumber']),       fn ($q) => $q->where('sumber', $filters['sumber']))
             ->when(isset($filters['is_akumulasi']), fn ($q) => $q->where('is_akumulasi', $filters['is_akumulasi']));
     }
-    public function chart(Request $request): JsonResponse
-{
-    $tahun  = $request->integer('tahun', now()->year);
-    $metrik = $request->input('metrik', 'kwh'); // 'kwh' atau 'rp'
-
-    return $this->success($this->service->getAllChartData($tahun, $metrik));
-}
+    
 }

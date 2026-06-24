@@ -59,6 +59,11 @@ class RtFactRpkwhController extends BaseApiController
 
 public function destroyByFilter(Request $request): JsonResponse
 {
+    $request->validate([
+        'tahun' => 'required|integer|min:2000|max:2100',
+        'tipe'  => 'nullable|in:realisasi,target,semua',
+    ]);
+
     $tahun = $request->integer('tahun');
     $tipe  = $request->input('tipe');
 
