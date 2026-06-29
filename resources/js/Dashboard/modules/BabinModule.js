@@ -51,12 +51,20 @@ export default class BabinModule {
             { label: 'Delta (Realisasi - Target)', data: delta, backgroundColor: deltaColor },
         ], v => v !== null ? (v / 1_000_000).toFixed(1) + ' jt kWh' : '—')
 
-        const validCapaian = capaian.filter(v => v !== null)
-        const lastCapaian  = validCapaian.slice(-1)[0] ?? 0
-        const lastLabel    = labels[validCapaian.length - 1] ?? ''
+        // Pie capaian YTD — gunakan nilai kWh aktual, bukan persentase
+        // Ambil dari akumulasi bulan terakhir yang ada datanya
+        const akumData     = data.akumulasi[area]
+        const validAkumIdx = akumData.realisasi.map((v, i) => v !== null ? i : -1).filter(i => i >= 0)
+        const lastAkumIdx  = validAkumIdx.length > 0 ? validAkumIdx[validAkumIdx.length - 1] : sliceIdx - 1
+        const lastAkumReal = akumData.realisasi[lastAkumIdx] ?? 0
+        const lastAkumTgt  = akumData.target[lastAkumIdx] ?? 0
+        const lastLabel    = this._getLabels()[lastAkumIdx] ?? ''
+        const sisaTgt      = Math.max(0, lastAkumTgt - lastAkumReal)
+
         this.chart.pie('chartBabinPie',
             ['Tercapai (' + lastLabel + ')', 'Belum'],
-            [lastCapaian, Math.max(0, 100 - lastCapaian)]
+            [lastAkumReal, sisaTgt],
+            ['#ff9800', '#2a2a2a']
         )
 
         const histLabels = histData.map(d => String(d.tahun))

@@ -20,18 +20,20 @@ const KATEGORI_TIPE = {
 
 export default class BppModule {
     constructor() {
-        this.service  = new BppService()
-        this.chart    = new BppChart('bppComparisonChart')
-        this.data     = null
-        this.hjrData  = null
-        this._tahun   = TAHUN_INI
-        this._isFallback = false
+        this.service      = new BppService()
+        this.chart        = new BppChart('bppComparisonChart')
+        this.data         = null
+        this.hjrData      = null
+        this.hjrCalculated = null
+        this._tahun       = TAHUN_INI
+        this._isFallback  = false
     }
 
     async load(tahun = TAHUN_INI) {
-        [this.data, this.hjrData] = await Promise.all([
+        [this.data, this.hjrData, this.hjrCalculated] = await Promise.all([
             this.service.getAllBpp(tahun),
             this.service.getHjrAvg(tahun),
+            this.service.getHjrCalculated(tahun),
         ])
         // Deteksi fallback: cek tahun_efektif dari response jika ada
         const anyKey = this.data ? Object.keys(this.data)[0] : null
@@ -84,7 +86,34 @@ export default class BppModule {
         }
 
         this._renderTable(kons, intl, hjr, displayLabels)
-        this.chart.render(kons, intl, hjr, displayLabels, mode)
+
+        // Chart utama: BPP Konsolidasi vs Internal (tanpa HJR)
+        this.chart.render(kons, intl, null, displayLabels, mode)
+
+        // Chart BPP vs HJR — BPP Distribusi TR vs HJR calculated (Pendapatan/Penjualan)
+        const bppTr  = this.data['BPP S.D DISTRIBUSI TR']
+        const hjrCal = this.hjrCalculated?.calculated ?? null
+
+        if (bppTr && hjrCal) {
+            let bppTrArr  = [...bppTr.konsolidasi]
+            let hjrCalArr = [...hjrCal]
+
+            if (state.month !== 'all') {
+                const idx = parseInt(state.month)
+                bppTrArr  = [bppTrArr[idx]]
+                hjrCalArr = [hjrCalArr[idx]]
+            }
+
+            const isFallback = this.hjrCalculated?.is_fallback ?? false
+            const hjrLabel   = isFallback
+                ? `HJR (${this.hjrCalculated.tahun_efektif}) — Pendapatan/Penjualan`
+                : 'HJR (Pendapatan ÷ Penjualan)'
+
+            this.chart.renderHjrComparison(bppTrArr, hjrCalArr, displayLabels, hjrLabel, mode)
+        } else {
+            this.chart.renderHjrComparison(null, null, displayLabels, 'HJR', mode)
+        }
+
         this._renderEditTable(state)
     }
 
@@ -148,157 +177,190 @@ export default class BppModule {
     // ── Edit Tables ──────────────────────────────────────────────────────────
 
     _renderEditTable(state) {
-        this._renderEditBpp(state)
-        this._renderEditHjr(state)
+        this._renderEditBpp()   // tidak perlu state — selalu tampilkan semua kategori
+        this._renderEditHjr()   // selalu tampilkan TR & TM
     }
 
-    /** Tabel edit BPP Konsolidasi & Internal per bulan */
-    _renderEditBpp(state) {
-        const container = document.getElementById('bppEditBppContainer')
-        if (!container || !this.data) return
+    /** Tabel edit BPP — semua 4 kategori dengan tab switcher */
+ _renderEditBpp() {
+    const container = document.getElementById('bppEditBppContainer')
+    const tabBar    = document.getElementById('bppTabBar')
+    if (!container || !this.data) return
 
-        const isReadOnly = this._tahun < TAHUN_INI
-        const tipeBpp    = KATEGORI_TIPE[state.type] ?? 'pembangkit'
-        const d          = this.data[state.type]
-        const kons       = d?.konsolidasi ?? new Array(12).fill(null)
-        const intl       = d?.internal    ?? new Array(12).fill(null)
+    const isReadOnly = this._tahun < TAHUN_INI
 
-        const disStyle   = isReadOnly
-            ? 'opacity:0.45; pointer-events:none;'
-            : ''
+    const KATEGORI = [
+        { key: 'BPP PEMBANGKIT',        tipe: 'pembangkit',    label: 'Pembangkit' },
+        { key: 'BPP S.D TRANSMISI',      tipe: 'transmisi',     label: 'Transmisi' },
+        { key: 'BPP S.D DISTRIBUSI TM',  tipe: 'distribusi_tm', label: 'Distribusi TM' },
+        { key: 'BPP S.D DISTRIBUSI TR',  tipe: 'distribusi_tr', label: 'Distribusi TR' },
+    ]
 
-        const rows = BULAN_NAMA.map((bln, i) => {
-            const mkInput = (val, field, color) => `
-                <input type="number"
-                    data-row="${i}" data-field="${field}"
-                    value="${val ?? ''}" placeholder="—"
-                    ${isReadOnly ? 'disabled' : ''}
-                    style="width:110px; padding:4px 6px; border-radius:4px;
-                           border:1px solid ${isReadOnly ? '#2a2a2a' : '#333'};
-                           background:#1a1a1a; color:${isReadOnly ? '#444' : color};
-                           font-size:0.75rem; text-align:right;" />`
+    if (!this._activeBppTab) this._activeBppTab = KATEGORI[0].tipe
+    const activeTab = this._activeBppTab
 
-            return `<tr style="border-bottom:1px solid #2a2a2a; ${disStyle}">
-                <td style="padding:7px 10px; color:#888; font-size:0.75rem; white-space:nowrap;">${bln}</td>
-                <td style="padding:4px 6px;">${mkInput(kons[i], 'nilai_konsolidasi', 'var(--accent-orange, #ff9800)')}</td>
-                <td style="padding:4px 6px;">${mkInput(intl[i], 'nilai_internal',    'var(--accent-green, #00ff88)')}</td>
-                <td style="padding:4px 6px; text-align:center;">
-                    <button id="btnSaveBpp_${i}"
-                        data-row="${i}"
-                        ${isReadOnly ? 'disabled' : ''}
-                        style="padding:3px 10px; border-radius:4px; border:none;
-                               background:${isReadOnly ? '#2a2a2a' : '#ff9800'};
-                               color:${isReadOnly ? '#444' : '#000'};
-                               font-size:0.7rem; cursor:${isReadOnly ? 'not-allowed' : 'pointer'}; font-weight:600;">
-                        ${isReadOnly ? '🔒' : 'Simpan'}
-                    </button>
-                </td>
-            </tr>`
-        }).join('')
+    if (tabBar) {
+        tabBar.innerHTML = KATEGORI.map(k => `
+            <button data-bpptab="${k.tipe}"
+                style="padding:5px 14px;border-radius:6px;border:none;cursor:pointer;font-size:0.72rem;font-weight:600;
+                       background:${k.tipe === activeTab ? 'var(--accent-orange,#ff9800)' : 'rgba(255,255,255,0.06)'};
+                       color:${k.tipe === activeTab ? '#000' : '#888'};transition:all 0.15s;">
+                ${k.label}
+            </button>`).join('')
 
-        container.innerHTML = `
-            <table style="width:100%; border-collapse:collapse;">
-                <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-                    <tr style="font-size:0.65rem; text-transform:uppercase;">
-                        <th style="padding:8px 10px; color:#888; text-align:left;">Bulan</th>
-                        <th style="padding:8px 10px; color:var(--accent-orange, #ff9800); text-align:left;">BPP Konsolidasi</th>
-                        <th style="padding:8px 10px; color:var(--accent-green, #00ff88); text-align:left;">BPP Internal</th>
-                        <th style="padding:8px 10px; color:#aaa; text-align:center;">Aksi</th>
-                    </tr>
-                </thead>
-                <tbody>${rows}</tbody>
-            </table>`
-
-        if (isReadOnly) return
-
-        BULAN_NAMA.forEach((_, i) => {
-            const btn = document.getElementById(`btnSaveBpp_${i}`)
-            if (!btn) return
-            btn.addEventListener('click', async () => {
-                btn.textContent = '⏳'
-                btn.disabled    = true
-
-                const rowInputs = container.querySelectorAll(`input[data-row="${i}"]`)
-                const values    = {}
-                rowInputs.forEach(inp => {
-                    values[inp.dataset.field] = inp.value === '' ? null : parseFloat(inp.value)
-                })
-
-                try {
-                    const base = { tahun: this._tahun, bulan: i + 1, tipe_bpp: tipeBpp, is_triwulan: 0, is_akumulasi: 0, sumber: 'manual' }
-                    if (values.nilai_konsolidasi !== null) {
-                        await upsert(API_BPP, { ...base, kategori: 'konsolidasi' },
-                            { ...base, kategori: 'konsolidasi', nilai: values.nilai_konsolidasi })
-                    }
-                    if (values.nilai_internal !== null) {
-                        await upsert(API_BPP, { ...base, kategori: 'internal' },
-                            { ...base, kategori: 'internal', nilai: values.nilai_internal })
-                    }
-                    btn.textContent      = '✓ OK'
-                    btn.style.background = '#00ff88'
-                } catch {
-                    btn.textContent      = '✗ Error'
-                    btn.style.background = '#f44336'
-                } finally {
-                    btn.disabled = false
-                    setTimeout(() => {
-                        btn.textContent      = 'Simpan'
-                        btn.style.background = '#ff9800'
-                    }, 2000)
-                }
+        // FIX: bind arrow function agar `this` tidak hilang
+        tabBar.querySelectorAll('[data-bpptab]').forEach(btn => {
+            btn.addEventListener('click', () => {
+                this._activeBppTab = btn.dataset.bpptab
+                this._renderEditBpp()
             })
         })
     }
 
-    /** Tabel edit HJR rata-rata per bulan */
-    _renderEditHjr(state) {
+    const activeKat = KATEGORI.find(k => k.tipe === activeTab) ?? KATEGORI[0]
+    const d    = this.data[activeKat.key]
+
+    // FIX: debug jika data tidak ditemukan
+    if (!d) {
+        console.warn('[BppModule] Data tidak ditemukan untuk key:', activeKat.key, '| Keys tersedia:', Object.keys(this.data))
+        container.innerHTML = `<p style="color:#f44336;padding:12px;">Data untuk "${activeKat.label}" tidak ditemukan.</p>`
+        return
+    }
+
+    const kons = d.konsolidasi ?? new Array(12).fill(null)
+    const intl = d.internal    ?? new Array(12).fill(null)
+    const dis  = isReadOnly ? 'opacity:0.45;pointer-events:none;' : ''
+
+    const rows = BULAN_NAMA.map((bln, i) => {
+        const mkInput = (val, field, color) =>
+            `<input type="number" data-row="${i}" data-field="${field}"
+                value="${val ?? ''}" placeholder="—" ${isReadOnly ? 'disabled' : ''}
+                style="width:110px;padding:4px 6px;border-radius:4px;
+                       border:1px solid ${isReadOnly ? '#2a2a2a' : '#333'};
+                       background:#1a1a1a;color:${isReadOnly ? '#444' : color};
+                       font-size:0.75rem;text-align:right;" />`
+
+        return `<tr style="border-bottom:1px solid #2a2a2a;${dis}">
+            <td style="padding:7px 10px;color:#888;font-size:0.75rem;white-space:nowrap;">${bln}</td>
+            <td style="padding:4px 6px;">${mkInput(kons[i], 'nilai_konsolidasi', 'var(--accent-orange,#ff9800)')}</td>
+            <td style="padding:4px 6px;">${mkInput(intl[i], 'nilai_internal', 'var(--accent-green,#00ff88)')}</td>
+            <td style="padding:4px 6px;text-align:center;">
+                <button id="btnSaveBpp_${activeKat.tipe}_${i}"
+                    ${isReadOnly ? 'disabled' : ''}
+                    style="padding:3px 10px;border-radius:4px;border:none;
+                           background:${isReadOnly ? '#2a2a2a' : '#ff9800'};
+                           color:${isReadOnly ? '#444' : '#000'};
+                           font-size:0.7rem;cursor:${isReadOnly ? 'not-allowed' : 'pointer'};font-weight:600;">
+                    ${isReadOnly ? '🔒' : 'Simpan'}
+                </button>
+            </td>
+        </tr>`
+    }).join('')
+
+    container.innerHTML = `
+        <table style="width:100%;border-collapse:collapse;">
+            <thead style="position:sticky;top:0;background:#252525;z-index:1;">
+                <tr style="font-size:0.65rem;text-transform:uppercase;">
+                    <th style="padding:8px 10px;color:#888;text-align:left;">Bulan</th>
+                    <th style="padding:8px 10px;color:var(--accent-orange,#ff9800);text-align:left;">BPP Konsolidasi</th>
+                    <th style="padding:8px 10px;color:var(--accent-green,#00ff88);text-align:left;">BPP Internal</th>
+                    <th style="padding:8px 10px;color:#aaa;text-align:center;">Aksi</th>
+                </tr>
+            </thead>
+            <tbody>${rows}</tbody>
+        </table>`
+
+    if (isReadOnly) return
+
+    BULAN_NAMA.forEach((_, i) => {
+        const btn = document.getElementById(`btnSaveBpp_${activeKat.tipe}_${i}`)
+        if (!btn) return
+        btn.addEventListener('click', async () => {
+            btn.textContent = '⏳'
+            btn.disabled    = true
+            const inputs = container.querySelectorAll(`input[data-row="${i}"]`)
+            const values = {}
+            inputs.forEach(inp => { values[inp.dataset.field] = inp.value === '' ? null : parseFloat(inp.value) })
+            try {
+                const base = { tahun: this._tahun, bulan: i + 1, jenis_bpp: activeKat.tipe, is_triwulan: 0, is_akumulasi: 0, sumber: 'manual' }
+                if (values.nilai_konsolidasi !== null)
+                    await upsert(API_BPP, { tahun: this._tahun, bulan: i + 1, jenis_bpp: activeKat.tipe, versi: 'konsolidasi' },
+                        { ...base, versi: 'konsolidasi', nilai_rpkwh: values.nilai_konsolidasi })
+                if (values.nilai_internal !== null)
+                    await upsert(API_BPP, { tahun: this._tahun, bulan: i + 1, jenis_bpp: activeKat.tipe, versi: 'internal' },
+                        { ...base, versi: 'internal', nilai_rpkwh: values.nilai_internal })
+                btn.textContent = '✓ OK'; btn.style.background = '#00ff88'
+            } catch {
+                btn.textContent = '✗ Error'; btn.style.background = '#f44336'
+            } finally {
+                btn.disabled = false
+                setTimeout(() => { btn.textContent = 'Simpan'; btn.style.background = '#ff9800' }, 2000)
+            }
+        })
+    })
+}
+
+    /** Tabel edit HJR — selalu tampilkan TR dan TM, tidak bergantung filter kategori */
+    _renderEditHjr() {
         const container = document.getElementById('bppEditHjrContainer')
+        const tabBar    = document.getElementById('hjrTabBar')
         if (!container) return
 
-        const hjrKey = this._getHjrKey(state.type)
-        if (!hjrKey) {
-            container.innerHTML = '<div style="padding:12px; color:#555; font-size:0.75rem;">HJR tidak tersedia untuk kategori ini.</div>'
-            return
+        const isReadOnly = this._tahun < TAHUN_INI
+        if (!this._activeHjrTab) this._activeHjrTab = 'TR'
+        const activeTab = this._activeHjrTab
+
+        // Tab bar ke elemen LUAR
+        if (tabBar) {
+            tabBar.innerHTML = ['TR', 'TM'].map(t => `
+                <button data-hjrtab="${t}"
+                    style="padding:5px 14px;border-radius:6px;border:none;cursor:pointer;font-size:0.72rem;font-weight:600;
+                           background:${t === activeTab ? 'var(--accent-blue,#4fc3f7)' : 'rgba(255,255,255,0.06)'};
+                           color:${t === activeTab ? '#000' : '#888'};transition:all 0.15s;">
+                    HJR ${t}
+                </button>`).join('')
+
+            tabBar.querySelectorAll('[data-hjrtab]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    this._activeHjrTab = btn.dataset.hjrtab
+                    this._renderEditHjr()
+                })
+            })
         }
 
-        const isReadOnly = this._tahun < TAHUN_INI
-        const hjrArr     = this.hjrData?.[hjrKey] ?? new Array(12).fill(null)
-
-        const disStyle = isReadOnly ? 'opacity:0.45; pointer-events:none;' : ''
+        const hjrArr = this.hjrData?.[activeTab] ?? new Array(12).fill(null)
+        const dis    = isReadOnly ? 'opacity:0.45;pointer-events:none;' : ''
 
         const rows = BULAN_NAMA.map((bln, i) => `
-            <tr style="border-bottom:1px solid #2a2a2a; ${disStyle}">
-                <td style="padding:7px 10px; color:#888; font-size:0.75rem; white-space:nowrap;">${bln}</td>
+            <tr style="border-bottom:1px solid #2a2a2a;${dis}">
+                <td style="padding:7px 10px;color:#888;font-size:0.75rem;white-space:nowrap;">${bln}</td>
                 <td style="padding:4px 6px;">
-                    <input type="number"
-                        data-row="${i}" data-field="nilai_hjr"
-                        value="${hjrArr[i] ?? ''}" placeholder="—"
-                        ${isReadOnly ? 'disabled' : ''}
-                        style="width:110px; padding:4px 6px; border-radius:4px;
+                    <input type="number" data-row="${i}"
+                        value="${hjrArr[i] ?? ''}" placeholder="—" ${isReadOnly ? 'disabled' : ''}
+                        style="width:110px;padding:4px 6px;border-radius:4px;
                                border:1px solid ${isReadOnly ? '#2a2a2a' : '#333'};
-                               background:#1a1a1a; color:${isReadOnly ? '#444' : 'var(--accent-blue, #4fc3f7)'};
-                               font-size:0.75rem; text-align:right;" />
+                               background:#1a1a1a;color:${isReadOnly ? '#444' : 'var(--accent-blue,#4fc3f7)'};
+                               font-size:0.75rem;text-align:right;" />
                 </td>
-                <td style="padding:4px 6px; text-align:center;">
-                    <button id="btnSaveHjr_${i}"
-                        data-row="${i}"
+                <td style="padding:4px 6px;text-align:center;">
+                    <button id="btnSaveHjr_${activeTab}_${i}"
                         ${isReadOnly ? 'disabled' : ''}
-                        style="padding:3px 10px; border-radius:4px; border:none;
+                        style="padding:3px 10px;border-radius:4px;border:none;
                                background:${isReadOnly ? '#2a2a2a' : '#ff9800'};
                                color:${isReadOnly ? '#444' : '#000'};
-                               font-size:0.7rem; cursor:${isReadOnly ? 'not-allowed' : 'pointer'}; font-weight:600;">
+                               font-size:0.7rem;cursor:${isReadOnly ? 'not-allowed' : 'pointer'};font-weight:600;">
                         ${isReadOnly ? '🔒' : 'Simpan'}
                     </button>
                 </td>
             </tr>`).join('')
 
         container.innerHTML = `
-            <table style="width:100%; border-collapse:collapse;">
-                <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-                    <tr style="font-size:0.65rem; text-transform:uppercase;">
-                        <th style="padding:8px 10px; color:#888; text-align:left;">Bulan</th>
-                        <th style="padding:8px 10px; color:var(--accent-blue, #4fc3f7); text-align:left;">HJR Rata-rata</th>
-                        <th style="padding:8px 10px; color:#aaa; text-align:center;">Aksi</th>
+            <table style="width:100%;border-collapse:collapse;">
+                <thead style="position:sticky;top:0;background:#252525;z-index:1;">
+                    <tr style="font-size:0.65rem;text-transform:uppercase;">
+                        <th style="padding:8px 10px;color:#888;text-align:left;">Bulan</th>
+                        <th style="padding:8px 10px;color:var(--accent-blue,#4fc3f7);text-align:left;">HJR Rata-rata (${activeTab})</th>
+                        <th style="padding:8px 10px;color:#aaa;text-align:center;">Aksi</th>
                     </tr>
                 </thead>
                 <tbody>${rows}</tbody>
@@ -307,32 +369,23 @@ export default class BppModule {
         if (isReadOnly) return
 
         BULAN_NAMA.forEach((_, i) => {
-            const btn = document.getElementById(`btnSaveHjr_${i}`)
+            const btn = document.getElementById(`btnSaveHjr_${activeTab}_${i}`)
             if (!btn) return
             btn.addEventListener('click', async () => {
-                btn.textContent = '⏳'
-                btn.disabled    = true
-                const inp  = container.querySelector(`input[data-row="${i}"]`)
+                btn.textContent = '⏳'; btn.disabled = true
+                const inp   = container.querySelector(`input[data-row="${i}"]`)
                 const nilai = inp?.value === '' ? null : parseFloat(inp?.value)
-
                 try {
-                    if (nilai !== null) {
+                    if (nilai !== null)
                         await upsert(API_HJR,
-                            { tahun: this._tahun, bulan: i + 1, kategori: hjrKey, is_triwulan: 0, is_akumulasi: 0 },
-                            { tahun: this._tahun, bulan: i + 1, kategori: hjrKey, is_triwulan: 0, is_akumulasi: 0, nilai_hjr: nilai, sumber: 'manual' }
-                        )
-                    }
-                    btn.textContent      = '✓ OK'
-                    btn.style.background = '#00ff88'
+                            { tahun: this._tahun, bulan: i + 1, tegangan: activeTab, is_triwulan: 0, is_akumulasi: 0 },
+                            { tahun: this._tahun, bulan: i + 1, tegangan: activeTab, is_triwulan: 0, is_akumulasi: 0, nilai_rpkwh: nilai, sumber: 'manual' })
+                    btn.textContent = '✓ OK'; btn.style.background = '#00ff88'
                 } catch {
-                    btn.textContent      = '✗ Error'
-                    btn.style.background = '#f44336'
+                    btn.textContent = '✗ Error'; btn.style.background = '#f44336'
                 } finally {
                     btn.disabled = false
-                    setTimeout(() => {
-                        btn.textContent      = 'Simpan'
-                        btn.style.background = '#ff9800'
-                    }, 2000)
+                    setTimeout(() => { btn.textContent = 'Simpan'; btn.style.background = '#ff9800' }, 2000)
                 }
             })
         })

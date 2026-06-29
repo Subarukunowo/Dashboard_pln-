@@ -87,6 +87,7 @@ export default class BaseChart {
             padding:       10,
             usePointStyle: true,
             generateLabels: (chart) => {
+                const color   = document.body.classList.contains('light-mode') ? '#1e293b' : '#cccccc'
                 const dataset = chart.data.datasets[0]
                 const total   = dataset.data.reduce((a, b) => a + b, 0)
                 return chart.data.labels.map((label, i) => {
@@ -101,6 +102,7 @@ export default class BaseChart {
                         text:         `${label}  ${valStr}  (${pct}%)`,
                         fillStyle:    dataset.backgroundColor[i],
                         strokeStyle:  dataset.backgroundColor[i],
+                        fontColor:    color,
                         pointStyle:   'circle',
                         hidden:       false,
                         index:        i,

@@ -36,9 +36,20 @@
         </div>
     </div>
 
-    {{-- Chart --}}
+    {{-- Chart BPP Trend --}}
     <div class="chart-wrapper" style="width:100%; min-height:300px; margin-bottom:20px;">
         <canvas id="bppComparisonChart"></canvas>
+    </div>
+
+    {{-- Chart BPP vs HJR --}}
+    <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+        <div class="card-title" style="margin:0;">BPP Distribusi TR vs HJR</div>
+        <span style="font-size:0.68rem; padding:2px 8px; border-radius:10px; background:rgba(79,195,247,0.08); border:1px solid rgba(79,195,247,0.2); color:#4fc3f7;">
+            Auto — Pendapatan ÷ Penjualan
+        </span>
+    </div>
+    <div class="chart-wrapper" style="width:100%; min-height:280px; margin-bottom:20px;">
+        <canvas id="bppHjrComparisonChart"></canvas>
     </div>
 
     {{-- Tabel Ringkasan --}}
@@ -63,10 +74,14 @@
             🔒 Data tahun lalu — hanya bisa dilihat
         </span>
     </div>
+    {{-- Tab bar BPP — di LUAR container scroll agar tidak terpotong --}}
+    <div id="bppTabBar" style="display:flex; gap:6px; flex-wrap:wrap; margin-bottom:8px;"></div>
     <div id="bppEditBppContainer" class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.15); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:420px; margin-bottom:20px;"></div>
 
     {{-- Edit Data HJR --}}
     <div class="edit-section-label card-title" style="margin-bottom:8px;">Edit Data HJR Rata-rata</div>
+    {{-- Tab bar HJR — di LUAR container scroll --}}
+    <div id="hjrTabBar" style="display:flex; gap:6px; margin-bottom:8px;"></div>
     <div id="bppEditHjrContainer" class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.15); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:420px;"></div>
 </div>
 

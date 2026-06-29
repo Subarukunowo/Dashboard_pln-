@@ -50,6 +50,7 @@ Route::middleware('internal.api')->group(function () {
     Route::prefix('chart')->group(function () {
         Route::get('bpp',       [RtFactBppController::class,       'chart']);
         Route::get('hjr',       [RtFactHjrController::class,       'chart']);
+        Route::get('hjr/calculated', [RtFactHjrController::class, 'calculatedChart']);
         Route::get('babin',     [RtFactBabinController::class,     'chart']);
         Route::get('jam-nyala', [RtFactJamNyalaController::class,  'chart']);
         Route::get('losses',    [RtFactLossesController::class,    'chart']);

@@ -20,9 +20,25 @@ class RtFactP2tlService extends BaseService
             'is_akumulasi' => 0,
         ])->sortBy('bulan');
 
+        // Fallback ke tahun sebelumnya jika tidak ada data
+        $tahunEfektif = $tahun;
+        $isFallback   = false;
+
+        if ($rows->isEmpty()) {
+            $tahunEfektif = $tahun - 1;
+            $isFallback   = true;
+            $rows = $this->repository->all([
+                'tahun'        => $tahunEfektif,
+                'tipe'         => $tipe,
+                'is_triwulan'  => 0,
+                'is_akumulasi' => 0,
+            ])->sortBy('bulan');
+        }
+
         $bulanNama = [
-            1=>'JANUARI',2=>'FEBRUARI',3=>'MARET',4=>'APRIL',5=>'MEI',6=>'JUNI',
-            7=>'JULI',8=>'AGUSTUS',9=>'SEPTEMBER',10=>'OKTOBER',11=>'NOVEMBER',12=>'DESEMBER',
+            1=>'JANUARI', 2=>'FEBRUARI', 3=>'MARET', 4=>'APRIL',
+            5=>'MEI', 6=>'JUNI', 7=>'JULI', 8=>'AGUSTUS',
+            9=>'SEPTEMBER', 10=>'OKTOBER', 11=>'NOVEMBER', 12=>'DESEMBER',
         ];
 
         $data = $rows->values()->map(fn ($r, $i) => [
@@ -34,6 +50,10 @@ class RtFactP2tlService extends BaseService
             'tagsus'          => (float) $r->nilai_tagihan_rp,
         ])->values()->all();
 
-        return ['data' => $data];
+        return [
+            'data'          => $data,
+            'tahun_efektif' => $tahunEfektif,
+            'is_fallback'   => $isFallback,
+        ];
     }
 }

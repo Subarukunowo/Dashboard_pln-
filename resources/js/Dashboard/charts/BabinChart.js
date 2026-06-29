@@ -1,15 +1,17 @@
 import BaseChart from './BaseChart.js'
 
+const themeTextColor = () =>
+    document.body.classList.contains('light-mode') ? '#1e293b' : '#cccccc'
+
 /**
- * BabinChart — override tooltip pie untuk format "X.Xjt (Y%)"
- * karena nilai babin dalam skala jutaan
+ * BabinChart — override tooltip pie untuk format "X.Xjt kWh (Y%)"
  */
 export default class BabinChart extends BaseChart {
     pie(id, labels, data, colors = null) {
         const fmt = (ctx) => {
             const total = ctx.dataset.data.reduce((a, b) => a + b, 0)
             const pct   = total ? ((ctx.raw / total) * 100).toFixed(1) : 0
-            return `${ctx.label}: ${(ctx.raw / 1_000_000).toFixed(1)}jt (${pct}%)`
+            return `${ctx.label}: ${(ctx.raw / 1_000_000).toFixed(1)}jt kWh (${pct}%)`
         }
 
         const legendLabels = {
@@ -17,6 +19,7 @@ export default class BabinChart extends BaseChart {
             padding:       10,
             usePointStyle: true,
             generateLabels: (chart) => {
+                const color   = themeTextColor()
                 const dataset = chart.data.datasets[0]
                 const total   = dataset.data.reduce((a, b) => a + b, 0)
                 return chart.data.labels.map((label, i) => {
@@ -27,6 +30,7 @@ export default class BabinChart extends BaseChart {
                         text:         `${label}  ${valStr}  (${pct}%)`,
                         fillStyle:    dataset.backgroundColor[i],
                         strokeStyle:  dataset.backgroundColor[i],
+                        fontColor:    color,
                         pointStyle:   'circle',
                         hidden:       false,
                         index:        i,

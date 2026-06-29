@@ -26,4 +26,19 @@ export default class BppService {
             return null
         }
     }
+
+    /**
+     * HJR dihitung otomatis: Pendapatan / Penjualan per bulan
+     * @returns {{ calculated: number[], tahun_efektif: number, is_fallback: boolean }}
+     */
+    async getHjrCalculated(tahun = new Date().getFullYear()) {
+        try {
+            const res    = await apiFetch(`/api/chart/hjr/calculated?tahun=${tahun}`)
+            const result = await res.json()
+            return result.data
+        } catch (error) {
+            console.error('Gagal memuat data HJR calculated:', error)
+            return null
+        }
+    }
 }

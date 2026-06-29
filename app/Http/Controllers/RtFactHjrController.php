@@ -50,9 +50,19 @@ class RtFactHjrController extends BaseApiController
         return $this->noContent();
     }
     public function chart(Request $request): JsonResponse
-{
-    $tahun = $request->integer('tahun', now()->year);
+    {
+        $tahun = $request->integer('tahun', now()->year);
 
-    return $this->success($this->service->getAvgByTegangan($tahun));
-}
+        return $this->success($this->service->getAvgByTegangan($tahun));
+    }
+
+    /**
+     * HJR dihitung otomatis: Pendapatan Realisasi JUMLAH / Penjualan Realisasi JUMLAH
+     */
+    public function calculatedChart(Request $request): JsonResponse
+    {
+        $tahun = $request->integer('tahun', now()->year);
+
+        return $this->success($this->service->getCalculated($tahun));
+    }
 }

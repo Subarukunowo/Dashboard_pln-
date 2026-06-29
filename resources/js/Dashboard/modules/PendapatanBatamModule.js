@@ -3,6 +3,15 @@ import { renderEditTable, upsert, deleteByFilter, TAHUN_INI } from '../utils/Cru
 const API        = '/api/v1/fact/pendapatan'
 const BULAN_NAMA = ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER']
 
+const GRUP_LABEL = {
+    S: 'Sosial',
+    R: 'Rumah Tangga',
+    B: 'Bisnis',
+    I: 'Industri',
+    P: 'Publik',
+    M: 'Multiguna',
+}
+
 export default class PendapatanBatamModule {
     constructor(chart) {
         this.chart  = chart
@@ -26,12 +35,38 @@ export default class PendapatanBatamModule {
 
         const sel = document.getElementById('filterTarifPendapatan')
         if (sel && sel.options.length === 0 && data.tarif) {
-            data.tarif.forEach(t => {
-                const opt = document.createElement('option')
-                opt.value = t; opt.textContent = t
-                sel.appendChild(opt)
+            // Opsi "Semua" di atas
+            const optAll       = document.createElement('option')
+            optAll.value       = 'JUMLAH'
+            optAll.textContent = 'Semua'
+            sel.appendChild(optAll)
+
+            const groups = {}
+
+            data.tarif.forEach(kode => {
+                if (kode === 'JUMLAH') return
+                const entry   = data.data[kode]
+                const golKode = entry?.golongan_kode ?? 'LAIN'
+                const label   = GRUP_LABEL[golKode] ?? golKode
+
+                if (!groups[golKode]) {
+                    const grp   = document.createElement('optgroup')
+                    grp.label   = label
+                    groups[golKode] = grp
+                    sel.appendChild(grp)
+                }
+
+                const opt       = document.createElement('option')
+                opt.value       = kode
+                opt.textContent = entry?.nama ?? kode
+                groups[golKode].appendChild(opt)
             })
+
             sel.value = state.tarif || 'JUMLAH'
+
+            if (sel._csUpgraded) {
+                sel.dispatchEvent(new Event('change', { bubbles: true }))
+            }
         }
 
         const tarif    = state.tarif || 'JUMLAH'
@@ -122,10 +157,8 @@ export default class PendapatanBatamModule {
         const rencana    = selected?.rencana   ?? new Array(12).fill(null)
         const realisasi  = selected?.realisasi ?? new Array(12).fill(null)
 
-        // Deteksi golongan_kode dari tarif (e.g. 'JUMLAH Sosial (S)' → 'S', 'JUMLAH' → 'TOTAL')
-        const golMatch = tarif.match(/\(([A-Z])\)/)
-        const golKode  = golMatch ? golMatch[1] : 'TOTAL'
-        const subKode  = tarif
+        const golKode = selected.golongan_kode ?? 'TOTAL'
+        const subKode = tarif
 
         const rows = BULAN_NAMA.map((bln, i) => ({
             label: bln,
@@ -152,13 +185,12 @@ export default class PendapatanBatamModule {
                         { ...base, tipe: 'realisasi', nilai_rp: values.nilai_realisasi })
             },
             ['Bulan', 'Target (Rp)', 'Realisasi (Rp)'],
-            // ── Live-recalc ──────────────────────────────────────────────────
             (ri, values) => {
                 if (values.nilai_target    !== null) rencana[ri]   = values.nilai_target
                 if (values.nilai_realisasi !== null) realisasi[ri] = values.nilai_realisasi
 
-                const labels      = this._getLabels()
-                const sliceIdx    = rencana.length
+                const labels          = this._getLabels()
+                const sliceIdx        = rencana.length
                 const slicedLabels    = labels.slice(0, sliceIdx)
                 const slicedRencana   = rencana.slice(0, sliceIdx)
                 const slicedRealisasi = realisasi.slice(0, sliceIdx)

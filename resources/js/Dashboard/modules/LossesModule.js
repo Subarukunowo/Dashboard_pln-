@@ -15,6 +15,7 @@ export default class LossesModule {
         if (!data) return
         this._rawData = data
         this._tahun   = data.tahun_efektif ?? TAHUN_INI
+        this._state   = state   // simpan state untuk dipakai di _renderEditTable
 
         const warning = document.getElementById('lossesWarning')
         if (warning) warning.style.display = data.is_fallback ? 'inline-block' : 'none'
@@ -185,7 +186,8 @@ export default class LossesModule {
             isReadOnly,
             async (ri, values) => {
                 const bulan      = ri + 1
-                const tipeLosses = 'dengan_emin'
+                // Ikuti state emin yang aktif saat ini
+                const tipeLosses = (this._state?.emin === 'without') ? 'tanpa_emin' : 'dengan_emin'
                 const baseParams  = { tahun: this._tahun, bulan, tipe: 'realisasi', tipe_losses: tipeLosses, is_triwulan: 0, is_akumulasi: 0 }
                 const basePayload = { ...baseParams, sumber: 'manual' }
                 if (values.losses_trans_kwh !== null || values.losses_trans_pct !== null)

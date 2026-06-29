@@ -22,7 +22,13 @@ class RtFactBppService extends BaseService
             'distribusi_tr' => 'BPP S.D DISTRIBUSI TR',
         ];
 
-        $allData = $this->repository->all()->where('tahun', $tahun);
+        // Fallback ke tahun sebelumnya jika tidak ada data
+        $hasData      = $this->repository->getModel()->where('tahun', $tahun)->exists();
+        $tahunEfektif = $hasData ? $tahun : $tahun - 1;
+
+        $allData = $this->repository->getModel()
+            ->where('tahun', $tahunEfektif)
+            ->get();
 
         $result = [];
 
@@ -42,8 +48,10 @@ class RtFactBppService extends BaseService
             }
 
             $result[$labelMap[$jenis]] = [
-                'konsolidasi' => $konsolidasi,
-                'internal'    => $internal,
+                'konsolidasi'  => $konsolidasi,
+                'internal'     => $internal,
+                'tahun_efektif'=> $tahunEfektif,
+                'is_fallback'  => !$hasData,
             ];
         }
 

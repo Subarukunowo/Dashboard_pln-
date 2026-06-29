@@ -1,5 +1,9 @@
 @import 'tailwindcss';
 
+@import './components/custom-select.css';
+@import './components/filter-components.css';
+@import './components/dashboard-components.css';
+
 @source '../../vendor/laravel/framework/src/Illuminate/Pagination/resources/views/*.blade.php';
 @source '../../storage/framework/views/*.php';
 @source '../**/*.blade.php';

@@ -1,6 +1,17 @@
 import { renderEditTable, upsert, deleteByFilter, TAHUN_INI } from '../utils/CrudHelper.js'
 
-const API = '/api/v1/fact/kva'
+const API         = '/api/v1/fact/kva'
+const API_PELANGGAN = '/api/v1/fact/pelanggan'
+const BULAN_NAMA  = ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI',
+                     'JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER']
+const GRUP_ORDER = ['S', 'R', 'B', 'I', 'P', 'M']
+const GRUP_LABEL = { S: 'Sosial', R: 'Rumah Tangga', B: 'Bisnis', I: 'Industri', P: 'Publik', M: 'Multiguna' }
+
+const getGrup = (t) => {
+    if (t === 'JUMLAH' || t.startsWith('JUMLAH-')) return '__JUMLAH__'
+    const m = t.match(/^([A-Z])/)
+    return m?.[1] ?? 'LAIN'
+}
 
 export default class KvaModule {
     constructor(chart) {
@@ -10,7 +21,7 @@ export default class KvaModule {
     }
 
     #getLabels() {
-        return [...document.querySelectorAll("#filterBulanKva option")]
+        return [...document.querySelectorAll('#filterBulanKva option')]
             .map(o => o.textContent.trim())
     }
 
@@ -24,7 +35,7 @@ export default class KvaModule {
 
         const r    = data.rencanaData[state.tarif]   || new Array(12).fill(0)
         const rl   = data.realisasiData[state.tarif] || new Array(12).fill(0)
-        const akum = state.view === "akumulasi"
+        const akum = state.view === 'akumulasi'
 
         const toAkum = arr => arr.map((_, i) => arr.slice(0, i + 1).reduce((a, b) => a + b, 0))
         const displayR  = akum ? toAkum(r)  : r
@@ -36,14 +47,14 @@ export default class KvaModule {
         const slicedR      = displayR.slice(0, sliceIdx)
         const slicedRl     = displayRl.slice(0, sliceIdx)
 
-        this.chart.make("chartKvaBar", "bar", slicedLabels, [
-            { label: "Rencana",   data: slicedR,  backgroundColor: "#ff9800" },
-            { label: "Realisasi", data: slicedRl, backgroundColor: "#00ff88" },
+        this.chart.make('chartKvaBar', 'bar', slicedLabels, [
+            { label: 'Rencana',   data: slicedR,  backgroundColor: '#ff9800' },
+            { label: 'Realisasi', data: slicedRl, backgroundColor: '#00ff88' },
         ])
 
         const delta = slicedRl.map((v, i) => v - slicedR[i])
-        this.chart.make("chartKvaDelta", "bar", slicedLabels, [
-            { label: "Delta", data: delta, backgroundColor: delta.map(v => v >= 0 ? "#00ff88" : "#f44336") }
+        this.chart.make('chartKvaDelta', 'bar', slicedLabels, [
+            { label: 'Delta', data: delta, backgroundColor: delta.map(v => v >= 0 ? '#00ff88' : '#f44336') }
         ])
 
         const pieLabels = data.golongan.map(g => g.replace(/ \(.\) ?/, ''))
@@ -51,23 +62,23 @@ export default class KvaModule {
         const pieTarget = data.golongan.map(g => data.targetGolAkum[g][state.bulan ?? 11])
         const pieReal   = data.golongan.map(g => data.realisasiGolAkum[g][state.bulan ?? 11])
 
-        this.chart.pie("chartKvaPie", pieLabels, pieData)
-        this.chart.make("chartKvaGol", "bar", pieLabels, [
-            { label: "Target Thn Ini",  data: pieTarget, backgroundColor: "#ff9800" },
-            { label: "Real Thn Lalu",   data: pieReal,   backgroundColor: "#2196f3" },
+        this.chart.pie('chartKvaPie', pieLabels, pieData)
+        this.chart.make('chartKvaGol', 'bar', pieLabels, [
+            { label: 'Target Thn Ini', data: pieTarget, backgroundColor: '#ff9800' },
+            { label: 'Real Thn Lalu',  data: pieReal,   backgroundColor: '#2196f3' },
         ])
 
         const p = data.perbandinganData
-        this.chart.make("chartKvaPerbandingan", "bar", labels.slice(0, p.length), [
-            { label: "Target Thn Lalu",    data: p.map(d => akum ? d.akum2024          : d.target2024),    backgroundColor: "#555"    },
-            { label: "Realisasi Thn Lalu", data: p.map(d => akum ? d.realisasiAkum2024 : d.realisasi2024), backgroundColor: "#2196f3" },
-            { label: "Target Thn Ini",     data: p.map(d => akum ? d.akum2025          : d.target2025),    backgroundColor: "#ff9800" },
-            { label: "Realisasi Thn Ini",  data: p.map(d => akum ? d.realisasiAkum2025 : d.realisasi2025), backgroundColor: "#00ff88" },
+        this.chart.make('chartKvaPerbandingan', 'bar', labels.slice(0, p.length), [
+            { label: 'Target Thn Lalu',    data: p.map(d => akum ? d.akum2024          : d.target2024),    backgroundColor: '#555'    },
+            { label: 'Realisasi Thn Lalu', data: p.map(d => akum ? d.realisasiAkum2024 : d.realisasi2024), backgroundColor: '#2196f3' },
+            { label: 'Target Thn Ini',     data: p.map(d => akum ? d.akum2025          : d.target2025),    backgroundColor: '#ff9800' },
+            { label: 'Realisasi Thn Ini',  data: p.map(d => akum ? d.realisasiAkum2025 : d.realisasi2025), backgroundColor: '#00ff88' },
         ])
 
         const deltaPerb = p.map(d => akum ? d.deltaAkumKva : d.deltaKva)
-        this.chart.make("chartKvaDeltaPerbandingan", "bar", labels.slice(0, p.length), [
-            { label: "Delta", data: deltaPerb, backgroundColor: deltaPerb.map(v => v >= 0 ? "#00ff88" : "#f44336") }
+        this.chart.make('chartKvaDeltaPerbandingan', 'bar', labels.slice(0, p.length), [
+            { label: 'Delta', data: deltaPerb, backgroundColor: deltaPerb.map(v => v >= 0 ? '#00ff88' : '#f44336') }
         ])
 
         this.#populateTarif(data, state.tarif)
@@ -85,71 +96,104 @@ export default class KvaModule {
     }
 
     initFilters(state, onChange) {
-        document.getElementById("filterTarifKva")?.addEventListener("change", e => { state.tarif = e.target.value;        onChange() })
-        document.getElementById("filterBulanKva")?.addEventListener("change", e => { state.bulan = parseInt(e.target.value); onChange() })
-        document.getElementById("filterViewKva")?.addEventListener("change",  e => { state.view  = e.target.value;        onChange() })
+        document.getElementById('filterTarifKva')?.addEventListener('change', e => { state.tarif = e.target.value;          onChange() })
+        document.getElementById('filterBulanKva')?.addEventListener('change', e => { state.bulan = parseInt(e.target.value); onChange() })
+        document.getElementById('filterViewKva')?.addEventListener('change',  e => { state.view  = e.target.value;          onChange() })
         this.#initCrud(state, onChange)
     }
 
     #populateTarif(data, currentTarif) {
-        const sel = document.getElementById("filterTarifKva")
-        if (sel && sel.options.length === 0 && data.tarif) {
-            data.tarif.forEach(t => {
-                const opt = document.createElement("option")
+        const sel = document.getElementById('filterTarifKva')
+        if (!sel || sel.options.length > 0 || !data.tarif) return
+
+        const optAll = document.createElement('option')
+        optAll.value = 'JUMLAH'; optAll.textContent = 'Semua'
+        sel.appendChild(optAll)
+
+        // Kelompokkan tarif per grup
+        const grouped = {}
+        const jumlahItems = {}
+        data.tarif.forEach(t => {
+            if (t === 'JUMLAH') return
+            const key = getGrup(t)
+            if (key === '__JUMLAH__') {
+                // JUMLAH-S, JUMLAH-R, dst — petakan ke huruf grupnya
+                const sufiks = t.replace('JUMLAH-', '')
+                jumlahItems[sufiks] = t
+            } else {
+                if (!grouped[key]) grouped[key] = []
+                grouped[key].push(t)
+            }
+        })
+
+        // Render sesuai urutan GRUP_ORDER
+        GRUP_ORDER.forEach(key => {
+            if (!grouped[key]?.length && !jumlahItems[key]) return
+            const grp = document.createElement('optgroup')
+            grp.label = GRUP_LABEL[key] ?? key
+            ;(grouped[key] ?? []).forEach(t => {
+                const opt = document.createElement('option')
                 opt.value = t; opt.textContent = t
-                sel.appendChild(opt)
+                grp.appendChild(opt)
             })
-            sel.value = currentTarif
-        }
+            if (jumlahItems[key]) {
+                const opt = document.createElement('option')
+                opt.value = jumlahItems[key]; opt.textContent = jumlahItems[key]
+                grp.appendChild(opt)
+            }
+            sel.appendChild(grp)
+        })
+
+        sel.value = currentTarif || 'JUMLAH'
     }
 
     #renderBarTable(labels, r, rl) {
-        const tbody = document.getElementById("kvaSideTable")
+        const tbody = document.getElementById('kvaSideTable')
         if (!tbody) return
         const fmt = v => (v || 0).toLocaleString('id-ID')
 
         tbody.innerHTML = labels.map((bln, i) => {
             const d     = (rl[i] || 0) - (r[i] || 0)
-            const color = d >= 0 ? "var(--accent-green)" : "#f44336"
+            const color = d >= 0 ? 'var(--accent-green)' : '#f44336'
             return `<tr>
                 <td>${bln}</td>
                 <td style="color:#ff9800;">${fmt(r[i])}</td>
                 <td style="color:var(--accent-green);">${fmt(rl[i])}</td>
-                <td style="color:${color}; font-weight:600;">${d >= 0 ? "+" : ""}${fmt(d)}</td>
+                <td style="color:${color}; font-weight:600;">${d >= 0 ? '+' : ''}${fmt(d)}</td>
             </tr>`
-        }).join("")
+        }).join('')
     }
 
     #renderDeltaTable(labels, delta) {
-        const tbody = document.getElementById("tabelKvaDelta")
+        const tbody = document.getElementById('tabelKvaDelta')
         if (!tbody) return
         const fmt = v => (v || 0).toLocaleString('id-ID')
 
         tbody.innerHTML = labels.map((bln, i) => `<tr>
             <td>${bln}</td>
-            <td style="color:${delta[i] >= 0 ? "#00ff88" : "#f44336"}; font-weight:600;">
-                ${delta[i] >= 0 ? "+" : ""}${fmt(delta[i])}
+            <td style="color:${delta[i] >= 0 ? '#00ff88' : '#f44336'}; font-weight:600;">
+                ${delta[i] >= 0 ? '+' : ''}${fmt(delta[i])}
             </td>
-        </tr>`).join("")
+        </tr>`).join('')
     }
 
     #renderPieTable(labels, data) {
-        const tbody = document.getElementById("kvaPieTable")
+        const tbody = document.getElementById('kvaPieTable')
         if (!tbody) return
         const total = data.reduce((a, b) => a + b, 0)
 
         tbody.innerHTML = labels.map((lbl, i) => {
-            const pct = total ? ((data[i] / total) * 100).toFixed(1) : "0.0"
+            const pct = total ? ((data[i] / total) * 100).toFixed(1) : '0.0'
             return `<tr>
                 <td>${lbl}</td>
                 <td style="color:var(--accent-green);">${(data[i] || 0).toLocaleString('id-ID')}</td>
                 <td style="color:#aaa;">${pct}%</td>
             </tr>`
-        }).join("")
+        }).join('')
     }
 
     #renderGolTable(labels, target, real) {
-        const tbody = document.getElementById("tabelKvaGol")
+        const tbody = document.getElementById('tabelKvaGol')
         if (!tbody) return
         const fmt = v => (v || 0).toLocaleString('id-ID')
 
@@ -157,43 +201,43 @@ export default class KvaModule {
             <td>${lbl}</td>
             <td style="color:#ff9800;">${fmt(target[i])}</td>
             <td style="color:#2196f3;">${fmt(real[i])}</td>
-        </tr>`).join("")
+        </tr>`).join('')
     }
 
     #renderPerbandinganTable(p, labels, akum) {
-        const tbody = document.getElementById("kvaPerbandinganSideTable")
+        const tbody = document.getElementById('kvaPerbandinganSideTable')
         if (!tbody) return
         const fmt = v => (v / 1000).toFixed(1)
 
         tbody.innerHTML = p.map((d, i) => {
             const delta = akum ? d.deltaAkumKva : d.deltaKva
-            const color = delta >= 0 ? "var(--accent-green)" : "#f44336"
+            const color = delta >= 0 ? 'var(--accent-green)' : '#f44336'
             return `<tr>
                 <td>${labels[i] ?? d.bulan}</td>
                 <td style="color:#555;">${fmt(akum ? d.akum2024          : d.target2024)}</td>
                 <td style="color:#2196f3;">${fmt(akum ? d.realisasiAkum2024 : d.realisasi2024)}</td>
                 <td style="color:#ff9800;">${fmt(akum ? d.akum2025          : d.target2025)}</td>
                 <td style="color:var(--accent-green);">${fmt(akum ? d.realisasiAkum2025 : d.realisasi2025)}</td>
-                <td style="color:${color}; font-weight:600;">${delta >= 0 ? "+" : ""}${fmt(delta)}</td>
+                <td style="color:${color}; font-weight:600;">${delta >= 0 ? '+' : ''}${fmt(delta)}</td>
             </tr>`
-        }).join("")
+        }).join('')
     }
 
     #renderDeltaPerbandinganTable(labels, delta) {
-        const tbody = document.getElementById("tabelKvaDeltaPerbandingan")
+        const tbody = document.getElementById('tabelKvaDeltaPerbandingan')
         if (!tbody) return
         const fmt = v => (v / 1000).toFixed(1)
 
         tbody.innerHTML = labels.map((bln, i) => `<tr>
             <td>${bln}</td>
-            <td style="color:${delta[i] >= 0 ? "#00ff88" : "#f44336"}; font-weight:600;">
-                ${delta[i] >= 0 ? "+" : ""}${fmt(delta[i])}
+            <td style="color:${delta[i] >= 0 ? '#00ff88' : '#f44336'}; font-weight:600;">
+                ${delta[i] >= 0 ? '+' : ''}${fmt(delta[i])}
             </td>
-        </tr>`).join("")
+        </tr>`).join('')
     }
 
     #renderRkapTable(data) {
-        const tbody = document.getElementById("tabelRkapKva")
+        const tbody = document.getElementById('tabelRkapKva')
         if (!tbody || !data.rkapData) return
 
         tbody.innerHTML = data.rkapData.map(d => `<tr>
@@ -208,17 +252,17 @@ export default class KvaModule {
             <td>${d.realTw3.toFixed(2)}</td>
             <td>${d.realTw4.toFixed(2)}</td>
             <td>${d.realTotal.toFixed(2)}</td>
-            <td style="color:${d.pencapaian >= 1 ? "#00ff88" : "#f44336"}">
+            <td style="color:${d.pencapaian >= 1 ? '#00ff88' : '#f44336'}">
                 ${(d.pencapaian * 100).toFixed(2)}%
             </td>
-        </tr>`).join("")
+        </tr>`).join('')
     }
 
     #renderPerbandinganDetailTable(data, labels, akum) {
-        const tbody = document.getElementById("tabelPerbandinganKva")
+        const tbody = document.getElementById('tabelPerbandinganKva')
         if (!tbody || !data.perbandinganData) return
-        const fmt    = v => (v / 1000).toFixed(2) + " kVA"
-        const fmtPct = v => (v * 100).toFixed(2) + "%"
+        const fmt    = v => (v / 1000).toFixed(2) + ' kVA'
+        const fmtPct = v => (v * 100).toFixed(2) + '%'
 
         tbody.innerHTML = data.perbandinganData.map((d, i) => `<tr>
             <td>${labels[i] ?? d.bulan}</td>
@@ -226,34 +270,26 @@ export default class KvaModule {
             <td style="color:#2196f3;">${fmt(akum ? d.realisasiAkum2024 : d.realisasi2024)}</td>
             <td style="color:#ff9800;">${fmt(akum ? d.akum2025          : d.target2025)}</td>
             <td style="color:var(--accent-green);">${fmt(akum ? d.realisasiAkum2025 : d.realisasi2025)}</td>
-            <td style="color:${d.deltaKva >= 0 ? "#00ff88" : "#f44336"}">
+            <td style="color:${d.deltaKva >= 0 ? '#00ff88' : '#f44336'}">
                 ${fmt(akum ? d.deltaAkumKva : d.deltaKva)}
             </td>
-            <td style="color:${d.deltaKva >= 0 ? "#00ff88" : "#f44336"}">
+            <td style="color:${d.deltaKva >= 0 ? '#00ff88' : '#f44336'}">
                 ${fmtPct(akum ? d.deltaAkumPct : d.deltaPct)}
             </td>
             <td>${fmtPct(d.pencapaianTarget)}</td>
             <td>${fmtPct(d.pencapaianRealisasi)}</td>
-        </tr>`).join("")
+        </tr>`).join('')
     }
 
-    // ── CRUD Edit Table ──────────────────────────────────────────────────────
-
-    /**
-     * Render tabel edit distribusi golongan KVA (Card 2 — per golongan, akumulasi bulan terpilih).
-     * Baris = golongan, kolom = target & realisasi akumulasi.
-     */
     #renderEditGolonganTable(data, state) {
         const container = document.getElementById('kvaEditGolonganContainer')
         if (!container || !data.golongan) return
 
         const isReadOnly = this._tahun < TAHUN_INI
         const bulanIdx   = state.bulan ?? 11
-        const API_KVA    = '/api/v1/fact/pelanggan'
+        const disStyle   = isReadOnly ? 'opacity:0.45; pointer-events:none;' : ''
 
-        const disStyle = isReadOnly ? 'opacity:0.45; pointer-events:none;' : ''
-
-        const headers = ['Golongan', 'Target Akum KVA', 'Realisasi Akum KVA']
+        const headers  = ['Golongan', 'Target Akum KVA', 'Realisasi Akum KVA']
         const headHtml = `<thead style="position:sticky;top:0;background:#252525;z-index:1;">
             <tr style="font-size:0.65rem;text-transform:uppercase;">
                 ${headers.map((h, i) => `<th style="padding:8px 10px;color:${i === 1 ? '#ff9800' : i === 2 ? '#00ff88' : '#888'};text-align:left;">${h}</th>`).join('')}
@@ -281,8 +317,7 @@ export default class KvaModule {
                 <td style="padding:4px 6px;">${mkInput(tVal, 'nilai_kva_target', '#ff9800')}</td>
                 <td style="padding:4px 6px;">${mkInput(rVal, 'nilai_kva_realisasi', '#00ff88')}</td>
                 <td style="padding:4px 6px;text-align:center;">
-                    <button id="btnSaveKvaGol_${ri}"
-                        data-row="${ri}"
+                    <button id="btnSaveKvaGol_${ri}" data-row="${ri}"
                         ${isReadOnly ? 'disabled' : ''}
                         style="padding:3px 10px;border-radius:4px;border:none;
                                background:${isReadOnly ? '#2a2a2a' : '#ff9800'};
@@ -313,9 +348,9 @@ export default class KvaModule {
                         is_triwulan: 0, is_akumulasi: 1, sumber: 'manual', nilai_pelanggan: 0,
                     }
                     if (values.nilai_kva_target !== null)
-                        await upsert(API_KVA, { ...base, tipe: 'target'    }, { ...base, tipe: 'target',    nilai_kva: values.nilai_kva_target })
+                        await upsert(API_PELANGGAN, { ...base, tipe: 'target'    }, { ...base, tipe: 'target',    nilai_kva: values.nilai_kva_target })
                     if (values.nilai_kva_realisasi !== null)
-                        await upsert(API_KVA, { ...base, tipe: 'realisasi' }, { ...base, tipe: 'realisasi', nilai_kva: values.nilai_kva_realisasi })
+                        await upsert(API_PELANGGAN, { ...base, tipe: 'realisasi' }, { ...base, tipe: 'realisasi', nilai_kva: values.nilai_kva_realisasi })
                     btn.textContent = '✓ OK'; btn.style.background = '#00ff88'
                 } catch {
                     btn.textContent = '✗ Error'; btn.style.background = '#f44336'
@@ -327,17 +362,9 @@ export default class KvaModule {
         })
     }
 
-    /**
-     * Render tabel edit KVA bulanan.
-     * Baris = bulan (Jan–Des), kolom = target & realisasi untuk sub_golongan_kode aktif.
-     * sub_golongan_kode diambil dari state.tarif (filter tarif yang sudah ada).
-     */
     #renderEditTable(data, state) {
         const isReadOnly   = this._tahun < TAHUN_INI
         const subGolKode   = state.tarif ?? (data.tarif?.[0] ?? '')
-        const BULAN_NAMA   = ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI',
-                              'JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER']
-
         const targetArr    = data.rencanaData?.[subGolKode]   ?? new Array(12).fill(null)
         const realisasiArr = data.realisasiData?.[subGolKode] ?? new Array(12).fill(null)
 
@@ -348,8 +375,6 @@ export default class KvaModule {
                 { key: 'nilai_kva_realisasi', value: realisasiArr[i] ?? '', color: '#00ff88' },
             ],
         }))
-
-        const API_PELANGGAN = '/api/v1/fact/pelanggan'
 
         renderEditTable(
             'kvaEditContainer',
@@ -365,20 +390,19 @@ export default class KvaModule {
                     await upsert(API_PELANGGAN, { ...baseParams, tipe: 'realisasi' }, { ...basePayload, tipe: 'realisasi', nilai_kva: values.nilai_kva_realisasi })
             },
             ['Bulan', 'Target KVA', 'Realisasi KVA'],
-            // ── Live-recalc ──────────────────────────────────────────────────
             (ri, values) => {
                 if (values.nilai_kva_target    !== null) targetArr[ri]    = values.nilai_kva_target
                 if (values.nilai_kva_realisasi !== null) realisasiArr[ri] = values.nilai_kva_realisasi
 
-                const labels  = this.#getLabels()
+                const labels   = this.#getLabels()
                 const sliceIdx = (state.bulan ?? 11) + 1
-                const akum    = state.view === 'akumulasi'
-                const toAkum  = arr => arr.map((_, i) => arr.slice(0, i + 1).reduce((a, b) => a + b, 0))
-                const dR      = akum ? toAkum(targetArr)    : targetArr
-                const dRl     = akum ? toAkum(realisasiArr) : realisasiArr
-                const slicedR = dR.slice(0, sliceIdx)
+                const akum     = state.view === 'akumulasi'
+                const toAkum   = arr => arr.map((_, i) => arr.slice(0, i + 1).reduce((a, b) => a + b, 0))
+                const dR       = akum ? toAkum(targetArr)    : targetArr
+                const dRl      = akum ? toAkum(realisasiArr) : realisasiArr
+                const slicedR  = dR.slice(0, sliceIdx)
                 const slicedRl = dRl.slice(0, sliceIdx)
-                const delta   = slicedRl.map((v, i) => (v ?? 0) - (slicedR[i] ?? 0))
+                const delta    = slicedRl.map((v, i) => (v ?? 0) - (slicedR[i] ?? 0))
 
                 this.#renderBarTable(labels.slice(0, sliceIdx), slicedR, slicedRl)
                 this.#renderDeltaTable(labels.slice(0, sliceIdx), delta)
@@ -393,7 +417,6 @@ export default class KvaModule {
         )
     }
 
-    /** Tampilkan/sembunyikan badge warning edit sesuai tahun */
     #updateEditWarning() {
         const isOld = this._tahun < TAHUN_INI
         const w1 = document.getElementById('kvaEditWarning')
@@ -402,21 +425,15 @@ export default class KvaModule {
         if (w2) w2.style.display = isOld ? 'inline-block' : 'none'
     }
 
-    /** Bind tombol Muat Data & Hapus Data modal */
     #initCrud(state, onChange) {
         const modalMuat  = document.getElementById('modalMuatKva')
         const modalHapus = document.getElementById('modalHapusKva')
 
-        // Tombol Muat Data
         const btnMuat = document.getElementById('btnMuatKva')
         if (btnMuat && !btnMuat._bound) {
             btnMuat._bound = true
             btnMuat.addEventListener('click', () => { if (modalMuat) modalMuat.style.display = 'flex' })
-
-            document.getElementById('btnBatalMuatKva')?.addEventListener('click', () => {
-                if (modalMuat) modalMuat.style.display = 'none'
-            })
-
+            document.getElementById('btnBatalMuatKva')?.addEventListener('click', () => { if (modalMuat) modalMuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiMuatKva')?.addEventListener('click', async () => {
                 const tahun = parseInt(document.getElementById('muatTahunKva')?.value)
                 if (modalMuat) modalMuat.style.display = 'none'
@@ -426,16 +443,11 @@ export default class KvaModule {
             })
         }
 
-        // Tombol Hapus Data
         const btnHapus = document.getElementById('btnHapusKva')
         if (btnHapus && !btnHapus._bound) {
             btnHapus._bound = true
             btnHapus.addEventListener('click', () => { if (modalHapus) modalHapus.style.display = 'flex' })
-
-            document.getElementById('btnBatalHapusKva')?.addEventListener('click', () => {
-                if (modalHapus) modalHapus.style.display = 'none'
-            })
-
+            document.getElementById('btnBatalHapusKva')?.addEventListener('click', () => { if (modalHapus) modalHapus.style.display = 'none' })
             document.getElementById('btnKonfirmasiHapusKva')?.addEventListener('click', async () => {
                 const tahun = document.getElementById('hapusTahunKva')?.value
                 const tipe  = document.getElementById('hapusTipeKva')?.value
@@ -443,7 +455,7 @@ export default class KvaModule {
                 if (modalHapus) modalHapus.style.display = 'none'
                 try {
                     const params = tipe === 'semua' ? { tahun } : { tahun, tipe }
-                    await deleteByFilter('/api/v1/fact/pelanggan', params)
+                    await deleteByFilter(API_PELANGGAN, params)
                     onChange()
                 } catch {
                     alert('Gagal menghapus data KVA')
@@ -451,7 +463,6 @@ export default class KvaModule {
             })
         }
 
-        // Tombol Buat Data
         const modalBuat = document.getElementById('modalBuatKva')
         const btnBuat   = document.getElementById('btnBuatKva')
         if (btnBuat && !btnBuat._bound) {
@@ -459,16 +470,16 @@ export default class KvaModule {
             btnBuat.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'flex' })
             document.getElementById('btnBatalBuatKva')?.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiBuatKva')?.addEventListener('click', async () => {
-                const tahun   = parseInt(document.getElementById('buatTahunKva')?.value)
-                const tipe    = document.getElementById('buatTipeKva')?.value
-                const subGol  = document.getElementById('buatSubGolKva')?.value || 'JUMLAH'
+                const tahun  = parseInt(document.getElementById('buatTahunKva')?.value)
+                const tipe   = document.getElementById('buatTipeKva')?.value
+                const subGol = document.getElementById('buatSubGolKva')?.value || 'JUMLAH'
                 if (modalBuat) modalBuat.style.display = 'none'
                 const csrf  = document.querySelector('meta[name="csrf-token"]')?.content
                 const heads = { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }
                 let ok = true
                 for (let bulan = 1; bulan <= 12; bulan++) {
                     try {
-                        const res = await fetch('/api/v1/fact/pelanggan', {
+                        const res = await fetch(API_PELANGGAN, {
                             method: 'POST', headers: heads,
                             body: JSON.stringify({ tahun, bulan, tipe, sub_golongan_kode: subGol, golongan_kode: subGol.charAt(0), is_triwulan: 0, is_akumulasi: 0, sumber: 'manual', nilai_pelanggan: 0, nilai_kva: 0 }),
                         })

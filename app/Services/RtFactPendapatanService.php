@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Repositories\RtFactPendapatanRepository;
+use Illuminate\Support\Facades\DB;
 
 class RtFactPendapatanService extends BaseService
 {
@@ -13,27 +14,36 @@ class RtFactPendapatanService extends BaseService
 
     public function getChartData(int $tahun): array
     {
-        // Fallback ke tahun sebelumnya jika kosong
         $hasData      = $this->repository->all(['tahun' => $tahun, 'is_triwulan' => 0])->isNotEmpty();
         $tahunEfektif = $hasData ? $tahun : $tahun - 1;
 
         $allData = $this->repository->all(['tahun' => $tahunEfektif, 'is_triwulan' => 0]);
 
-        // ── Pivot per sub_golongan_kode ────────────────────────────────────
-        $tarif   = [];
-        $data    = [];
+        // Dim table untuk urutan & metadata
+        $dimSubs = DB::table('rt_dim_sub_golongan')
+            ->orderByRaw("FIELD(golongan_kode,'S','R','B','I','P','M','TOTAL')")
+            ->orderBy('urutan')
+            ->get()
+            ->keyBy('kode');
 
         $bulananTarget    = $allData->where('is_akumulasi', 0)->where('tipe', 'target')->groupBy('sub_golongan_kode');
         $bulananRealisasi = $allData->where('is_akumulasi', 0)->where('tipe', 'realisasi')->groupBy('sub_golongan_kode');
         $akumTarget       = $allData->where('is_akumulasi', 1)->where('tipe', 'target')->groupBy('sub_golongan_kode');
         $akumRealisasi    = $allData->where('is_akumulasi', 1)->where('tipe', 'realisasi')->groupBy('sub_golongan_kode');
 
-        $allKodes = $bulananTarget->keys()->merge($bulananRealisasi->keys())->unique()->values();
+        // Urutan dari dim table, fallback ke kode dari data jika tidak ada di dim
+        $allKodes = $dimSubs->keys()
+            ->merge($bulananTarget->keys()->merge($bulananRealisasi->keys())->unique()->values())
+            ->unique()->values();
+
+        $tarif = [];
+        $data  = [];
 
         foreach ($allKodes as $kode) {
             $tarif[] = $kode;
-
             $data[$kode] = [
+                'nama'          => $dimSubs[$kode]->nama          ?? $kode,
+                'golongan_kode' => $dimSubs[$kode]->golongan_kode ?? 'TOTAL',
                 'rencana'       => $this->toMonthly($bulananTarget[$kode]    ?? collect()),
                 'realisasi'     => $this->toMonthly($bulananRealisasi[$kode] ?? collect()),
                 'rencanaAkum'   => $this->toMonthly($akumTarget[$kode]       ?? collect()),
@@ -41,7 +51,7 @@ class RtFactPendapatanService extends BaseService
             ];
         }
 
-        // ── Realisasi bulanan total (JUMLAH) ───────────────────────────────
+        // Realisasi bulanan total (JUMLAH)
         $realisasiBulanan = [];
         for ($m = 1; $m <= 12; $m++) {
             $tRow = $allData->where('is_akumulasi', 0)->where('tipe', 'target')
@@ -61,12 +71,12 @@ class RtFactPendapatanService extends BaseService
             ];
         }
 
-        // ── Data per golongan besar untuk GolTarif ────────────────────────
-        $golList = ['S', 'R', 'B', 'I', 'P', 'M'];
+        // Data per golongan besar untuk GolTarif pie
+        $golList      = ['S', 'R', 'B', 'I', 'P', 'M'];
         $golonganData = [];
 
         foreach ($golList as $gol) {
-            $rows = $allData->where('is_akumulasi', 0)->where('golongan_kode', $gol);
+            $rows       = $allData->where('is_akumulasi', 0)->where('golongan_kode', $gol);
             $jumlahKode = 'JUMLAH-' . $gol;
 
             $golonganData[$gol] = [
