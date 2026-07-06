@@ -31,30 +31,32 @@ export default class BabinModule {
         const tahunIni  = this._tahun
         const tahunLalu = tahunIni - 1
 
-        const sliceIdx  = (state.bulan && state.bulan !== 'all') ? parseInt(state.bulan) + 1 : 12
+        const sliceIdx  = (state.bulan && state.bulan !== 'all') ? Number.parseInt(state.bulan) + 1 : 12
         const labels    = this._getLabels().slice(0, sliceIdx)
         const target    = viewData.target.slice(0, sliceIdx)
         const realisasi = viewData.realisasi.slice(0, sliceIdx)
         const capaian   = viewData.capaian.slice(0, sliceIdx)
         const thnLalu   = (yoyData.tahun_lalu ?? []).slice(0, sliceIdx)
-        const growthPct = (yoyData.growth_pct ?? []).slice(0, sliceIdx)
 
         this.chart.make('chartBabinBar', 'bar', labels, [
             { label: 'Realisasi ' + tahunLalu, data: thnLalu,   backgroundColor: '#2196f3' },
             { label: 'Target ' + tahunIni,     data: target,    backgroundColor: '#ff9800' },
             { label: 'Realisasi ' + tahunIni,  data: realisasi, backgroundColor: '#00ff88' },
-        ], v => v !== null ? (v / 1_000_000).toFixed(1) + ' jt kWh' : '—')
+        ], v => v == null ? '—' : (v / 1_000_000).toFixed(1) + ' jt kWh')
 
         const delta      = realisasi.map((r, i) => r !== null && target[i] !== null ? r - target[i] : null)
-        const deltaColor = delta.map(v => v === null ? '#555' : v >= 0 ? '#00ff88' : '#f44336')
+        const deltaColor = delta.map(v => {
+            if (v === null) return '#555'
+            return v >= 0 ? '#00ff88' : '#f44336'
+        })
         this.chart.make('chartBabinDelta', 'bar', labels, [
             { label: 'Delta (Realisasi - Target)', data: delta, backgroundColor: deltaColor },
-        ], v => v !== null ? (v / 1_000_000).toFixed(1) + ' jt kWh' : '—')
+        ], v => v == null ? '—' : (v / 1_000_000).toFixed(1) + ' jt kWh')
 
         // Pie capaian YTD — gunakan nilai kWh aktual, bukan persentase
         // Ambil dari akumulasi bulan terakhir yang ada datanya
         const akumData     = data.akumulasi[area]
-        const validAkumIdx = akumData.realisasi.map((v, i) => v !== null ? i : -1).filter(i => i >= 0)
+        const validAkumIdx = akumData.realisasi.map((v, i) => v == null ? -1 : i).filter(i => i >= 0)
         const lastAkumIdx  = validAkumIdx.length > 0 ? validAkumIdx[validAkumIdx.length - 1] : sliceIdx - 1
         const lastAkumReal = akumData.realisasi[lastAkumIdx] ?? 0
         const lastAkumTgt  = akumData.target[lastAkumIdx] ?? 0
@@ -75,7 +77,7 @@ export default class BabinModule {
                 data: histValues,
                 backgroundColor: histValues.map((_, i) => i === histValues.length - 1 ? '#00ff88' : '#2196f3'),
             },
-        ], v => v !== null ? (v / 1_000_000).toFixed(1) + ' jt kWh' : '—')
+        ], v => v == null ? '—' : (v / 1_000_000).toFixed(1) + ' jt kWh')
 
         this._renderTable(labels, target, realisasi, thnLalu, delta, capaian)
         this._renderGrowthTable(histData)
@@ -84,7 +86,7 @@ export default class BabinModule {
 
     initFilters(state, onChange) {
         document.getElementById('filterSectionBabin')?.addEventListener('change', e => { state.section = e.target.value; onChange() })
-        document.getElementById('filterTahunBabin')?.addEventListener('change',   e => { state.tahun   = parseInt(e.target.value); onChange() })
+        document.getElementById('filterTahunBabin')?.addEventListener('change',   e => { state.tahun   = Number.parseInt(e.target.value); onChange() })
         document.getElementById('filterViewBabin')?.addEventListener('change',    e => { state.view    = e.target.value; onChange() })
         document.getElementById('filterBulanBabin')?.addEventListener('change',   e => { state.bulan   = e.target.value; onChange() })
         this._initCrud(state, onChange)
@@ -93,20 +95,26 @@ export default class BabinModule {
     _renderTable(labels, target, realisasi, thnLalu, delta, capaian) {
         const tbody = document.getElementById('babinSideTable')
         if (!tbody) return
-        const fmt  = v => v !== null ? (v / 1_000_000).toFixed(2) : '—'
-        const fmtP = v => v !== null ? v.toFixed(1) + '%' : '—'
+        const fmt  = v => v == null ? '—' : (v / 1_000_000).toFixed(2)
+        const fmtP = v => v == null ? '—' : v.toFixed(1) + '%'
 
-        tbody.innerHTML = labels.map((bln, i) => {
-            const color = delta[i] === null ? '#888' : delta[i] >= 0 ? 'var(--accent-green)' : '#f44336'
-            return '<tr>' +
-                '<td style="padding:7px 8px;">' + bln + '</td>' +
-                '<td style="padding:7px 8px; color:#2196f3;">' + fmt(thnLalu[i]) + '</td>' +
-                '<td style="padding:7px 8px; color:#ff9800;">' + fmt(target[i]) + '</td>' +
-                '<td style="padding:7px 8px; color:var(--accent-green);">' + fmt(realisasi[i]) + '</td>' +
-                '<td style="padding:7px 8px; color:' + color + ';">' + (delta[i] !== null ? (delta[i] >= 0 ? '+' : '') + fmt(delta[i]) : '—') + '</td>' +
-                '<td style="padding:7px 8px; color:' + color + ';">' + fmtP(capaian[i]) + '</td>' +
-                '</tr>'
-        }).join('')
+tbody.innerHTML = labels.map((bln, i) => {
+    let color = '#888'
+    if (delta[i] !== null) color = delta[i] >= 0 ? 'var(--accent-green)' : '#f44336'
+    let deltaCell = '—'
+    if (delta[i] !== null) {
+        const sign = delta[i] >= 0 ? '+' : ''
+        deltaCell = sign + fmt(delta[i])
+    }
+    return '<tr>' +
+        '<td style="padding:7px 8px;">' + bln + '</td>' +
+        '<td style="padding:7px 8px; color:#2196f3;">' + fmt(thnLalu[i]) + '</td>' +
+        '<td style="padding:7px 8px; color:#ff9800;">' + fmt(target[i]) + '</td>' +
+        '<td style="padding:7px 8px; color:var(--accent-green);">' + fmt(realisasi[i]) + '</td>' +
+        '<td style="padding:7px 8px; color:' + color + ';">' + deltaCell + '</td>' +
+        '<td style="padding:7px 8px; color:' + color + ';">' + fmtP(capaian[i]) + '</td>' +
+        '</tr>'
+}).join('')
     }
 
     _renderGrowthTable(histData) {
@@ -123,7 +131,7 @@ export default class BabinModule {
         }
 
         const bulanLabels = this._getLabels()
-        const fmt  = v => v !== null ? (v / 1_000_000).toFixed(2) : '—'
+        const fmt  = v => v == null ? '—' : (v / 1_000_000).toFixed(2)
         const fmtG = v => {
             if (v === null) return '<div style="color:#444; font-size:0.7rem;">—</div>'
             const c = v >= 0 ? '#00c853' : '#f44336'
@@ -139,14 +147,20 @@ export default class BabinModule {
             return '<tr><td style="padding:7px 10px; color:#888;">' + bln + '</td>' + cells + '</tr>'
         }).join('')
 
-        const totalCells = histData.map(d => {
-            const c = d.growth_tahunan === null ? '#555' : d.growth_tahunan >= 0 ? '#00c853' : '#f44336'
-            return '<td style="padding:8px; text-align:right; border-top:1px solid #333;">' +
-                '<div style="color:#fff; font-weight:600; font-size:0.8rem;">' + fmt(d.total) + '</div>' +
-                '<div style="color:' + c + '; font-size:0.7rem;">' +
-                (d.growth_tahunan !== null ? (d.growth_tahunan >= 0 ? '+' : '') + d.growth_tahunan.toFixed(1) + '%' : '—') +
-                '</div></td>'
-        }).join('')
+       const totalCells = histData.map(d => {
+    let c = '#555'
+    if (d.growth_tahunan !== null) c = d.growth_tahunan >= 0 ? '#00c853' : '#f44336'
+    let growthText
+    if (d.growth_tahunan === null) {
+        growthText = '—'
+    } else {
+        const sign = d.growth_tahunan >= 0 ? '+' : ''
+        growthText = sign + d.growth_tahunan.toFixed(1) + '%'
+    }
+    return '<td style="padding:8px; text-align:right; border-top:1px solid #333;">' +
+        '<div style="color:#fff; font-weight:600; font-size:0.8rem;">' + fmt(d.total) + '</div>' +
+        '<div style="color:' + c + '; font-size:0.7rem;">' + growthText + '</div></td>'
+}).join('')
 
         tbody.innerHTML = rows +
             '<tr style="background:rgba(255,255,255,0.04);">' +
@@ -198,8 +212,7 @@ export default class BabinModule {
             btnMuat.addEventListener('click', () => { if (modalMuat) modalMuat.style.display = 'flex' })
             document.getElementById('btnBatalMuatBabin')?.addEventListener('click', () => { if (modalMuat) modalMuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiMuatBabin')?.addEventListener('click', async () => {
-                const tahun = parseInt(document.getElementById('muatTahunBabin')?.value)
-                const tipe  = document.getElementById('muatTipeBabin')?.value
+                const tahun = Number.parseInt(document.getElementById('muatTahunBabin')?.value)
                 if (modalMuat) modalMuat.style.display = 'none'
                 this._tahun = tahun
                 state.tahun = tahun
@@ -221,7 +234,7 @@ export default class BabinModule {
                     const params = tipe === 'semua' ? { tahun } : { tahun, tipe }
                     await deleteByFilter(API, params)
                     onChange()
-                } catch (e) {
+                } catch {
                     alert('Gagal menghapus data')
                 }
             })
@@ -234,7 +247,7 @@ export default class BabinModule {
             btnBuat.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'flex' })
             document.getElementById('btnBatalBuatBabin')?.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiBuatBabin')?.addEventListener('click', async () => {
-                const tahun = parseInt(document.getElementById('buatTahunBabin')?.value)
+                const tahun = Number.parseInt(document.getElementById('buatTahunBabin')?.value)
                 const area  = document.getElementById('buatAreaBabin')?.value
                 const tipe  = document.getElementById('buatTipeBabin2')?.value
                 if (modalBuat) modalBuat.style.display = 'none'

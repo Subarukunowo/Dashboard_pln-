@@ -75,37 +75,49 @@ class HistorisPelangganStatsController extends Controller
                 $tahun, $tahun, 'pelanggan', self::GOLONGAN_ALL, 'bulanan'
             );
 
-            if (empty($chartData['datasets'])) return 0;
-
-            $bulanNames   = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
-            $targetBulans = array_slice($bulanNames, 0, $sampaibulan); // Jan s.d bulan ke-N
-            $labels       = $chartData['labels'] ?? [];                // ["2025-Jan", ...]
-
-            // Index label yang masuk rentang bulan yang diminta
-            $validIndexes = [];
-            foreach ($labels as $i => $label) {
-                $part = explode('-', $label)[1] ?? '';
-                if (in_array($part, $targetBulans)) {
-                    $validIndexes[] = $i;
-                }
-            }
-
-            if (empty($validIndexes)) return 0;
-
-            // Jumlahkan semua golongan × semua bulan valid
-            $total = 0;
-            foreach ($chartData['datasets'] as $ds) {
-                foreach ($validIndexes as $i) {
-                    $total += (float) ($ds['data'][$i] ?? 0);
-                }
-            }
-
-            return $total;
+            return $this->sumChartDataUntilBulan($chartData, $sampaibulan);
 
         } catch (\Throwable $e) {
             Log::warning('getTotalViaService failed', ['error' => $e->getMessage()]);
             return 0;
         }
+    }
+
+    /**
+     * Jumlahkan semua golongan × bulan valid (Jan s.d $sampaibulan) dari hasil chart data.
+     */
+    private function sumChartDataUntilBulan(array $chartData, int $sampaibulan): float
+    {
+        if (empty($chartData['datasets'])) {
+            return 0;
+        }
+
+        $bulanNames   = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
+        $targetBulans = array_slice($bulanNames, 0, $sampaibulan); // Jan s.d bulan ke-N
+        $labels       = $chartData['labels'] ?? [];                // ["2025-Jan", ...]
+
+        // Index label yang masuk rentang bulan yang diminta
+        $validIndexes = [];
+        foreach ($labels as $i => $label) {
+            $part = explode('-', $label)[1] ?? '';
+            if (in_array($part, $targetBulans)) {
+                $validIndexes[] = $i;
+            }
+        }
+
+        if (empty($validIndexes)) {
+            return 0;
+        }
+
+        // Jumlahkan semua golongan × semua bulan valid
+        $total = 0;
+        foreach ($chartData['datasets'] as $ds) {
+            foreach ($validIndexes as $i) {
+                $total += (float) ($ds['data'][$i] ?? 0);
+            }
+        }
+
+        return $total;
     }
 
     /**

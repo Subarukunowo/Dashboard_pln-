@@ -1,9 +1,8 @@
 import { apiFetch } from '@/Dashboard/utils/apiClient'
 
 export default class KvaService {
-    constructor() {
-        this.baseUrl = '/api/chart/kva'
-    }
+    
+    baseUrl = '/api/chart/kva'
 
     async getData(tahun = new Date().getFullYear(), tahunLalu = null) {
         try {

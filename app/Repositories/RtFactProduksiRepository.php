@@ -15,6 +15,8 @@ class RtFactProduksiRepository extends BaseRepository
     {
         return $query
             ->when(isset($filters['tahun']), fn ($q) => $q->where('tahun', $filters['tahun']))
-            ->when(isset($filters['bulan']), fn ($q) => $q->where('bulan', $filters['bulan']));
+            ->when(isset($filters['bulan']), fn ($q) => $q->where('bulan', $filters['bulan']))
+            ->when(isset($filters['tipe_losses']), fn ($q) => $q->where('tipe_losses', $filters['tipe_losses']))
+            ->when(isset($filters['sumber']), fn ($q) => $q->where('sumber', $filters['sumber']));
     }
-}   
+}

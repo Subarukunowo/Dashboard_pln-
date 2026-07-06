@@ -1,7 +1,6 @@
 export default class PenjualanService {
-    constructor() {
-        this.baseUrl = '/api/chart/penjualan'
-    }
+    
+    baseUrl = '/api/chart/penjualan'
 
     async getKinerjaData(tahun = new Date().getFullYear()) {
         try {

@@ -6,7 +6,7 @@ use App\Repositories\RtFactProduksiRepository;
 
 class RtFactProduksiService extends BaseService
 {
-    public function __construct(RtFactProduksiRepository $repository)
+    public function __construct( RtFactProduksiRepository $repository)
     {
         parent::__construct($repository);
     }

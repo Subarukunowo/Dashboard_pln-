@@ -8,7 +8,7 @@ class RtFactTunggakanService extends BaseService
 {
     const RATIO_TARGET = 0.0001; // 0,01% — sesuai data Excel
 
-    public function __construct(RtFactTunggakanRepository $repository)
+    public function __construct( RtFactTunggakanRepository $repository)
     {
         parent::__construct($repository);
     }

@@ -93,8 +93,8 @@ export async function apiFetch(url, options = {}) {
  * Shorthand helpers
  */
 export const apiGet    = (url, opts = {})         => apiFetch(url, { ...opts, method: 'GET' })
-export const apiPost   = (url, body, opts = {})   => apiFetch(url, { ...opts, method: 'POST',   body: JSON.stringify(body), headers: { 'Content-Type': 'application/json', ...(opts.headers ?? {}) } })
-export const apiPut    = (url, body, opts = {})   => apiFetch(url, { ...opts, method: 'PUT',    body: JSON.stringify(body), headers: { 'Content-Type': 'application/json', ...(opts.headers ?? {}) } })
+export const apiPost   = (url, body, opts = {})   => apiFetch(url, { ...opts, method: 'POST',   body: JSON.stringify(body), headers: { 'Content-Type': 'application/json', ...(opts.headers) } })
+export const apiPut    = (url, body, opts = {})   => apiFetch(url, { ...opts, method: 'PUT',    body: JSON.stringify(body), headers: { 'Content-Type': 'application/json', ...(opts.headers ) } })
 export const apiDelete = (url, opts = {})         => apiFetch(url, { ...opts, method: 'DELETE' })
 
 export default apiFetch

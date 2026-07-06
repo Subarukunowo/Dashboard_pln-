@@ -33,7 +33,6 @@ import JamNyalaChart          from '../charts/JamNyalaChart.js'
 import LossesChart            from '../charts/LossesChart.js'
 import TunggakanChart         from '../charts/TunggakanChart.js'
 import P2tlChart              from '../charts/P2tlChart.js'
-import ScreenshotProtection   from '../utils/ScreenshotProtection.js'
 import { initStats }          from '../layout/UpdateStats.js'
 import { onThemeChange }      from '../utils/ThemeChart.js'
 import CustomSelect           from '../components/CustomSelect.js'
@@ -89,7 +88,6 @@ class Dashboard {
     }
 
     async init() {
-        ScreenshotProtection.init()
         this._initChatbotEvents()
         this._initClock()
         this._initGlobalFilters()

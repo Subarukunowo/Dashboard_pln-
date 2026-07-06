@@ -1,9 +1,7 @@
 import { apiFetch } from '@/Dashboard/utils/apiClient'
 
 export default class GolTarifBatamService {
-    constructor() {
-        this.baseUrl = '/api/chart/pendapatan'
-    }
+    baseUrl = '/api/chart/pendapatan'
 
     async getData(tahun = new Date().getFullYear()) {
         try {

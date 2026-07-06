@@ -12,7 +12,7 @@ class RtFactRpkwhService extends BaseService
         'I' => 'JUMLAH-I', 'P' => 'JUMLAH-P', 'M' => 'JUMLAH-M',
     ];
 
-    public function __construct(RtFactRpkwhRepository $repository)
+    public function __construct( RtFactRpkwhRepository $repository)
     {
         parent::__construct($repository);
     }
@@ -134,7 +134,9 @@ class RtFactRpkwhService extends BaseService
 
         foreach ($rows as $row) {
             $kode = $row->sub_golongan_kode;
-            if (!isset($map[$kode])) continue;
+            if (!isset($map[$kode])) {
+                continue;
+            }
 
             $g   = $map[$kode];
             $key = $this->golonganNama($g) . ' (' . $g . ')';
@@ -230,8 +232,12 @@ class RtFactRpkwhService extends BaseService
         $real   = array_fill(0, 12, 0);
 
         foreach ($rows as $row) {
-            if ($row->tipe === 'target')    $target[$row->bulan - 1] = (float) $row->nilai_rpkwh;
-            if ($row->tipe === 'realisasi') $real[$row->bulan - 1]   = (float) $row->nilai_rpkwh;
+            if ($row->tipe === 'target') {
+                $target[$row->bulan - 1] = (float) $row->nilai_rpkwh;
+            }
+            if ($row->tipe === 'realisasi') {
+                $real[$row->bulan - 1] = (float) $row->nilai_rpkwh;
+            }
         }
 
         $result = [];

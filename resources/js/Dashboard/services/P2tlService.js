@@ -1,9 +1,9 @@
 import { apiFetch } from '@/Dashboard/utils/apiClient'
 
 export default class P2tlService {
-    constructor() {
-        this.baseUrl = '/api/chart/p2tl'
-    }
+   
+    baseUrl = '/api/chart/p2tl'
+    
 
     async getData(tahun = new Date().getFullYear(), tipe = 'realisasi') {
         try {

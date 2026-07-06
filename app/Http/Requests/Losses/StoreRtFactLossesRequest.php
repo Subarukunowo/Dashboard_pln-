@@ -20,9 +20,11 @@ class StoreRtFactLossesRequest extends FormRequest
             'is_akumulasi' => ['required', 'boolean'],
             'tipe_losses'  => ['required', 'string', 'max:50'],
             'tipe'         => ['required', 'string', 'max:50'],
-           'kategori' => ['sometimes', 'required', 'in:transmisi,distribusi,jaringan'],
+            'kategori'     => ['required', 'in:transmisi,distribusi,jaringan'],
             'nilai_pct'    => ['nullable', 'numeric'],
-            'nilai_kwh'    => ['nullable', 'numeric', 'min:0'],
+            // FIX: min:0 dihapus — data losses bisa negatif (mis. -4.410.178 kWh
+            // saat produksi < siap salur + PS GI, itu valid secara fisik/akuntansi)
+            'nilai_kwh'    => ['nullable', 'numeric'],
             'sumber'       => ['nullable', 'string', 'max:100'],
         ];
     }

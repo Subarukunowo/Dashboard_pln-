@@ -13,9 +13,20 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware) {
 
-        // ← INI YANG KURANG DARI TADI
         $middleware->web(append: [
             \App\Http\Middleware\SetLocale::class,
+            \App\Http\Middleware\SecurityHeaders::class,
+        ]);
+
+        // Wajib agar Sanctum mengautentikasi request API via session/cookie.
+        // statefulApi() saja tidak cukup — middleware ini butuh StartSession,
+        // EncryptCookies, dan VerifyCsrfToken juga berjalan di grup "api"
+        // supaya cookie session benar-benar terbaca jadi session aktif.
+        $middleware->statefulApi();
+
+        $middleware->api(prepend: [
+            \Illuminate\Cookie\Middleware\EncryptCookies::class,
+            \Illuminate\Session\Middleware\StartSession::class,
         ]);
 
         $middleware->alias([

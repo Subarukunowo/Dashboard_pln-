@@ -2,14 +2,13 @@ import { renderEditTable, upsert, deleteByFilter, TAHUN_INI } from '../utils/Cru
 
 const API        = '/api/v1/fact/pendapatan'
 const BULAN_NAMA = ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER']
+const GRUP_ORDER = ['S', 'R', 'B', 'I', 'P', 'M']
+const GRUP_LABEL = { S: 'Sosial', R: 'Rumah Tangga', B: 'Bisnis', I: 'Industri', P: 'Publik', M: 'Multiguna' }
 
-const GRUP_LABEL = {
-    S: 'Sosial',
-    R: 'Rumah Tangga',
-    B: 'Bisnis',
-    I: 'Industri',
-    P: 'Publik',
-    M: 'Multiguna',
+const getGrup = (t) => {
+    if (t === 'JUMLAH' || t.startsWith('JUMLAH-')) return '__JUMLAH__'
+    const m = t.match(/^([A-Z])/)
+    return m?.[1] ?? 'LAIN'
 }
 
 export default class PendapatanBatamModule {
@@ -34,46 +33,53 @@ export default class PendapatanBatamModule {
         if (warning) warning.style.display = data.is_fallback ? 'inline-block' : 'none'
 
         const sel = document.getElementById('filterTarifPendapatan')
-        if (sel && sel.options.length === 0 && data.tarif) {
-            // Opsi "Semua" di atas
-            const optAll       = document.createElement('option')
-            optAll.value       = 'JUMLAH'
-            optAll.textContent = 'Semua'
-            sel.appendChild(optAll)
+       if (sel?.options.length === 0 && data.tarif) {
+    const optAll = document.createElement('option')
+    optAll.value = 'JUMLAH'; optAll.textContent = 'Semua'
+    sel.appendChild(optAll)
 
-            const groups = {}
 
-            data.tarif.forEach(kode => {
-                if (kode === 'JUMLAH') return
-                const entry   = data.data[kode]
-                const golKode = entry?.golongan_kode ?? 'LAIN'
-                const label   = GRUP_LABEL[golKode] ?? golKode
-
-                if (!groups[golKode]) {
-                    const grp   = document.createElement('optgroup')
-                    grp.label   = label
-                    groups[golKode] = grp
-                    sel.appendChild(grp)
+            const grouped = {}
+            const jumlahItems = {}
+            data.tarif.forEach(t => {
+                if (t === 'JUMLAH') return
+                const key = getGrup(t)
+                if (key === '__JUMLAH__') {
+                    jumlahItems[t.replace('JUMLAH-', '')] = t
+                } else {
+                    const entry   = data.data[t]
+                    const golKode = entry?.golongan_kode ?? key
+                    const grpKey  = GRUP_LABEL[golKode] ? golKode : key
+                    if (!grouped[grpKey]) grouped[grpKey] = []
+                    grouped[grpKey].push(t)
                 }
+            })
 
-                const opt       = document.createElement('option')
-                opt.value       = kode
-                opt.textContent = entry?.nama ?? kode
-                groups[golKode].appendChild(opt)
+            GRUP_ORDER.forEach(key => {
+                if (!grouped[key]?.length && !jumlahItems[key]) return
+                const grp = document.createElement('optgroup')
+                grp.label = GRUP_LABEL[key] ?? key
+                ;(grouped[key] ?? []).forEach(t => {
+                    const opt = document.createElement('option')
+                    opt.value = t; opt.textContent = data.data[t]?.nama ?? t
+                    grp.appendChild(opt)
+                })
+                if (jumlahItems[key]) {
+                    const opt = document.createElement('option')
+                    opt.value = jumlahItems[key]; opt.textContent = jumlahItems[key]
+                    grp.appendChild(opt)
+                }
+                sel.appendChild(grp)
             })
 
             sel.value = state.tarif || 'JUMLAH'
-
-            if (sel._csUpgraded) {
-                sel.dispatchEvent(new Event('change', { bubbles: true }))
-            }
         }
 
         const tarif    = state.tarif || 'JUMLAH'
         const selected = data.data?.[tarif]
         if (!selected) return
 
-        const sliceIdx        = (state.bulan && state.bulan !== 'all') ? parseInt(state.bulan) + 1 : 12
+        const sliceIdx        = (state.bulan && state.bulan !== 'all') ? Number.parseInt(state.bulan) + 1 : 12
         const labels          = this._getLabels()
         const slicedLabels    = labels.slice(0, sliceIdx)
         const slicedRencana   = selected.rencana.slice(0, sliceIdx)
@@ -220,7 +226,7 @@ export default class PendapatanBatamModule {
             btnMuat.addEventListener('click', () => { if (modalMuat) modalMuat.style.display = 'flex' })
             document.getElementById('btnBatalMuatPendapatan')?.addEventListener('click', () => { if (modalMuat) modalMuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiMuatPendapatan')?.addEventListener('click', async () => {
-                const tahun = parseInt(document.getElementById('muatTahunPendapatan')?.value)
+                const tahun = Number.parseInt(document.getElementById('muatTahunPendapatan')?.value)
                 if (modalMuat) modalMuat.style.display = 'none'
                 this._tahun = tahun
                 state.tahun = tahun
@@ -253,7 +259,7 @@ export default class PendapatanBatamModule {
             btnBuat.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'flex' })
             document.getElementById('btnBatalBuatPendapatan')?.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiBuatPendapatan')?.addEventListener('click', async () => {
-                const tahun = parseInt(document.getElementById('buatTahunPendapatan')?.value)
+                const tahun = Number.parseInt(document.getElementById('buatTahunPendapatan')?.value)
                 const tipe  = document.getElementById('buatTipePendapatan')?.value
                 if (modalBuat) modalBuat.style.display = 'none'
                 const csrf  = document.querySelector('meta[name="csrf-token"]')?.content

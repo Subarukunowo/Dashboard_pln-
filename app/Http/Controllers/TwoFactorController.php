@@ -9,17 +9,23 @@ use PragmaRX\Google2FA\Google2FA;
 
 class TwoFactorController extends Controller
 {
+    protected Google2FA $google2fa;
+
+    public function __construct(Google2FA $google2fa)
+    {
+        $this->google2fa = $google2fa;
+    }
+
     public function setup()
     {
-        $user      = Auth::user();
-        $google2fa = new Google2FA();
+        $user = Auth::user();
 
         if (!$user->two_factor_secret) {
-            $user->two_factor_secret = $google2fa->generateSecretKey();
+            $user->two_factor_secret = $this->google2fa->generateSecretKey();
             $user->save();
         }
 
-        $qrCodeUrl = $google2fa->getQRCodeUrl(
+        $qrCodeUrl = $this->google2fa->getQRCodeUrl(
             config('app.name'),
             $user->email,
             $user->two_factor_secret
@@ -33,14 +39,7 @@ class TwoFactorController extends Controller
 
     public function enable(Request $request)
     {
-        $request->validate(['otp' => 'required|digits:6']);
-
-        $user      = Auth::user();
-        $google2fa = new Google2FA();
-
-        if (!$google2fa->verifyKey($user->two_factor_secret, $request->otp)) {
-            return back()->withErrors(['otp' => 'Kode OTP tidak valid.']);
-        }
+        $user = $this->verifyOtpOrFail($request);
 
         $user->two_factor_enabled = true;
         $user->save();
@@ -49,52 +48,51 @@ class TwoFactorController extends Controller
 
         ActivityLogger::log('2fa_enabled', 'User mengaktifkan 2FA', null, $request);
 
-        $route = $user->hasRole('admin') ? 'admin.dashboard' : 'dashboard';
-        return redirect()->route($route)->with('success', '2FA berhasil diaktifkan.');
+        return redirect()->route($this->dashboardRoute($user))
+            ->with('success', '2FA berhasil diaktifkan.');
     }
 
     public function verify()
     {
-        // Kalau sudah verified di session, langsung redirect
         if (session('2fa_verified')) {
-            $user  = Auth::user();
-            $route = $user->hasRole('admin') ? 'admin.dashboard' : 'dashboard';
-            return redirect()->route($route);
+            return redirect()->route($this->dashboardRoute(Auth::user()));
         }
 
         return view('auth.two-factor-verify');
     }
 
-  public function check(Request $request)
-{
-    $request->validate(['otp' => 'required|digits:6']);
-
-    $user = Auth::user();
-    $google2fa = new Google2FA();
-
-    $valid = $google2fa->verifyKey($user->two_factor_secret, $request->otp);
-
-    if (!$valid) {
-        return back()->withErrors(['otp' => 'Kode OTP salah atau sudah kedaluwarsa.']);
-    }
-
-    // Set true secara eksplisit
-    session(['2fa_verified' => true]);
-
-    $redirectTo = $user->hasRole('admin') ? 'admin.dashboard' : 'dashboard';
-    return redirect()->route($redirectTo);
-}
-
-    public function disable(Request $request)
+    public function check(Request $request)
     {
         $request->validate(['otp' => 'required|digits:6']);
 
-        $user      = Auth::user();
-        $google2fa = new Google2FA();
+        $user    = Auth::user();
+        $lockKey = '2fa_attempts_' . $user->id;
 
-        if (!$google2fa->verifyKey($user->two_factor_secret, $request->otp)) {
-            return back()->withErrors(['otp' => 'Kode OTP tidak valid.']);
+        $attempts = cache()->get($lockKey, 0);
+
+        if ($attempts >= 5) {
+            $ttl   = cache()->getStore()->connection()->ttl(cache()->getPrefix() . $lockKey);
+            $menit = max(1, (int) ceil($ttl / 60));
+            return back()->withErrors(['otp' => "Terlalu banyak percobaan. Coba lagi dalam {$menit} menit."]);
         }
+
+        if (!$this->google2fa->verifyKey($user->two_factor_secret, $request->otp)) {
+            cache()->put($lockKey, $attempts + 1, now()->addMinutes(15));
+            $sisa = 4 - $attempts;
+            return back()->withErrors(['otp' => "Kode OTP salah. {$sisa} percobaan tersisa."]);
+        }
+
+        cache()->forget($lockKey);
+        session(['2fa_verified' => true]);
+
+        ActivityLogger::log('2fa_verified', 'User berhasil verifikasi 2FA', null, $request);
+
+        return redirect()->route($this->dashboardRoute($user));
+    }
+
+    public function disable(Request $request)
+    {
+        $user = $this->verifyOtpOrFail($request);
 
         $user->two_factor_enabled = false;
         $user->two_factor_secret  = null;
@@ -104,7 +102,28 @@ class TwoFactorController extends Controller
 
         ActivityLogger::log('2fa_disabled', 'User menonaktifkan 2FA', null, $request);
 
-        $route = $user->hasRole('admin') ? 'admin.dashboard' : 'dashboard';
-        return redirect()->route($route)->with('success', '2FA dinonaktifkan.');
+        return redirect()->route($this->dashboardRoute($user))
+            ->with('success', '2FA dinonaktifkan.');
+    }
+
+    /**
+     * Validasi OTP, kembalikan user kalau valid, abort dengan redirect kalau tidak.
+     */
+    protected function verifyOtpOrFail(Request $request)
+    {
+        $request->validate(['otp' => 'required|digits:6']);
+
+        $user = Auth::user();
+
+        if (!$this->google2fa->verifyKey($user->two_factor_secret, $request->otp)) {
+            abort(back()->withErrors(['otp' => 'Kode OTP tidak valid.']));
+        }
+
+        return $user;
+    }
+
+    protected function dashboardRoute($user): string
+    {
+        return $user->hasRole('admin') ? 'admin.dashboard' : 'dashboard';
     }
 }

@@ -6,13 +6,15 @@ use App\Repositories\RtFactPelangganRepository;
 
 class RtFactPelangganService extends BaseService
 {
+    private const PREFIX_JUMLAH = 'Jumlah ';
+
     protected array $golonganList = ['S', 'R', 'B', 'I', 'P', 'M'];
     protected array $golonganJumlahKode = [
         'S' => 'JUMLAH-S', 'R' => 'JUMLAH-R', 'B' => 'JUMLAH-B',
         'I' => 'JUMLAH-I', 'P' => 'JUMLAH-P', 'M' => 'JUMLAH-M',
     ];
 
-    public function __construct(RtFactPelangganRepository $repository)
+    public function __construct( RtFactPelangganRepository $repository)
     {
         parent::__construct($repository);
     }
@@ -61,13 +63,13 @@ class RtFactPelangganService extends BaseService
         $realisasiGolAkum = $this->pivotByGolonganJumlah($realisasiGolRowsLalu);
 
         foreach ($this->golonganList as $g) {
-            $key = 'Jumlah ' . $this->golonganNama($g) . ' (' . $g . ')';
+            $key = self::PREFIX_JUMLAH . $this->golonganNama($g) . ' (' . $g . ')';
             $targetGolAkum[$key]    = $targetGolAkum[$key]    ?? array_fill(0, 12, 0);
             $realisasiGolAkum[$key] = $realisasiGolAkum[$key] ?? array_fill(0, 12, 0);
         }
 
         $golongan = array_map(
-            fn ($g) => 'Jumlah ' . $this->golonganNama($g) . ' (' . $g . ')',
+            fn ($g) => self::PREFIX_JUMLAH . $this->golonganNama($g) . ' (' . $g . ')',
             $this->golonganList
         );
 
@@ -106,10 +108,12 @@ class RtFactPelangganService extends BaseService
 
         foreach ($rows as $row) {
             $kode = $row->sub_golongan_kode;
-            if (!isset($map[$kode])) continue;
+            if (!isset($map[$kode])) {
+                continue;
+            }
 
             $g   = $map[$kode];
-            $key = 'Jumlah ' . $this->golonganNama($g) . ' (' . $g . ')';
+            $key = self::PREFIX_JUMLAH . $this->golonganNama($g) . ' (' . $g . ')';
 
             if (!isset($result[$key])) {
                 $result[$key] = array_fill(0, 12, 0);

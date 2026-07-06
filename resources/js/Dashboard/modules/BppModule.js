@@ -31,15 +31,15 @@ export default class BppModule {
 
     async load(tahun = TAHUN_INI) {
         [this.data, this.hjrData, this.hjrCalculated] = await Promise.all([
-            this.service.getAllBpp(tahun),
-            this.service.getHjrAvg(tahun),
-            this.service.getHjrCalculated(tahun),
+            Promise.resolve(this.service.getAllBpp(tahun)),
+            Promise.resolve(this.service.getHjrAvg(tahun)),
+            Promise.resolve(this.service.getHjrCalculated(tahun)),
         ])
         // Deteksi fallback: cek tahun_efektif dari response jika ada
         const anyKey = this.data ? Object.keys(this.data)[0] : null
         const sample = anyKey ? this.data[anyKey] : null
         this._isFallback = sample?.tahun_efektif
-            ? parseInt(sample.tahun_efektif) < tahun
+            ? Number.parseInt(sample.tahun_efektif) < tahun
             : false
         this._tahun = tahun
     }
@@ -59,62 +59,68 @@ export default class BppModule {
     render(state) {
         if (!this.data) return
 
-        // Tampilkan / sembunyikan warning fallback
-        const warning = document.getElementById('bppFallbackWarning')
-        if (warning) warning.style.display = this._isFallback ? 'inline-block' : 'none'
+        this._toggleFallbackWarning()
 
         const data = this.data[state.type]
         if (!data) return
 
-        let kons          = [...data.konsolidasi]
-        let intl          = [...data.internal]
-        let displayLabels = this._getLabels()
-        let mode          = 'trend'
-
-        const hjrKey = this._getHjrKey(state.type)
-        let hjr = hjrKey && this.hjrData?.[hjrKey]
-            ? [...this.hjrData[hjrKey]]
-            : null
-
-        if (state.month !== 'all') {
-            const index   = parseInt(state.month)
-            kons          = [kons[index]]
-            intl          = [intl[index]]
-            hjr           = hjr ? [hjr[index]] : null
-            displayLabels = [displayLabels[index]]
-            mode          = 'single'
-        }
+        const { kons, intl, hjr, displayLabels, mode } = this._prepareDisplayData(data, state.month, state.type)
 
         this._renderTable(kons, intl, hjr, displayLabels)
-
-        // Chart utama: BPP Konsolidasi vs Internal (tanpa HJR)
         this.chart.render(kons, intl, null, displayLabels, mode)
+        this._renderHjrComparison(displayLabels, mode, state.month)
+        this._renderEditTable(state)
+    }
 
-        // Chart BPP vs HJR — BPP Distribusi TR vs HJR calculated (Pendapatan/Penjualan)
-        const bppTr  = this.data['BPP S.D DISTRIBUSI TR']
+    _toggleFallbackWarning() {
+        const warning = document.getElementById('bppFallbackWarning')
+        if (warning) warning.style.display = this._isFallback ? 'inline-block' : 'none'
+    }
+
+    _prepareDisplayData(data, month, type) {
+        const labels = this._getLabels()
+        const hjr = this._getHjrSeries(type)
+
+        return {
+            kons: this._applyMonthFilter([...data.konsolidasi], month),
+            intl: this._applyMonthFilter([...data.internal], month),
+            hjr: hjr ? this._applyMonthFilter(hjr, month) : null,
+            displayLabels: month === 'all' ? labels : [labels[Number.parseInt(month)]],
+            mode: month === 'all' ? 'trend' : 'single',
+        }
+    }
+
+    _getHjrSeries(type) {
+        const hjrKey = this._getHjrKey(type)
+        return hjrKey && this.hjrData?.[hjrKey]
+            ? [...this.hjrData[hjrKey]]
+            : null
+    }
+
+    _applyMonthFilter(values, month) {
+        if (month === 'all') return [...values]
+
+        const index = Number.parseInt(month)
+        return [values[index]]
+    }
+
+    _renderHjrComparison(displayLabels, mode, month) {
+        const bppTr = this.data['BPP S.D DISTRIBUSI TR']
         const hjrCal = this.hjrCalculated?.calculated ?? null
 
-        if (bppTr && hjrCal) {
-            let bppTrArr  = [...bppTr.konsolidasi]
-            let hjrCalArr = [...hjrCal]
-
-            if (state.month !== 'all') {
-                const idx = parseInt(state.month)
-                bppTrArr  = [bppTrArr[idx]]
-                hjrCalArr = [hjrCalArr[idx]]
-            }
-
-            const isFallback = this.hjrCalculated?.is_fallback ?? false
-            const hjrLabel   = isFallback
-                ? `HJR (${this.hjrCalculated.tahun_efektif}) — Pendapatan/Penjualan`
-                : 'HJR (Pendapatan ÷ Penjualan)'
-
-            this.chart.renderHjrComparison(bppTrArr, hjrCalArr, displayLabels, hjrLabel, mode)
-        } else {
+        if (!bppTr || !hjrCal) {
             this.chart.renderHjrComparison(null, null, displayLabels, 'HJR', mode)
+            return
         }
 
-        this._renderEditTable(state)
+        const bppTrArr = this._applyMonthFilter([...bppTr.konsolidasi], month)
+        const hjrCalArr = this._applyMonthFilter([...hjrCal], month)
+        const isFallback = this.hjrCalculated?.is_fallback ?? false
+        const hjrLabel = isFallback
+            ? `HJR (${this.hjrCalculated.tahun_efektif}) — Pendapatan/Penjualan`
+            : 'HJR (Pendapatan ÷ Penjualan)'
+
+        this.chart.renderHjrComparison(bppTrArr, hjrCalArr, displayLabels, hjrLabel, mode)
     }
 
     initFilters(state, onChange) {
@@ -155,10 +161,15 @@ export default class BppModule {
         }
 
         tbody.innerHTML = labels.map((label, i) => {
-            const hasInt     = internal[i] !== null && internal[i] !== undefined
-            const delta      = hasInt ? konsolidasi[i] - internal[i] : null
-            const deltaColor = delta === null ? '#888' : delta > 0 ? '#00ff88' : '#f44336'
-            const deltaText  = delta === null ? '—' : (delta > 0 ? '+' : '') + fmt(delta)
+            const hasInt = internal[i] !== null && internal[i] !== undefined
+            const delta  = hasInt ? konsolidasi[i] - internal[i] : null
+
+            let deltaColor = '#888'
+            let deltaText  = '—'
+            if (delta !== null) {
+                deltaColor = delta > 0 ? '#00ff88' : '#f44336'
+                deltaText  = (delta > 0 ? '+' : '') + fmt(delta)
+            }
 
             const hjrCell = hasHjr
                 ? `<td style="padding:8px; color:var(--accent-blue, #4fc3f7);">${fmt(hjr[i])}</td>`
@@ -182,123 +193,123 @@ export default class BppModule {
     }
 
     /** Tabel edit BPP — semua 4 kategori dengan tab switcher */
- _renderEditBpp() {
-    const container = document.getElementById('bppEditBppContainer')
-    const tabBar    = document.getElementById('bppTabBar')
-    if (!container || !this.data) return
+    _renderEditBpp() {
+        const container = document.getElementById('bppEditBppContainer')
+        const tabBar    = document.getElementById('bppTabBar')
+        if (!container || !this.data) return
 
-    const isReadOnly = this._tahun < TAHUN_INI
+        const isReadOnly = this._tahun < TAHUN_INI
 
-    const KATEGORI = [
-        { key: 'BPP PEMBANGKIT',        tipe: 'pembangkit',    label: 'Pembangkit' },
-        { key: 'BPP S.D TRANSMISI',      tipe: 'transmisi',     label: 'Transmisi' },
-        { key: 'BPP S.D DISTRIBUSI TM',  tipe: 'distribusi_tm', label: 'Distribusi TM' },
-        { key: 'BPP S.D DISTRIBUSI TR',  tipe: 'distribusi_tr', label: 'Distribusi TR' },
-    ]
+        const KATEGORI = [
+            { key: 'BPP PEMBANGKIT',        tipe: 'pembangkit',    label: 'Pembangkit' },
+            { key: 'BPP S.D TRANSMISI',      tipe: 'transmisi',     label: 'Transmisi' },
+            { key: 'BPP S.D DISTRIBUSI TM',  tipe: 'distribusi_tm', label: 'Distribusi TM' },
+            { key: 'BPP S.D DISTRIBUSI TR',  tipe: 'distribusi_tr', label: 'Distribusi TR' },
+        ]
 
-    if (!this._activeBppTab) this._activeBppTab = KATEGORI[0].tipe
-    const activeTab = this._activeBppTab
+        if (!this._activeBppTab) this._activeBppTab = KATEGORI[0].tipe
+        const activeTab = this._activeBppTab
 
-    if (tabBar) {
-        tabBar.innerHTML = KATEGORI.map(k => `
-            <button data-bpptab="${k.tipe}"
-                style="padding:5px 14px;border-radius:6px;border:none;cursor:pointer;font-size:0.72rem;font-weight:600;
-                       background:${k.tipe === activeTab ? 'var(--accent-orange,#ff9800)' : 'rgba(255,255,255,0.06)'};
-                       color:${k.tipe === activeTab ? '#000' : '#888'};transition:all 0.15s;">
-                ${k.label}
-            </button>`).join('')
+        if (tabBar) {
+            tabBar.innerHTML = KATEGORI.map(k => `
+                <button data-bpptab="${k.tipe}"
+                    style="padding:5px 14px;border-radius:6px;border:none;cursor:pointer;font-size:0.72rem;font-weight:600;
+                           background:${k.tipe === activeTab ? 'var(--accent-orange,#ff9800)' : 'rgba(255,255,255,0.06)'};
+                           color:${k.tipe === activeTab ? '#000' : '#888'};transition:all 0.15s;">
+                    ${k.label}
+                </button>`).join('')
 
-        // FIX: bind arrow function agar `this` tidak hilang
-        tabBar.querySelectorAll('[data-bpptab]').forEach(btn => {
-            btn.addEventListener('click', () => {
-                this._activeBppTab = btn.dataset.bpptab
-                this._renderEditBpp()
+            // FIX: bind arrow function agar `this` tidak hilang
+            tabBar.querySelectorAll('[data-bpptab]').forEach(btn => {
+                btn.addEventListener('click', () => {
+                    this._activeBppTab = btn.dataset.bpptab
+                    this._renderEditBpp()
+                })
+            })
+        }
+
+        const activeKat = KATEGORI.find(k => k.tipe === activeTab) ?? KATEGORI[0]
+        const d    = this.data[activeKat.key]
+
+        // FIX: debug jika data tidak ditemukan
+        if (!d) {
+            console.warn('[BppModule] Data tidak ditemukan untuk key:', activeKat.key, '| Keys tersedia:', Object.keys(this.data))
+            container.innerHTML = `<p style="color:#f44336;padding:12px;">Data untuk "${activeKat.label}" tidak ditemukan.</p>`
+            return
+        }
+
+        const kons = d.konsolidasi ?? new Array(12).fill(null)
+        const intl = d.internal    ?? new Array(12).fill(null)
+        const dis  = isReadOnly ? 'opacity:0.45;pointer-events:none;' : ''
+
+        const rows = BULAN_NAMA.map((bln, i) => {
+            const mkInput = (val, field, color) =>
+                `<input type="number" data-row="${i}" data-field="${field}"
+                    value="${val ?? ''}" placeholder="—" ${isReadOnly ? 'disabled' : ''}
+                    style="width:110px;padding:4px 6px;border-radius:4px;
+                           border:1px solid ${isReadOnly ? '#2a2a2a' : '#333'};
+                           background:#1a1a1a;color:${isReadOnly ? '#444' : color};
+                           font-size:0.75rem;text-align:right;" />`
+
+            return `<tr style="border-bottom:1px solid #2a2a2a;${dis}">
+                <td style="padding:7px 10px;color:#888;font-size:0.75rem;white-space:nowrap;">${bln}</td>
+                <td style="padding:4px 6px;">${mkInput(kons[i], 'nilai_konsolidasi', 'var(--accent-orange,#ff9800)')}</td>
+                <td style="padding:4px 6px;">${mkInput(intl[i], 'nilai_internal', 'var(--accent-green,#00ff88)')}</td>
+                <td style="padding:4px 6px;text-align:center;">
+                    <button id="btnSaveBpp_${activeKat.tipe}_${i}"
+                        ${isReadOnly ? 'disabled' : ''}
+                        style="padding:3px 10px;border-radius:4px;border:none;
+                               background:${isReadOnly ? '#2a2a2a' : '#ff9800'};
+                               color:${isReadOnly ? '#444' : '#000'};
+                               font-size:0.7rem;cursor:${isReadOnly ? 'not-allowed' : 'pointer'};font-weight:600;">
+                        ${isReadOnly ? '🔒' : 'Simpan'}
+                    </button>
+                </td>
+            </tr>`
+        }).join('')
+
+        container.innerHTML = `
+            <table style="width:100%;border-collapse:collapse;">
+                <thead style="position:sticky;top:0;background:#252525;z-index:1;">
+                    <tr style="font-size:0.65rem;text-transform:uppercase;">
+                        <th style="padding:8px 10px;color:#888;text-align:left;">Bulan</th>
+                        <th style="padding:8px 10px;color:var(--accent-orange,#ff9800);text-align:left;">BPP Konsolidasi</th>
+                        <th style="padding:8px 10px;color:var(--accent-green,#00ff88);text-align:left;">BPP Internal</th>
+                        <th style="padding:8px 10px;color:#aaa;text-align:center;">Aksi</th>
+                    </tr>
+                </thead>
+                <tbody>${rows}</tbody>
+            </table>`
+
+        if (isReadOnly) return
+
+        BULAN_NAMA.forEach((_, i) => {
+            const btn = document.getElementById(`btnSaveBpp_${activeKat.tipe}_${i}`)
+            if (!btn) return
+            btn.addEventListener('click', async () => {
+                btn.textContent = '⏳'
+                btn.disabled    = true
+                const inputs = container.querySelectorAll(`input[data-row="${i}"]`)
+                const values = {}
+                inputs.forEach(inp => { values[inp.dataset.field] = inp.value === '' ? null : Number.parseFloat(inp.value) })
+                try {
+                    const base = { tahun: this._tahun, bulan: i + 1, jenis_bpp: activeKat.tipe, is_triwulan: 0, is_akumulasi: 0, sumber: 'manual' }
+                    if (values.nilai_konsolidasi !== null)
+                        await upsert(API_BPP, { tahun: this._tahun, bulan: i + 1, jenis_bpp: activeKat.tipe, versi: 'konsolidasi' },
+                            { ...base, versi: 'konsolidasi', nilai_rpkwh: values.nilai_konsolidasi })
+                    if (values.nilai_internal !== null)
+                        await upsert(API_BPP, { tahun: this._tahun, bulan: i + 1, jenis_bpp: activeKat.tipe, versi: 'internal' },
+                            { ...base, versi: 'internal', nilai_rpkwh: values.nilai_internal })
+                    btn.textContent = '✓ OK'; btn.style.background = '#00ff88'
+                } catch {
+                    btn.textContent = '✗ Error'; btn.style.background = '#f44336'
+                } finally {
+                    btn.disabled = false
+                    setTimeout(() => { btn.textContent = 'Simpan'; btn.style.background = '#ff9800' }, 2000)
+                }
             })
         })
     }
-
-    const activeKat = KATEGORI.find(k => k.tipe === activeTab) ?? KATEGORI[0]
-    const d    = this.data[activeKat.key]
-
-    // FIX: debug jika data tidak ditemukan
-    if (!d) {
-        console.warn('[BppModule] Data tidak ditemukan untuk key:', activeKat.key, '| Keys tersedia:', Object.keys(this.data))
-        container.innerHTML = `<p style="color:#f44336;padding:12px;">Data untuk "${activeKat.label}" tidak ditemukan.</p>`
-        return
-    }
-
-    const kons = d.konsolidasi ?? new Array(12).fill(null)
-    const intl = d.internal    ?? new Array(12).fill(null)
-    const dis  = isReadOnly ? 'opacity:0.45;pointer-events:none;' : ''
-
-    const rows = BULAN_NAMA.map((bln, i) => {
-        const mkInput = (val, field, color) =>
-            `<input type="number" data-row="${i}" data-field="${field}"
-                value="${val ?? ''}" placeholder="—" ${isReadOnly ? 'disabled' : ''}
-                style="width:110px;padding:4px 6px;border-radius:4px;
-                       border:1px solid ${isReadOnly ? '#2a2a2a' : '#333'};
-                       background:#1a1a1a;color:${isReadOnly ? '#444' : color};
-                       font-size:0.75rem;text-align:right;" />`
-
-        return `<tr style="border-bottom:1px solid #2a2a2a;${dis}">
-            <td style="padding:7px 10px;color:#888;font-size:0.75rem;white-space:nowrap;">${bln}</td>
-            <td style="padding:4px 6px;">${mkInput(kons[i], 'nilai_konsolidasi', 'var(--accent-orange,#ff9800)')}</td>
-            <td style="padding:4px 6px;">${mkInput(intl[i], 'nilai_internal', 'var(--accent-green,#00ff88)')}</td>
-            <td style="padding:4px 6px;text-align:center;">
-                <button id="btnSaveBpp_${activeKat.tipe}_${i}"
-                    ${isReadOnly ? 'disabled' : ''}
-                    style="padding:3px 10px;border-radius:4px;border:none;
-                           background:${isReadOnly ? '#2a2a2a' : '#ff9800'};
-                           color:${isReadOnly ? '#444' : '#000'};
-                           font-size:0.7rem;cursor:${isReadOnly ? 'not-allowed' : 'pointer'};font-weight:600;">
-                    ${isReadOnly ? '🔒' : 'Simpan'}
-                </button>
-            </td>
-        </tr>`
-    }).join('')
-
-    container.innerHTML = `
-        <table style="width:100%;border-collapse:collapse;">
-            <thead style="position:sticky;top:0;background:#252525;z-index:1;">
-                <tr style="font-size:0.65rem;text-transform:uppercase;">
-                    <th style="padding:8px 10px;color:#888;text-align:left;">Bulan</th>
-                    <th style="padding:8px 10px;color:var(--accent-orange,#ff9800);text-align:left;">BPP Konsolidasi</th>
-                    <th style="padding:8px 10px;color:var(--accent-green,#00ff88);text-align:left;">BPP Internal</th>
-                    <th style="padding:8px 10px;color:#aaa;text-align:center;">Aksi</th>
-                </tr>
-            </thead>
-            <tbody>${rows}</tbody>
-        </table>`
-
-    if (isReadOnly) return
-
-    BULAN_NAMA.forEach((_, i) => {
-        const btn = document.getElementById(`btnSaveBpp_${activeKat.tipe}_${i}`)
-        if (!btn) return
-        btn.addEventListener('click', async () => {
-            btn.textContent = '⏳'
-            btn.disabled    = true
-            const inputs = container.querySelectorAll(`input[data-row="${i}"]`)
-            const values = {}
-            inputs.forEach(inp => { values[inp.dataset.field] = inp.value === '' ? null : parseFloat(inp.value) })
-            try {
-                const base = { tahun: this._tahun, bulan: i + 1, jenis_bpp: activeKat.tipe, is_triwulan: 0, is_akumulasi: 0, sumber: 'manual' }
-                if (values.nilai_konsolidasi !== null)
-                    await upsert(API_BPP, { tahun: this._tahun, bulan: i + 1, jenis_bpp: activeKat.tipe, versi: 'konsolidasi' },
-                        { ...base, versi: 'konsolidasi', nilai_rpkwh: values.nilai_konsolidasi })
-                if (values.nilai_internal !== null)
-                    await upsert(API_BPP, { tahun: this._tahun, bulan: i + 1, jenis_bpp: activeKat.tipe, versi: 'internal' },
-                        { ...base, versi: 'internal', nilai_rpkwh: values.nilai_internal })
-                btn.textContent = '✓ OK'; btn.style.background = '#00ff88'
-            } catch {
-                btn.textContent = '✗ Error'; btn.style.background = '#f44336'
-            } finally {
-                btn.disabled = false
-                setTimeout(() => { btn.textContent = 'Simpan'; btn.style.background = '#ff9800' }, 2000)
-            }
-        })
-    })
-}
 
     /** Tabel edit HJR — selalu tampilkan TR dan TM, tidak bergantung filter kategori */
     _renderEditHjr() {
@@ -374,7 +385,7 @@ export default class BppModule {
             btn.addEventListener('click', async () => {
                 btn.textContent = '⏳'; btn.disabled = true
                 const inp   = container.querySelector(`input[data-row="${i}"]`)
-                const nilai = inp?.value === '' ? null : parseFloat(inp?.value)
+                const nilai = inp?.value === '' ? null : Number.parseFloat(inp?.value)
                 try {
                     if (nilai !== null)
                         await upsert(API_HJR,
@@ -407,7 +418,7 @@ export default class BppModule {
                 if (modalMuat) modalMuat.style.display = 'none'
             })
             document.getElementById('btnKonfirmasiMuatBpp')?.addEventListener('click', async () => {
-                const tahun = parseInt(document.getElementById('muatTahunBpp')?.value)
+                const tahun = Number.parseInt(document.getElementById('muatTahunBpp')?.value)
                 if (modalMuat) modalMuat.style.display = 'none'
                 await this.load(tahun)
                 onChange()
@@ -450,7 +461,7 @@ export default class BppModule {
                 if (modalBuat) modalBuat.style.display = 'none'
             })
             document.getElementById('btnKonfirmasiBuatBpp')?.addEventListener('click', async () => {
-                const tahun   = parseInt(document.getElementById('buatTahunBpp')?.value)
+                const tahun   = Number.parseInt(document.getElementById('buatTahunBpp')?.value)
                 const tipeBpp = document.getElementById('buatTipeBpp')?.value
                 const csrf    = CSRF()
                 if (modalBuat) modalBuat.style.display = 'none'

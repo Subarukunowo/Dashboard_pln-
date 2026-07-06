@@ -14,7 +14,11 @@ class RtFactProduksiController extends BaseApiController
 
     public function index(Request $request): JsonResponse
     {
-        $filters = $request->only(['tahun', 'bulan']);
+        // tipe_losses ditambahkan supaya upsert() di CrudHelper.js bisa
+        // mencari record yang tepat (tahun+bulan+tipe_losses), bukan cuma
+        // tahun+bulan — karena sekarang 1 bulan bisa punya 2 varian data
+        // (dengan_emin & tanpa_emin).
+        $filters = $request->only(['tahun', 'bulan', 'tipe_losses']);
         $data    = $this->service->getPaginated($request->integer('per_page', 15), $filters);
 
         return $this->success($data);

@@ -1,4 +1,4 @@
-import { renderEditTable, upsert, deleteByFilter, TAHUN_INI } from '../utils/CrudHelper.js'
+import { renderEditTable, upsert, TAHUN_INI } from '../utils/CrudHelper.js'
 
 const LABELS     = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
 const API        = '/api/v1/fact/pelanggan'
@@ -60,7 +60,7 @@ export default class PelangganModule {
 
     initFilters(state, onChange) {
         document.getElementById('filterTarifPelanggan')?.addEventListener('change', e => { state.tarif = e.target.value;          onChange() })
-        document.getElementById('filterBulanPelanggan')?.addEventListener('change', e => { state.bulan = parseInt(e.target.value); onChange() })
+        document.getElementById('filterBulanPelanggan')?.addEventListener('change', e => { state.bulan = Number.parseInt(e.target.value); onChange() })
         this.#initCrud(state, onChange)
     }
 
@@ -251,8 +251,8 @@ export default class PelangganModule {
                 try {
                     await this.service.muatData(tahun, tipe)
                     modalMuat.style.display = 'none'
-                    this._tahun = parseInt(tahun)
-                    state.tahun = parseInt(tahun)
+                    this._tahun = Number.parseInt(tahun)
+                    state.tahun = Number.parseInt(tahun)
                     onChange()
                 } catch { alert('Gagal memuat data') }
             })
@@ -281,7 +281,7 @@ export default class PelangganModule {
             btnBuat.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'flex' })
             document.getElementById('btnBatalBuatPelanggan')?.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiBuatPelanggan')?.addEventListener('click', async () => {
-                const tahun = parseInt(document.getElementById('buatTahunPelanggan')?.value)
+                const tahun = Number.parseInt(document.getElementById('buatTahunPelanggan')?.value)
                 const tipe  = document.getElementById('buatTipePelanggan')?.value
                 if (modalBuat) modalBuat.style.display = 'none'
                 const csrf  = document.querySelector('meta[name="csrf-token"]')?.content

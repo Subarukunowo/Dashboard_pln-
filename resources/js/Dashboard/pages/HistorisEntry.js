@@ -1,4 +1,4 @@
-    /**
+/**
      * HistorisEntry.js — Entry Panel Handler (2026+)
      * Path: public/js/Dashboard/pages/HistorisEntry.js
      */
@@ -70,8 +70,8 @@
             getBulanName: num => Config.bulanNames[+num] || '',
 
             parseInteger: (val, fallback = null) => {
-                const n = parseInt(val, 10);
-                return isNaN(n) ? fallback : n;
+                const n = Number.parseInt(val, 10);
+                return Number.isNaN(n) ? fallback : n;
             },
 
             isValidDate: (tahun, bulan) =>
@@ -88,8 +88,8 @@
              * atau null jika input tidak valid.
              */
             convertVADisplay(vaValue) {
-                const num = parseFloat(vaValue);
-                if (isNaN(num) || vaValue === '' || vaValue === null || vaValue === undefined) {
+                const num = Number.parseFloat(vaValue);
+                if (Number.isNaN(num) || vaValue === '' || vaValue === null || vaValue === undefined) {
                     return null;
                 }
                 if (num >= 1_000_000) {
@@ -113,7 +113,7 @@
                     '.data-input[data-metrik-kode="daya_va"]'
                 ) ?? [];
                 const hasMVA = [...inputs].some(inp =>
-                    inp.value && parseFloat(inp.value) >= 1_000_000
+                    inp.value && Number.parseFloat(inp.value) >= 1_000_000
                 );
                 return hasMVA ? 'MVA' : 'KVA';
             },
@@ -185,25 +185,110 @@
 
         /* ─────────────────────────────────────────────────────────
         TABLE RENDERER
-        Synced dengan historis-components.css:
-            - col.c-metrik / col.c-satuan / col.c-data
-            - td.td-metrik / td.td-satuan / td.td-val
-            - input.data-input  (bukan .entry-input)
-            - data-metrik-kode  (bukan data-metrik / data-metrik-nama)
-            - th class .h-s/.h-r/.h-b/... untuk badge golongan
-
-        Khusus daya_va (autoConvertVA: true):
-            - Input tetap menerima dan menyimpan nilai mentah dalam VA.
-            - td.td-satuan berisi <span id="satuan-daya_va"> yang
-            menampilkan "KVA" atau "MVA" secara dinamis.
-            - Di bawah setiap input, teks hint kecil menampilkan
-            nilai hasil konversi (mis. "12,50 KVA") secara real-time.
-            - Tooltip input menampilkan nilai VA asli.
         ───────────────────────────────────────────────────────── */
+        /* Render satu cell input untuk metrik daya_va (auto-convert VA→KVA/MVA) */
+        function renderVACell(metric, gol, existingRows) {
+            const row      = existingRows.find(r => r.golongan_kode === gol.kode);
+            const nilai    = row?.nilai ?? '';
+            const hasValue = nilai !== '';
+            const conv     = hasValue ? Utils.convertVADisplay(nilai) : null;
+
+            return `
+                <td class="td-val">
+                    <input type="number" step="any"
+                        class="data-input${hasValue ? ' has-value' : ''}"
+                        data-metrik-kode="${metric.kode}"
+                        data-golongan="${gol.kode}"
+                        value="${hasValue ? nilai : ''}"
+                        placeholder="0"
+                        title="${hasValue ? `${Number(nilai).toLocaleString('id-ID')} VA` : ''}"
+                        ${State.isLocked ? 'disabled' : ''}>
+                    <span class="va-hint"
+                        data-golongan="${gol.kode}"
+                        style="display:block;font-size:0.72rem;
+                                color:var(--text-muted,#9e9e9e);
+                                margin-top:2px;text-align:right;
+                                min-height:1em;pointer-events:none;
+                                user-select:none;letter-spacing:0.01em;">
+                        ${conv ? `${conv.nilai} ${conv.satuan}` : ''}
+                    </span>
+                </td>`;
+        }
+
+        /* Render satu cell input untuk metrik biasa (non daya_va) */
+        function renderNormalCell(metric, gol, existingRows) {
+            const row      = existingRows.find(r => r.golongan_kode === gol.kode);
+            const nilai    = row?.nilai ?? '';
+            const hasValue = nilai !== '' && nilai !== null && nilai !== undefined;
+
+            return `
+                <td class="td-val">
+                    <input type="number" step="any"
+                        class="data-input${hasValue ? ' has-value' : ''}"
+                        data-metrik-kode="${metric.kode}"
+                        data-golongan="${gol.kode}"
+                        value="${hasValue ? nilai : ''}"
+                        placeholder="0"
+                        ${State.isLocked ? 'disabled' : ''}>
+                </td>`;
+        }
+
+        /* Render satu baris <tr> metrik (daya_va atau biasa) */
+        function renderMetricRow(metric, golongans, data) {
+            const existingRows = data?.[metric.kode] ?? [];
+
+            if (metric.autoConvertVA) {
+                const sampleVal  = existingRows.find(r => r.nilai != null)?.nilai ?? '';
+                const initSatuan = sampleVal == ''
+                    ? (Utils.convertVADisplay(sampleVal)?.satuan ?? 'KVA')
+                    : 'KVA';
+
+                const cells = golongans.map(gol => renderVACell(metric, gol, existingRows)).join('');
+
+                return `
+                    <tr>
+                        <td class="td-metrik">${metric.nama}</td>
+                        <td class="td-satuan">
+                            <span id="satuan-daya_va">${initSatuan}</span>
+                        </td>
+                        ${cells}
+                    </tr>`;
+            }
+
+            const cells = golongans.map(gol => renderNormalCell(metric, gol, existingRows)).join('');
+
+            return `
+                <tr>
+                    <td class="td-metrik">${metric.nama}</td>
+                    <td class="td-satuan">${metric.satuan}</td>
+                    ${cells}
+                </tr>`;
+        }
+
+        /* Handler untuk event 'input' pada tiap data-input (dipisah agar tidak nested) */
+        function handleDataInputChange() {
+            this.classList.toggle('has-value', this.value !== '');
+
+            if (this.dataset.metrikKode !== 'daya_va') return;
+
+            const conv = this.value === '' ? Utils.convertVADisplay(this.value) : null;
+
+            const hint = this.closest('td')?.querySelector('.va-hint');
+            if (hint) {
+                hint.textContent = conv ? `${conv.nilai} ${conv.satuan}` : '';
+            }
+
+            this.title = this.value
+                ? `${Number(this.value).toLocaleString('id-ID')} VA`
+                : '';
+
+            const satuanSpan = document.getElementById('satuan-daya_va');
+            if (satuanSpan) satuanSpan.textContent = Utils.dominantVASatuan();
+        }
+
         function buildEntryTable(data) {
             if (!DOM.entryThead || !DOM.entryTbody) return;
 
-            /* Ambil golongan dari chips yang ada di DOM */
             let golongans = [...document.querySelectorAll('.cb-golongan')].map(cb => ({
                 kode: cb.value,
                 nama: cb.closest('label')?.querySelector('.chip-text')?.textContent?.trim()
@@ -222,7 +307,6 @@
                 ];
             }
 
-            /* ── colgroup (lebar kolom terkontrol) ── */
             const existingColgroup = DOM.entryTbody.closest('table')?.querySelector('colgroup');
             if (existingColgroup) existingColgroup.remove();
 
@@ -235,7 +319,6 @@
                 table.prepend(cg);
             }
 
-            /* ── HEADER ── */
             DOM.entryThead.innerHTML = `
                 <tr>
                     <th class="h-metrik">Metrik</th>
@@ -250,109 +333,12 @@
                 </tr>
             `;
 
-            /* ── BODY ── */
-            DOM.entryTbody.innerHTML = Config.metrics.map(metric => {
+            DOM.entryTbody.innerHTML = Config.metrics
+                .map(metric => renderMetricRow(metric, golongans, data))
+                .join('');
 
-                const existingRows = data?.[metric.kode] ?? [];
-
-                /* ── DAYA VA: input biasa, kolom satuan & hint dikonversi otomatis ── */
-                if (metric.autoConvertVA) {
-
-                    /* Label satuan awal berdasarkan data yang sudah ada */
-                    const sampleVal   = existingRows.find(r => r.nilai != null)?.nilai ?? '';
-                    const initSatuan  = sampleVal !== ''
-                        ? (Utils.convertVADisplay(sampleVal)?.satuan ?? 'KVA')
-                        : 'KVA';
-
-                    const cells = golongans.map(gol => {
-                        const row      = existingRows.find(r => r.golongan_kode === gol.kode);
-                        const nilai    = row?.nilai ?? '';
-                        const hasValue = nilai !== '';
-                        const conv     = hasValue ? Utils.convertVADisplay(nilai) : null;
-
-                        return `
-                            <td class="td-val">
-                                <input type="number" step="any"
-                                    class="data-input${hasValue ? ' has-value' : ''}"
-                                    data-metrik-kode="${metric.kode}"
-                                    data-golongan="${gol.kode}"
-                                    value="${hasValue ? nilai : ''}"
-                                    placeholder="0"
-                                    title="${hasValue ? `${Number(nilai).toLocaleString('id-ID')} VA` : ''}"
-                                    ${State.isLocked ? 'disabled' : ''}>
-                                <span class="va-hint"
-                                    data-golongan="${gol.kode}"
-                                    style="display:block;font-size:0.72rem;
-                                            color:var(--text-muted,#9e9e9e);
-                                            margin-top:2px;text-align:right;
-                                            min-height:1em;pointer-events:none;
-                                            user-select:none;letter-spacing:0.01em;">
-                                    ${conv ? `${conv.nilai} ${conv.satuan}` : ''}
-                                </span>
-                            </td>`;
-                    }).join('');
-
-                    return `
-                        <tr>
-                            <td class="td-metrik">${metric.nama}</td>
-                            <td class="td-satuan">
-                                <span id="satuan-daya_va">${initSatuan}</span>
-                            </td>
-                            ${cells}
-                        </tr>`;
-                }
-
-                /* ── NORMAL: semua metrik lainnya ── */
-                const cells = golongans.map(gol => {
-                    const row      = existingRows.find(r => r.golongan_kode === gol.kode);
-                    const nilai    = row?.nilai ?? '';
-                    const hasValue = nilai !== '' && nilai !== null && nilai !== undefined;
-
-                    return `
-                        <td class="td-val">
-                            <input type="number" step="any"
-                                class="data-input${hasValue ? ' has-value' : ''}"
-                                data-metrik-kode="${metric.kode}"
-                                data-golongan="${gol.kode}"
-                                value="${hasValue ? nilai : ''}"
-                                placeholder="0"
-                                ${State.isLocked ? 'disabled' : ''}>
-                        </td>`;
-                }).join('');
-
-                return `
-                    <tr>
-                        <td class="td-metrik">${metric.nama}</td>
-                        <td class="td-satuan">${metric.satuan}</td>
-                        ${cells}
-                    </tr>`;
-            }).join('');
-
-            /* ── Input listeners ── */
             DOM.entryTbody.querySelectorAll('.data-input').forEach(input => {
-                input.addEventListener('input', function () {
-                    this.classList.toggle('has-value', this.value !== '');
-
-                    /* Real-time konversi untuk baris daya_va */
-                    if (this.dataset.metrikKode === 'daya_va') {
-                        const conv = this.value !== '' ? Utils.convertVADisplay(this.value) : null;
-
-                        /* Update hint di bawah input ini */
-                        const hint = this.closest('td')?.querySelector('.va-hint');
-                        if (hint) {
-                            hint.textContent = conv ? `${conv.nilai} ${conv.satuan}` : '';
-                        }
-
-                        /* Update tooltip */
-                        this.title = this.value
-                            ? `${Number(this.value).toLocaleString('id-ID')} VA`
-                            : '';
-
-                        /* Update label kolom satuan secara dominan */
-                        const satuanSpan = document.getElementById('satuan-daya_va');
-                        if (satuanSpan) satuanSpan.textContent = Utils.dominantVASatuan();
-                    }
-                });
+                input.addEventListener('input', handleDataInputChange);
             });
         }
 
@@ -413,8 +399,6 @@
 
         /* ─────────────────────────────────────────────────────────
         DATA SAVER
-        daya_va tetap disimpan dalam VA (satuan asli).
-        Konversi KVA/MVA hanya untuk tampilan, tidak ikut dikirim.
         ───────────────────────────────────────────────────────── */
         async function saveEntryData() {
             if (State.isLocked) {
@@ -432,8 +416,8 @@
 
             const entries = [];
             document.querySelectorAll('#entryTbody .data-input').forEach(input => {
-                const nilai = parseFloat(input.value);
-                if (!isNaN(nilai) && input.dataset.metrikKode && input.dataset.golongan) {
+                const nilai = Number.parseFloat(input.value);
+                if (!Number.isNaN(nilai) && input.dataset.metrikKode && input.dataset.golongan) {
                     entries.push({
                         metrik_kode:   input.dataset.metrikKode,
                         golongan_kode: input.dataset.golongan,
@@ -495,7 +479,7 @@
             if (State.isLocked) return;
             document.querySelectorAll('#entryTbody .data-input').forEach(input => {
                 input.value = value;
-                input.classList.toggle('has-value', value !== '');
+                input.classList.toggle('has-value', input.value !== '');
                 input.dispatchEvent(new Event('input', { bubbles: true }));
             });
             UI.setStatus('Semua field diisi dengan 0', 'info');
@@ -525,7 +509,7 @@
         /* ─────────────────────────────────────────────────────────
         PUBLIC API
         ───────────────────────────────────────────────────────── */
-        window.HistorisEntry = {
+        globalThis.HistorisEntry = {
             load:        loadEntryData,
             save:        saveEntryData,
             buildTable:  buildEntryTable,
@@ -535,20 +519,15 @@
             utils:       Utils,
         };
 
-        /* Backward compat */
-        window.entryBuildTable  = buildEntryTable;
-        window.loadEntryData    = loadEntryData;
-        window.saveEntryData    = saveEntryData;
-        window.toggleEntryPanel = () => UI.togglePanel();
+        globalThis.entryBuildTable  = buildEntryTable;
+        globalThis.loadEntryData    = loadEntryData;
+        globalThis.saveEntryData    = saveEntryData;
+        globalThis.toggleEntryPanel = () => UI.togglePanel();
 
-        /* ─────────────────────────────────────────────────────────
-        INIT
-        ───────────────────────────────────────────────────────── */
         function init() {
             cacheElements();
             bindEvents();
 
-            /* Sync chip checked state dari server-rendered HTML */
             document.querySelectorAll('.cb-golongan').forEach(cb => {
                 cb.closest('.hist-gol-chip')?.classList.toggle('checked', cb.checked);
             });

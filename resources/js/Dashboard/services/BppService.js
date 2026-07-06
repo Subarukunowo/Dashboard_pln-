@@ -1,9 +1,7 @@
 import { apiFetch } from '@/Dashboard/utils/apiClient'
 
 export default class BppService {
-    constructor() {
-        this.baseUrl = '/api/chart/bpp'
-    }
+    baseUrl = '/api/chart/bpp'
 
     async getAllBpp(tahun = new Date().getFullYear()) {
         try {

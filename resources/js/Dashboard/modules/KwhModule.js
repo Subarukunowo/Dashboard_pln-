@@ -8,8 +8,8 @@ export default class KwhModule {
         if (!data) return
 
         const akum     = state.view === 'akumulasi'
-        const filtered = state.bulan !== 'all'
-            ? data.slice(0, parseInt(state.bulan) + 1)
+        const filtered = state.bulan === 'all'
+            ? data.slice(0, Number.parseInt(state.bulan) + 1)
             : data
 
         this.chart.renderTargetRealisasi(filtered, akum)

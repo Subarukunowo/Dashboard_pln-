@@ -8,11 +8,10 @@ use App\Models\RtFactPenjualan;
 
 class RtFactHjrService extends BaseService
 {
-    public function __construct(RtFactHjrRepository $repository)
+     public function __construct(RtFactHjrRepository $repository)
     {
         parent::__construct($repository);
     }
-
     /**
      * Rata-rata HJR per bulan, dikelompokkan per tegangan (TR / TM).
      * Fallback ke tahun sebelumnya jika data tahun ini kosong.

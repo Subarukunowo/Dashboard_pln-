@@ -1,9 +1,9 @@
 import { apiFetch } from '@/Dashboard/utils/apiClient'
 
 export default class RpkwhService {
-    constructor() {
-        this.baseUrl = '/api/chart/rpkwh'
-    }
+   
+    baseUrl = '/api/chart/rpkwh'
+  
 
     async getData(tahun = new Date().getFullYear(), tahunLalu = null) {
         try {

@@ -27,7 +27,7 @@ export default class TunggakanModule {
         const source       = data.data
         const labels       = this._getLabels()
         const filtered     = (state.bulan && state.bulan !== 'all')
-            ? source.slice(0, parseInt(state.bulan) + 1) : source
+            ? source.slice(0, Number.parseInt(state.bulan) + 1) : source
         const slicedLabels = labels.slice(0, filtered.length)
 
         this.chart.make('chartTunggakanPendapatan', 'bar', slicedLabels, [
@@ -62,7 +62,7 @@ export default class TunggakanModule {
             btnBuat.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'flex' })
             document.getElementById('btnBatalBuatTunggakan')?.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiBuatTunggakan')?.addEventListener('click', async () => {
-                const tahun = parseInt(document.getElementById('tahunBuatTunggakan')?.value)
+                const tahun = Number.parseInt(document.getElementById('tahunBuatTunggakan')?.value)
                 try {
                     await this.service.createTahun(tahun)
                     if (modalBuat) modalBuat.style.display = 'none'
@@ -127,7 +127,7 @@ export default class TunggakanModule {
             'style="width:90px;padding:3px 5px;border-radius:4px;border:1px solid;font-size:0.74rem;text-align:right;' + disStyle + '">'
 
         tbody.innerHTML = source.map((r, i) => {
-            const ok = r.ratioTunggakan <= r.ratioTarget
+           
             return '<tr data-id="' + (r.id || '') + '">' +
                 '<td style="padding:6px 8px;color:#888;white-space:nowrap;">' + (labels[i] ?? r.bulan) + '</td>' +
                 '<td style="padding:3px 5px;">' + inp(r.palBerjalan,       'pal_berjalan')       + '</td>' +
@@ -158,7 +158,7 @@ export default class TunggakanModule {
                 const values = {}
                 inputs.forEach(inp => {
                     const raw = inp.value.replace(/[^\d.,-]/g, '').replace(',', '.')
-                    values[inp.dataset.field] = raw === '' ? null : parseFloat(raw)
+                    values[inp.dataset.field] = raw === '' ? null : Number.parseFloat(raw)
                 })
 
                 btn.textContent = '⏳'
@@ -175,7 +175,7 @@ export default class TunggakanModule {
                         if (!res.ok) throw new Error('PUT failed')
                     } else {
                         // Record belum ada, pakai upsert
-                        const bulan = parseInt(btn.dataset.row) + 1
+                        const bulan = Number.parseInt(btn.dataset.row) + 1
                         await upsert(API,
                             { tahun: this._tahun, bulan },
                             { tahun: this._tahun, bulan, sumber: 'manual', ...values }

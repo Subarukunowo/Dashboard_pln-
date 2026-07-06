@@ -1,4 +1,4 @@
-import { renderEditTable, upsert, deleteByFilter, TAHUN_INI } from '../utils/CrudHelper.js'
+import { renderEditTable, upsert, TAHUN_INI } from '../utils/CrudHelper.js'
 
 const LABELS     = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
 const COLORS     = ['#ff9800','#00ff88','#2196f3','#e91e63','#9c27b0','#00bcd4']
@@ -52,7 +52,7 @@ export default class RpkwhModule {
         if (!kwhData?.length) return
         const akum     = state.kwhView === 'akumulasi'
         const filtered = (state.kwhBulan !== undefined && state.kwhBulan !== 'all')
-            ? [kwhData[parseInt(state.kwhBulan)]] : kwhData
+            ? [kwhData[Number.parseInt(state.kwhBulan)]] : kwhData
 
         this.chart.renderKwhTargetRealisasi(filtered, akum)
         this.chart.renderKwhDelta(filtered, akum)
@@ -68,7 +68,7 @@ export default class RpkwhModule {
     _renderKwhMainTable(data, akum) {
         const tbody = document.getElementById('kwhTableBody')
         if (!tbody) return
-        const fmtGwh = v => v != null ? (v / 1_000_000).toFixed(2) + ' GWh' : '—'
+        const fmtGwh = v => v == null ? '—' : (v / 1_000_000).toFixed(2) + ' GWh'
         tbody.innerHTML = data.map(d => {
             const tLalu = akum ? d.targetAkum2024    : d.target2024
             const rLalu = akum ? d.realisasiAkum2024 : d.realisasi2024
@@ -76,13 +76,15 @@ export default class RpkwhModule {
             const rIni  = akum ? d.realisasiAkum2025 : d.realisasi2025
             const sel   = (rIni ?? 0) - (tIni ?? 0)
             const c     = sel >= 0 ? 'var(--accent-green)' : '#f44336'
+            const sign  = sel >= 0 ? '+' : ''
+            const selCell = sel === 0 ? '—' : sign + fmtGwh(sel)
             return '<tr>' +
                 '<td style="padding:8px 10px;color:#888;">' + d.bulan + '</td>' +
                 '<td style="padding:8px 10px;color:#555;text-align:right;">' + fmtGwh(tLalu) + '</td>' +
                 '<td style="padding:8px 10px;color:#2196f3;text-align:right;">' + fmtGwh(rLalu) + '</td>' +
                 '<td style="padding:8px 10px;color:#ff9800;text-align:right;">' + fmtGwh(tIni) + '</td>' +
                 '<td style="padding:8px 10px;color:var(--accent-green);text-align:right;">' + fmtGwh(rIni) + '</td>' +
-                '<td style="padding:8px 10px;color:' + c + ';font-weight:600;text-align:right;">' + (sel !== 0 ? (sel >= 0 ? '+' : '') + fmtGwh(sel) : '—') + '</td>' +
+                '<td style="padding:8px 10px;color:' + c + ';font-weight:600;text-align:right;">' + selCell + '</td>' +
                 '</tr>'
         }).join('')
     }
@@ -129,8 +131,8 @@ export default class RpkwhModule {
     _renderKwhRingkasanTable(data, akum) {
         const tbody = document.getElementById('tabelRingkasan')
         if (!tbody) return
-        const fmtGwh = v => v != null ? (v / 1_000_000).toFixed(2) : '—'
-        const fmtPct = v => v != null ? (v * 100).toFixed(1) + '%' : '—'
+        const fmtGwh = v => v == null ? '—' : (v / 1_000_000).toFixed(2)
+        const fmtPct = v => v == null ? '—' : (v * 100).toFixed(1) + '%'
         tbody.innerHTML = data.map(d => {
             const tLalu  = akum ? d.targetAkum2024    : d.target2024
             const rLalu  = akum ? d.realisasiAkum2024 : d.realisasi2024
@@ -170,7 +172,7 @@ export default class RpkwhModule {
             btnMuat.addEventListener('click', () => { if (modalMuat) modalMuat.style.display = 'flex' })
             document.getElementById('btnBatalMuatRpkwh')?.addEventListener('click', () => { if (modalMuat) modalMuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiMuatRpkwh')?.addEventListener('click', async () => {
-                const tahun = parseInt(document.getElementById('muatTahunRpkwh')?.value)
+                const tahun = Number.parseInt(document.getElementById('muatTahunRpkwh')?.value)
                 const tipe  = document.getElementById('muatTipeRpkwh')?.value
                 try {
                     await this.service?.muatData(tahun, tipe)
@@ -204,7 +206,7 @@ export default class RpkwhModule {
             btnBuat.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'flex' })
             document.getElementById('btnBatalBuatRpkwh')?.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiBuatRpkwh')?.addEventListener('click', async () => {
-                const tahun = parseInt(document.getElementById('buatTahunRpkwh')?.value)
+                const tahun = Number.parseInt(document.getElementById('buatTahunRpkwh')?.value)
                 const tipe  = document.getElementById('buatTipeRpkwh')?.value
                 if (modalBuat) modalBuat.style.display = 'none'
                 const csrf  = document.querySelector('meta[name="csrf-token"]')?.content
@@ -310,13 +312,12 @@ export default class RpkwhModule {
 
     _renderGolongan(data, state) {
         const akum   = state.view === 'akumulasi'
-        const idx    = (state.bulan && state.bulan !== 'all') ? parseInt(state.bulan) : 11
+        const idx    = (state.bulan && state.bulan !== 'all') ? Number.parseInt(state.bulan) : 11
         const is2024 = state.tahun === '2024'
-        const nilaiGol = (data.golongan ?? []).map(g =>
-            is2024
-                ? (akum ? (data.realisasiGolAkum?.[g]?.[idx] ?? 0) : (data.realisasiGolBul?.[g]?.[idx] ?? 0))
-                : (akum ? (data.targetGolAkum?.[g]?.[idx] ?? 0)    : (data.targetGolBul?.[g]?.[idx] ?? 0))
-        )
+        const nilaiGol = (data.golongan ?? []).map(g => {
+            if (is2024) return akum ? (data.realisasiGolAkum?.[g]?.[idx] ?? 0) : (data.realisasiGolBul?.[g]?.[idx] ?? 0)
+            return akum ? (data.targetGolAkum?.[g]?.[idx] ?? 0) : (data.targetGolBul?.[g]?.[idx] ?? 0)
+        })
         const judulEl = document.getElementById('judulPieRpkwh')
         if (judulEl) judulEl.textContent =
             (is2024 ? 'Realisasi' : 'Target') + ' RPKWH ' + state.tahun +
@@ -380,7 +381,7 @@ export default class RpkwhModule {
 
     _populateTarif(data, currentTarif) {
         const sel = document.getElementById('filterTarifRpkwh')
-        if (sel && sel.options.length === 0 && data.tarif) {
+        if (sel?.options.length === 0 && data.tarif) {
             data.tarif.forEach(t => {
                 const opt = document.createElement('option')
                 opt.value = t; opt.textContent = t

@@ -14,7 +14,7 @@ use App\Http\Controllers\StatsController;
 
 // ===== PUBLIC API =====
 Route::get('/api/dashboard/bpp', [DashboardController::class, 'bpp']);
-Route::post('/api/chatbot', [ChatbotController::class, 'ask']);
+Route::post('/api/chatbot', [ChatbotController::class, 'ask'])->middleware('throttle:chatbot');
 
 // ===== STATS API =====
 Route::get('/api/stats/{section}', [StatsController::class, 'show']);
@@ -39,14 +39,22 @@ Route::get('/language/{locale}', function ($locale) {
 // ===== GUEST ONLY =====
 Route::middleware('guest')->group(function () {
     Route::get('/login', fn() => view('auth.login'))->name('login');
-    Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])->name('auth.google');
-    Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback']);
+    // Rate limit: max 10 kali/menit per IP untuk OAuth redirect
+    Route::get('/auth/google', [AuthController::class, 'redirectToGoogle'])
+        ->middleware('throttle:google-oauth')
+        ->name('auth.google');
+    // Rate limit: max 10 kali/menit per IP untuk OAuth callback
+    Route::get('/auth/google/callback', [AuthController::class, 'handleGoogleCallback'])
+        ->middleware('throttle:google-oauth');
 });
 
 // ===== AUTH ONLY — 2FA + logout =====
 Route::middleware('auth')->group(function () {
 
-    Route::post('/logout', [AuthController::class, 'logout'])->name('logout');
+    // Rate limit logout: max 10 kali/menit (cegah session flooding)
+    Route::post('/logout', [AuthController::class, 'logout'])
+        ->middleware('throttle:logout')
+        ->name('logout');
 
     Route::get('/2fa/setup', function () {
         $user = auth()->user();
@@ -56,7 +64,9 @@ Route::middleware('auth')->group(function () {
         return app(TwoFactorController::class)->setup();
     })->name('2fa.setup');
 
-    Route::post('/2fa/enable',  [TwoFactorController::class, 'enable'])->name('2fa.enable');
+    Route::post('/2fa/enable',  [TwoFactorController::class, 'enable'])
+        ->middleware('throttle:2fa-verify')
+        ->name('2fa.enable');
 
     Route::get('/2fa/verify', function () {
         $user = auth()->user();
@@ -69,8 +79,13 @@ Route::middleware('auth')->group(function () {
         return app(TwoFactorController::class)->verify();
     })->name('2fa.verify');
 
-    Route::post('/2fa/check',   [TwoFactorController::class, 'check'])->name('2fa.check');
-    Route::post('/2fa/disable', [TwoFactorController::class, 'disable'])->name('2fa.disable');
+    // Rate limit 2FA check: max 5 kali/menit (brute-force protection)
+    Route::post('/2fa/check',   [TwoFactorController::class, 'check'])
+        ->middleware('throttle:2fa-verify')
+        ->name('2fa.check');
+    Route::post('/2fa/disable', [TwoFactorController::class, 'disable'])
+        ->middleware('throttle:2fa-verify')
+        ->name('2fa.disable');
 });
 
 // ===== AUTH + 2FA — User =====
@@ -124,6 +139,3 @@ Route::middleware(['auth'])->group(function () {
     Route::post('/fact-historis/import-excel',     [FactHistorisEntryController::class, 'importExcel'])->name('fact-historis.import-excel');
     Route::get('/fact-historis/download-template', [FactHistorisEntryController::class, 'downloadTemplate'])->name('fact-historis.download-template');
 });
-
-// ===== DEBUG (hapus di production!) =====
-// Route::get('/debug', ...) — DIHAPUS demi keamanan

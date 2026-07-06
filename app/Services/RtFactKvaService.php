@@ -12,7 +12,7 @@ class RtFactKvaService extends BaseService
         'I' => 'JUMLAH-I', 'P' => 'JUMLAH-P', 'M' => 'JUMLAH-M',
     ];
 
-    public function __construct(RtFactPelangganRepository $repository)
+    public function __construct( RtFactPelangganRepository $repository)
     {
         parent::__construct($repository);
     }
@@ -98,24 +98,26 @@ class RtFactKvaService extends BaseService
     }
 
     protected function pivotGolonganKva($rows): array
-    {
-        $result = [];
-        $map = array_flip($this->golonganJumlahKode);
+{
+    $result = [];
+    $map = array_flip($this->golonganJumlahKode);
 
-        foreach ($rows as $row) {
-            $kode = $row->sub_golongan_kode;
-            if (!isset($map[$kode])) continue;
-
-            $g   = $map[$kode];
-            $key = 'Jumlah ' . $this->golonganNama($g) . ' (' . $g . ')';
-
-            if (!isset($result[$key])) {
-                $result[$key] = array_fill(0, 12, 0);
-            }
-            $result[$key][$row->bulan - 1] = (float) ($row->nilai_kva ?? 0);
+    foreach ($rows as $row) {
+        $kode = $row->sub_golongan_kode;
+        if (!isset($map[$kode])) {
+            continue;
         }
-        return $result;
+
+        $g   = $map[$kode];
+        $key = 'Jumlah ' . $this->golonganNama($g) . ' (' . $g . ')';
+
+        if (!isset($result[$key])) {
+            $result[$key] = array_fill(0, 12, 0);
+        }
+        $result[$key][$row->bulan - 1] = (float) ($row->nilai_kva ?? 0);
     }
+    return $result;
+}
 
     protected function golonganNama(string $kode): string
     {

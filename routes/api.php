@@ -46,8 +46,8 @@ Route::middleware('internal.api')->group(function () {
         'timestamp' => now()->toISOString(),
     ]));
 
-    // Chart endpoints — diakses frontend dashboard
-    Route::prefix('chart')->group(function () {
+    // Chart endpoints — rate limited: max 60 request/menit per user/IP
+    Route::middleware('throttle:60,1')->prefix('chart')->group(function () {
         Route::get('bpp',       [RtFactBppController::class,       'chart']);
         Route::get('hjr',       [RtFactHjrController::class,       'chart']);
         Route::get('hjr/calculated', [RtFactHjrController::class, 'calculatedChart']);

@@ -6,7 +6,7 @@ use App\Repositories\RtFactPenjualanRepository;
 
 class RtFactPenjualanService extends BaseService
 {
-    public function __construct(RtFactPenjualanRepository $repository)
+    public function __construct( RtFactPenjualanRepository $repository)
     {
         parent::__construct($repository);
     }

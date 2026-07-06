@@ -72,7 +72,7 @@ class SheetsService {
 
     extractMonths(row, start = 6, total = 6) {
         return row.slice(start, start + total)
-                  .map(v => parseFloat(v) || 0)
+                  .map(v => Number.parseFloat(v) || 0)
     }
 
     /** Paksa invalidate cache — dipakai saat tahu data sudah berubah */

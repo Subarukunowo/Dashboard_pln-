@@ -34,19 +34,6 @@
             <div id="clock" style="color:var(--text-muted); font-size:0.72rem;"></div>
         </div>
     </div>
-    <div class="filters">
-        <select id="filterYear" aria-label="{{ __('dashboard.filter.tahun') }}">
-            <option value="2025">2025</option>
-        </select>
-        <select id="filterMonth" aria-label="{{ __('dashboard.filter.bulan') }}">
-            <option value="all">{{ __('dashboard.filter.semua_bulan') }}</option>
-            @foreach(range(0, 11) as $i)
-                <option value="{{ $i }}">
-                    {{ \Carbon\Carbon::create()->month($i + 1)->translatedFormat('F') }}
-                </option>
-            @endforeach
-        </select>
-    </div>
 </header>
 
 <div class="dashboard-layout" id="dashboardLayout">

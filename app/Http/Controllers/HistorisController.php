@@ -97,8 +97,12 @@ class HistorisController extends Controller
             ->toArray();
 
         // Tambahkan metrik YoY kalau data sumbernya tersedia di range ini
-        if (in_array('pelanggan', $kodes)) $kodes[] = 'pertumbuhan_yoy';
-        if (in_array('kwh_jual', $kodes))  $kodes[] = 'growth';
+        if (in_array('pelanggan', $kodes)) {
+            $kodes[] = 'pertumbuhan_yoy';
+        }
+        if (in_array('kwh_jual', $kodes)) {
+            $kodes[] = 'growth';
+        }
 
         return response()->json(
             DimMetrik::whereIn('kode', array_unique($kodes))
@@ -204,7 +208,9 @@ class HistorisController extends Controller
         $yoyValues = [];
 
         foreach ($totalPerTahun as $tahun => $nilaiIni) {
-            if ($tahun < $dari) continue;
+            if ($tahun < $dari) {
+                continue;
+            }
 
             $nilaiLalu = $totalPerTahun[$tahun - 1] ?? null;
 

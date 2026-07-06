@@ -1,9 +1,9 @@
 import { apiFetch } from '@/Dashboard/utils/apiClient'
 
 export default class TunggakanService {
-    constructor() {
-        this.baseUrl = '/api/chart/tunggakan'
-    }
+    
+    baseUrl = '/api/chart/tunggakan'
+    
 
     async getData(tahun = new Date().getFullYear()) {
         try {

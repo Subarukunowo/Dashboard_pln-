@@ -15,6 +15,7 @@ class RtFactLosses extends Model
         'is_akumulasi',
         'tipe_losses',
         'tipe',
+        'kategori',     // FIX: sebelumnya hilang — bikin upsert Target % gagal tersimpan
         'nilai_pct',
         'nilai_kwh',
         'sumber',

@@ -17,26 +17,30 @@ export default class GolTarifBatamModule {
             .map(o => o.textContent.trim())
     }
 
+    _getNilaiGol(data, g, idx, is2024, akum) {
+        if (is2024) {
+            return akum ? data.realisasi2024Akum[g][idx] : data.realisasi2024Bul[g][idx]
+        }
+        return akum ? data.target2025Akum[g][idx] : data.target2025Bul[g][idx]
+    }
+
     render(data, state) {
         if (!data) return
         this._data  = data
         this._tahun = TAHUN_INI
 
         const akum     = state.view === 'akumulasi'
-        const idx      = parseInt(state.bulan)
+        const idx      = Number.parseInt(state.bulan)
         const is2024   = state.tahun === '2024'
         const sliceIdx = (state.bulanRealisasi && state.bulanRealisasi !== 'all')
-            ? parseInt(state.bulanRealisasi) + 1 : 12
+            ? Number.parseInt(state.bulanRealisasi) + 1 : 12
 
         const labels       = this._getLabels('filterBulanPie')
         const slicedLabels = labels.slice(0, sliceIdx)
 
         // Section 1 — pie
-        const nilaiGol = data.golongan.map(g =>
-            is2024
-                ? (akum ? data.realisasi2024Akum[g][idx] : data.realisasi2024Bul[g][idx])
-                : (akum ? data.target2025Akum[g][idx]    : data.target2025Bul[g][idx])
-        )
+        const nilaiGol = data.golongan.map(g => this._getNilaiGol(data, g, idx, is2024, akum))
+
         const judulEl = document.getElementById('judulPie')
         if (judulEl) judulEl.textContent =
             (is2024 ? 'Realisasi' : 'Target') + ' Pendapatan ' + state.tahun +
@@ -98,11 +102,12 @@ export default class GolTarifBatamModule {
         const tbody = document.getElementById('tabelPieTarif')
         if (!tbody) return
         const total = nilaiGol.reduce((a, b) => a + b, 0)
+        const fmtM  = v => { const [i, d] = (v / 1000).toFixed(2).split('.'); return i.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + d }
         tbody.innerHTML = golongan.map((g, i) => {
             const pct = total ? ((nilaiGol[i] / total) * 100).toFixed(1) : '0.0'
             return '<tr>' +
                 '<td style="padding:8px 10px; color:#888; text-align:center;">' + g.replace(/ \(.\) ?/, '') + '</td>' +
-                '<td style="padding:8px 10px; text-align:center; color:var(--accent-green);">Rp ' + (nilaiGol[i] / 1000).toFixed(2) + 'M</td>' +
+                '<td style="padding:8px 10px; text-align:center; color:var(--accent-green);">Rp ' + fmtM(nilaiGol[i]) + 'M</td>' +
                 '<td style="padding:8px 10px; text-align:center; color:#aaa;">' + pct + '%</td>' +
                 '</tr>'
         }).join('')
@@ -111,13 +116,14 @@ export default class GolTarifBatamModule {
     _renderRealisasiTable(data, labels) {
         const tbody = document.getElementById('tabelRealisasi')
         if (!tbody) return
+        const fmtJ = v => { const [i, d] = (v / 1000).toFixed(2).split('.'); return i.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + d }
         tbody.innerHTML = data.map((d, i) => {
             const c = d.delta >= 0 ? '#00ff88' : '#f44336'
             return '<tr>' +
                 '<td style="padding:8px 10px; text-align:center;">' + (labels[i] ?? d.bulan) + '</td>' +
-                '<td style="padding:8px 10px; text-align:center; color:#ff9800;">Rp ' + (d.target / 1000).toFixed(2) + ' Jt</td>' +
-                '<td style="padding:8px 10px; text-align:center; color:#00ff88;">Rp ' + (d.realisasi / 1000).toFixed(2) + ' Jt</td>' +
-                '<td style="padding:8px 10px; text-align:center; color:' + c + ';">Rp ' + (d.delta / 1000).toFixed(2) + ' Jt</td>' +
+                '<td style="padding:8px 10px; text-align:center; color:#ff9800;">Rp ' + fmtJ(d.target) + ' Jt</td>' +
+                '<td style="padding:8px 10px; text-align:center; color:#00ff88;">Rp ' + fmtJ(d.realisasi) + ' Jt</td>' +
+                '<td style="padding:8px 10px; text-align:center; color:' + c + ';">Rp ' + fmtJ(d.delta) + ' Jt</td>' +
                 '<td style="padding:8px 10px; text-align:center; color:' + c + ';">' + (d.pencapaian * 100).toFixed(2) + '%</td>' +
                 '</tr>'
         }).join('')
@@ -126,10 +132,11 @@ export default class GolTarifBatamModule {
     _renderDeltaTable(labels, delta) {
         const tbody = document.getElementById('tabelDeltaRealisasi')
         if (!tbody) return
+        const fmtJ = v => { const [i, d] = (v / 1000).toFixed(2).split('.'); return i.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + d }
         tbody.innerHTML = labels.map((bln, i) =>
             '<tr>' +
             '<td style="padding:8px 10px; text-align:center; color:#888;">' + bln + '</td>' +
-            '<td style="padding:8px 10px; text-align:center; color:' + (delta[i] >= 0 ? '#00ff88' : '#f44336') + ';">Rp ' + (delta[i] / 1000).toFixed(2) + ' Jt</td>' +
+            '<td style="padding:8px 10px; text-align:center; color:' + (delta[i] >= 0 ? '#00ff88' : '#f44336') + ';">Rp ' + fmtJ(delta[i]) + ' Jt</td>' +
             '</tr>'
         ).join('')
     }
@@ -137,15 +144,16 @@ export default class GolTarifBatamModule {
     _renderTotalTable(t, labels) {
         const tbody = document.getElementById('tabelTotal')
         if (!tbody) return
+        const fmtT = v => { const [i, d] = (v / 1e9).toFixed(2).split('.'); return i.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + d }
         tbody.innerHTML = t.map((d, i) => {
             const c = d.deltaKwh >= 0 ? '#00ff88' : '#f44336'
             return '<tr>' +
                 '<td style="padding:8px 10px; text-align:center;">' + (labels[i] ?? d.bulan) + '</td>' +
-                '<td style="padding:8px 10px; text-align:center; color:#555;">Rp ' + (d.target2024 / 1e9).toFixed(2) + 'T</td>' +
-                '<td style="padding:8px 10px; text-align:center; color:#2196f3;">Rp ' + (d.realisasi2024 / 1e9).toFixed(2) + 'T</td>' +
-                '<td style="padding:8px 10px; text-align:center; color:#ff9800;">Rp ' + (d.target2025 / 1e9).toFixed(2) + 'T</td>' +
-                '<td style="padding:8px 10px; text-align:center; color:#00ff88;">Rp ' + (d.realisasi2025 / 1e9).toFixed(2) + 'T</td>' +
-                '<td style="padding:8px 10px; text-align:center; color:' + c + ';">Rp ' + (d.deltaKwh / 1e9).toFixed(2) + 'T</td>' +
+                '<td style="padding:8px 10px; text-align:center; color:#555;">Rp ' + fmtT(d.target2024) + 'T</td>' +
+                '<td style="padding:8px 10px; text-align:center; color:#2196f3;">Rp ' + fmtT(d.realisasi2024) + 'T</td>' +
+                '<td style="padding:8px 10px; text-align:center; color:#ff9800;">Rp ' + fmtT(d.target2025) + 'T</td>' +
+                '<td style="padding:8px 10px; text-align:center; color:#00ff88;">Rp ' + fmtT(d.realisasi2025) + 'T</td>' +
+                '<td style="padding:8px 10px; text-align:center; color:' + c + ';">Rp ' + fmtT(d.deltaKwh) + 'T</td>' +
                 '<td style="padding:8px 10px; text-align:center; color:' + c + ';">' + ((d.deltaPct - 1) * 100).toFixed(2) + '%</td>' +
                 '</tr>'
         }).join('')
@@ -154,10 +162,11 @@ export default class GolTarifBatamModule {
     _renderDeltaTotalTable(labels, delta) {
         const tbody = document.getElementById('tabelDeltaTotal')
         if (!tbody) return
+        const fmtT = v => { const [i, d] = (v / 1e9).toFixed(2).split('.'); return i.replace(/\B(?=(\d{3})+(?!\d))/g, '.') + ',' + d }
         tbody.innerHTML = labels.map((bln, i) =>
             '<tr>' +
             '<td style="padding:8px 10px; text-align:center; color:#888;">' + bln + '</td>' +
-            '<td style="padding:8px 10px; text-align:center; color:' + (delta[i] >= 0 ? '#00ff88' : '#f44336') + ';">Rp ' + (delta[i] / 1e9).toFixed(2) + 'T</td>' +
+            '<td style="padding:8px 10px; text-align:center; color:' + (delta[i] >= 0 ? '#00ff88' : '#f44336') + ';">Rp ' + fmtT(delta[i]) + 'T</td>' +
             '</tr>'
         ).join('')
     }
@@ -221,7 +230,7 @@ export default class GolTarifBatamModule {
 
                 // Recalculate turunan
                 d.delta     = (d.realisasi ?? 0) - (d.target ?? 0)
-                d.pencapaian = (d.target ?? 0) !== 0 ? (d.realisasi ?? 0) / d.target : 0
+                d.pencapaian = (d.target ?? 0) == 0 ? (d.realisasi ?? 0) / d.target : 0
 
                 // Re-render tabel view yang terpengaruh
                 const sliceIdx     = data.realisasiBulanan.length
@@ -308,10 +317,11 @@ export default class GolTarifBatamModule {
                 if (values.real_ini    !== null) d.realisasi2025 = values.real_ini
 
                 // Recalculate turunan
-                d.deltaKwh = (d.realisasi2025 ?? 0) - (d.target2025 ?? 0)
-                d.deltaPct = (d.target2025 ?? 0) !== 0
-                    ? ((d.realisasi2025 ?? 0) / d.target2025)
-                    : 1
+                const targetIni    = d.target2025 ?? 0
+                const realisasiIni = d.realisasi2025 ?? 0
+
+                d.deltaKwh = realisasiIni - targetIni
+                d.deltaPct = targetIni > 0 ? realisasiIni / targetIni : 1
 
                 const totalLabels  = this._getLabels('filterBulanPie').slice(0, data.total.length)
                 const t            = data.total
@@ -354,7 +364,7 @@ export default class GolTarifBatamModule {
             btnMuat.addEventListener('click', () => { if (modalMuat) modalMuat.style.display = 'flex' })
             document.getElementById('btnBatalMuatGolTarif')?.addEventListener('click', () => { if (modalMuat) modalMuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiMuatGolTarif')?.addEventListener('click', async () => {
-                const tahun = parseInt(document.getElementById('muatTahunGolTarif')?.value)
+                const tahun = Number.parseInt(document.getElementById('muatTahunGolTarif')?.value)
                 if (modalMuat) modalMuat.style.display = 'none'
                 this._tahun = tahun
                 state.tahun = String(tahun)
@@ -387,7 +397,7 @@ export default class GolTarifBatamModule {
             btnBuat.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'flex' })
             document.getElementById('btnBatalBuatGolTarif')?.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiBuatGolTarif')?.addEventListener('click', async () => {
-                const tahun = parseInt(document.getElementById('buatTahunGolTarif')?.value)
+                const tahun = Number.parseInt(document.getElementById('buatTahunGolTarif')?.value)
                 const tipe  = document.getElementById('buatTipeGolTarif')?.value
                 if (modalBuat) modalBuat.style.display = 'none'
                 const csrf  = document.querySelector('meta[name="csrf-token"]')?.content

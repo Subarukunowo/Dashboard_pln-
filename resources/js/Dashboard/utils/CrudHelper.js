@@ -78,7 +78,7 @@ export function renderEditTable(containerId, rows, isReadOnly, onSave, headers =
             const inputs    = container.querySelectorAll(`input[data-row="${ri}"]`)
             const values    = {}
             inputs.forEach(inp => {
-                values[inp.dataset.field] = inp.value === '' ? null : parseFloat(inp.value)
+                values[inp.dataset.field] = inp.value === '' ? null : Number.parseFloat(inp.value)
             })
             try {
                 await onSave(ri, values)

@@ -27,6 +27,14 @@ class AuthController extends Controller
      */
     public function handleGoogleCallback(Request $request)
     {
+        // Brute-force / scraping protection per IP
+        $ipKey    = 'oauth_cb_' . md5($request->ip());
+        $attempts = cache()->get($ipKey, 0);
+        if ($attempts >= 20) {
+            return redirect()->route('login')->with('error', 'Terlalu banyak percobaan. Coba lagi nanti.');
+        }
+        cache()->put($ipKey, $attempts + 1, now()->addMinutes(10));
+
         try {
             $googleUser = Socialite::driver('google')->stateless()->user();
 
@@ -53,6 +61,9 @@ class AuthController extends Controller
             }
 
             Auth::login($user, true);
+
+            // Reset IP attempt counter setelah login berhasil
+            cache()->forget('oauth_cb_' . md5($request->ip()));
 
             // Admin bypass device check
             if ($user->hasRole('admin')) {

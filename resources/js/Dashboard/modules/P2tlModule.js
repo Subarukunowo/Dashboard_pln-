@@ -16,7 +16,7 @@ export default class P2tlModule {
         this._tahun   = state.tahun ?? TAHUN_INI
 
         const filtered = (state.bulan && state.bulan !== 'all')
-            ? data.slice(0, parseInt(state.bulan) + 1)
+            ? data.slice(0, Number.parseInt(state.bulan) + 1)
             : data
         const labels = filtered.map(r => r.bulan)
 
@@ -132,7 +132,7 @@ export default class P2tlModule {
             btnMuat.addEventListener('click', () => { if (modalMuat) modalMuat.style.display = 'flex' })
             document.getElementById('btnBatalMuatP2tl')?.addEventListener('click', () => { if (modalMuat) modalMuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiMuatP2tl')?.addEventListener('click', async () => {
-                const tahun = parseInt(document.getElementById('muatTahunP2tl')?.value)
+                const tahun = Number.parseInt(document.getElementById('muatTahunP2tl')?.value)
                 if (modalMuat) modalMuat.style.display = 'none'
                 this._tahun = tahun
                 state.tahun = tahun
@@ -153,6 +153,7 @@ export default class P2tlModule {
                     await deleteByFilter(API, { tahun })
                     onChange()
                 } catch (e) {
+                    console.error('Gagal menghapus data P2TL:', e)
                     alert('Gagal menghapus data')
                 }
             })
@@ -165,7 +166,7 @@ export default class P2tlModule {
             btnBuat.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'flex' })
             document.getElementById('btnBatalBuatP2tl')?.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiBuatP2tl')?.addEventListener('click', async () => {
-                const tahun = parseInt(document.getElementById('buatTahunP2tl')?.value)
+                const tahun = Number.parseInt(document.getElementById('buatTahunP2tl')?.value)
                 if (modalBuat) modalBuat.style.display = 'none'
                 const csrf  = document.querySelector('meta[name="csrf-token"]')?.content
                 const heads = { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }

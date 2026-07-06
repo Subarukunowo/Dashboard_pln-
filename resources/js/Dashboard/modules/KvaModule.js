@@ -13,6 +13,9 @@ const getGrup = (t) => {
     return m?.[1] ?? 'LAIN'
 }
 
+const sumUpTo = (arr, upToIndex) => arr.slice(0, upToIndex + 1).reduce((a, b) => a + b, 0)
+const toAkum  = (arr) => arr.map((_, i) => sumUpTo(arr, i))
+
 export default class KvaModule {
     constructor(chart) {
         this.chart    = chart
@@ -37,7 +40,6 @@ export default class KvaModule {
         const rl   = data.realisasiData[state.tarif] || new Array(12).fill(0)
         const akum = state.view === 'akumulasi'
 
-        const toAkum = arr => arr.map((_, i) => arr.slice(0, i + 1).reduce((a, b) => a + b, 0))
         const displayR  = akum ? toAkum(r)  : r
         const displayRl = akum ? toAkum(rl) : rl
 
@@ -97,7 +99,7 @@ export default class KvaModule {
 
     initFilters(state, onChange) {
         document.getElementById('filterTarifKva')?.addEventListener('change', e => { state.tarif = e.target.value;          onChange() })
-        document.getElementById('filterBulanKva')?.addEventListener('change', e => { state.bulan = parseInt(e.target.value); onChange() })
+        document.getElementById('filterBulanKva')?.addEventListener('change', e => { state.bulan = Number.parseInt(e.target.value); onChange() })
         document.getElementById('filterViewKva')?.addEventListener('change',  e => { state.view  = e.target.value;          onChange() })
         this.#initCrud(state, onChange)
     }
@@ -289,10 +291,13 @@ export default class KvaModule {
         const bulanIdx   = state.bulan ?? 11
         const disStyle   = isReadOnly ? 'opacity:0.45; pointer-events:none;' : ''
 
+        const HEADER_COLORS = { 1: '#ff9800', 2: '#00ff88' }
+        const getHeaderColor = (i) => HEADER_COLORS[i] ?? '#888'
+
         const headers  = ['Golongan', 'Target Akum KVA', 'Realisasi Akum KVA']
         const headHtml = `<thead style="position:sticky;top:0;background:#252525;z-index:1;">
             <tr style="font-size:0.65rem;text-transform:uppercase;">
-                ${headers.map((h, i) => `<th style="padding:8px 10px;color:${i === 1 ? '#ff9800' : i === 2 ? '#00ff88' : '#888'};text-align:left;">${h}</th>`).join('')}
+                ${headers.map((h, i) => `<th style="padding:8px 10px;color:${getHeaderColor(i)};text-align:left;">${h}</th>`).join('')}
                 <th style="padding:8px 10px;color:#aaa;text-align:center;">Aksi</th>
             </tr>
         </thead>`
@@ -340,7 +345,7 @@ export default class KvaModule {
                 btn.textContent = '⏳'; btn.disabled = true
                 const inputs = container.querySelectorAll(`input[data-row="${ri}"]`)
                 const values = {}
-                inputs.forEach(inp => { values[inp.dataset.field] = inp.value === '' ? null : parseFloat(inp.value) })
+                inputs.forEach(inp => { values[inp.dataset.field] = inp.value === '' ? null : Number.parseFloat(inp.value) })
                 try {
                     const base = {
                         tahun: this._tahun, bulan: bulanIdx + 1,
@@ -397,7 +402,6 @@ export default class KvaModule {
                 const labels   = this.#getLabels()
                 const sliceIdx = (state.bulan ?? 11) + 1
                 const akum     = state.view === 'akumulasi'
-                const toAkum   = arr => arr.map((_, i) => arr.slice(0, i + 1).reduce((a, b) => a + b, 0))
                 const dR       = akum ? toAkum(targetArr)    : targetArr
                 const dRl      = akum ? toAkum(realisasiArr) : realisasiArr
                 const slicedR  = dR.slice(0, sliceIdx)
@@ -435,7 +439,7 @@ export default class KvaModule {
             btnMuat.addEventListener('click', () => { if (modalMuat) modalMuat.style.display = 'flex' })
             document.getElementById('btnBatalMuatKva')?.addEventListener('click', () => { if (modalMuat) modalMuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiMuatKva')?.addEventListener('click', async () => {
-                const tahun = parseInt(document.getElementById('muatTahunKva')?.value)
+                const tahun = Number.parseInt(document.getElementById('muatTahunKva')?.value)
                 if (modalMuat) modalMuat.style.display = 'none'
                 this._tahun = tahun
                 state.tahun = tahun
@@ -470,7 +474,7 @@ export default class KvaModule {
             btnBuat.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'flex' })
             document.getElementById('btnBatalBuatKva')?.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiBuatKva')?.addEventListener('click', async () => {
-                const tahun  = parseInt(document.getElementById('buatTahunKva')?.value)
+                const tahun  = Number.parseInt(document.getElementById('buatTahunKva')?.value)
                 const tipe   = document.getElementById('buatTipeKva')?.value
                 const subGol = document.getElementById('buatSubGolKva')?.value || 'JUMLAH'
                 if (modalBuat) modalBuat.style.display = 'none'

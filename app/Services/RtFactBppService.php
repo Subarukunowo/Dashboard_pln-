@@ -6,11 +6,11 @@ use App\Repositories\RtFactBppRepository;
 
 class RtFactBppService extends BaseService
 {
-    public function __construct(RtFactBppRepository $repository)
+     public function __construct( RtFactBppRepository $repository)
     {
         parent::__construct($repository);
     }
-
+    
     public function getAllChartData(int $tahun): array
     {
         $jenisList = ['pembangkit', 'transmisi', 'distribusi_tm', 'distribusi_tr'];
@@ -48,10 +48,10 @@ class RtFactBppService extends BaseService
             }
 
             $result[$labelMap[$jenis]] = [
-                'konsolidasi'  => $konsolidasi,
-                'internal'     => $internal,
-                'tahun_efektif'=> $tahunEfektif,
-                'is_fallback'  => !$hasData,
+                'konsolidasi'   => $konsolidasi,
+                'internal'      => $internal,
+                'tahun_efektif' => $tahunEfektif,
+                'is_fallback'   => !$hasData,
             ];
         }
 

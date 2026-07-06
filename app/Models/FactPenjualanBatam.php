@@ -5,7 +5,10 @@ namespace App\Models;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Builder;
-use App\Models\Dimension\{DimTahun, DimPeriode, DimGolonganTarif, DimMetrik};
+use App\Models\DimGolongan;
+use App\Models\DimMetrik;
+use App\Models\DimPeriode;
+use App\Models\DimTahun;
 
 class FactPenjualanBatam extends Model
 {
@@ -22,11 +25,7 @@ class FactPenjualanBatam extends Model
     /**
      * Relasi ke dimension tables
      */
-    public function tahun(): BelongsTo
-    {
-        return $this->belongsTo(DimTahun::class, 'dim_tahun_tahun', 'tahun');
-    }
-
+   
     public function periode(): BelongsTo
     {
         return $this->belongsTo(DimPeriode::class, 'dim_periode_id');
@@ -34,7 +33,7 @@ class FactPenjualanBatam extends Model
 
     public function golongan(): BelongsTo
     {
-        return $this->belongsTo(DimGolonganTarif::class, 'dim_golongan_tarif_id');
+        return $this->belongsTo(DimGolongan::class, 'dim_golongan_tarif_id');
     }
 
     public function metrik(): BelongsTo

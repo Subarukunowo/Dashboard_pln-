@@ -223,6 +223,7 @@
                         legend: {
                             labels: { color: '#bbb', font: { size: 11 }, padding: 16, usePointStyle: true }
                         },
+                        datalabels: { display: false },
                         tooltip: {
                             backgroundColor: '#1a1a1a', borderColor: '#333', borderWidth: 1,
                             titleColor: '#ccc', bodyColor: '#aaa', padding: 10,

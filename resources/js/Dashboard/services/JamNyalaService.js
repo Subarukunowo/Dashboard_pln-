@@ -1,9 +1,9 @@
 import { apiFetch } from '@/Dashboard/utils/apiClient'
 
 export default class JamNyalaService {
-    constructor() {
-        this.baseUrl = '/api/chart/jam-nyala'
-    }
+   
+    baseUrl = '/api/chart/jam-nyala'
+
 
     async getData(tahun = new Date().getFullYear(), tipe = 'realisasi') {
         try {

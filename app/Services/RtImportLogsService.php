@@ -7,7 +7,7 @@ use Illuminate\Pagination\LengthAwarePaginator;
 
 class RtImportLogsService extends BaseService
 {
-    public function __construct(protected RtImportLogsRepository $repository)
+    public function __construct(RtImportLogsRepository $repository)
     {
         parent::__construct($repository);
     }

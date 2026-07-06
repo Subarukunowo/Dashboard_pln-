@@ -6,7 +6,7 @@ use App\Repositories\RtFactP2tlRepository;
 
 class RtFactP2tlService extends BaseService
 {
-    public function __construct(RtFactP2tlRepository $repository)
+    public function __construct( RtFactP2tlRepository $repository)
     {
         parent::__construct($repository);
     }
