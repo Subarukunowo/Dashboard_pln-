@@ -17,18 +17,7 @@
         initialized:  false,
     };
 
-    const GROWTH_METRICS = ['pertumbuhan_yoy', 'growth'];
-
-    // Warna per kode golongan — dipakai chart DAN chip indicator
-    const GOL_COLORS = {
-        S:     '#00bcd4',
-        R:     '#00c853',
-        B:     '#ff9800',
-        I:     '#f44336',
-        P:     '#ce93d8',
-        M:     '#f06292',
-        TOTAL: '#ffc107',
-    };
+    const GROWTH_METRICS = new Set(['pertumbuhan_yoy', 'growth']);
 
     // ── DOM REFS ─────────────────────────────────────────────────────
     function el(id) { return document.getElementById(id); }
@@ -36,7 +25,7 @@
     // ── HELPERS ──────────────────────────────────────────────────────
 
     function isGrowth() {
-        return GROWTH_METRICS.includes(el('histMetrik')?.value?.toLowerCase() ?? '');
+        return GROWTH_METRICS.has(el('histMetrik')?.value?.toLowerCase() ?? '');
     }
 
     // ➕ NEW: Cek apakah metrik saat ini adalah daya_va
@@ -47,7 +36,7 @@
 
     // ➕ NEW: Konversi nilai VA → kVA hanya untuk display
     function toDisplayValue(v) {
-        if (v === null || v === undefined || isNaN(v)) return v;
+        if (v === null || v === undefined || Number.isNaN(v)) return v;
         return isDayaVA() ? v / 1000 : v;
     }
 
@@ -72,7 +61,7 @@
     }
 
     function formatNilai(v, satuan) {
-        if (v === null || v === undefined || isNaN(v)) return '—';
+        if (v === null || v === undefined || Number.isNaN(v)) return '—';
         
         // ➕ APPLY konversi VA→kVA sebelum format
         const displayVal = toDisplayValue(v);
@@ -92,9 +81,9 @@
     function hexToRgba(hex, alpha = 0.75) {
         if (!hex) return `rgba(255,255,255,${alpha})`;
         const c = hex.replace('#', '');
-        const r = parseInt(c.substring(0, 2), 16);
-        const g = parseInt(c.substring(2, 4), 16);
-        const b = parseInt(c.substring(4, 6), 16);
+        const r = Number.parseInt(c.substring(0, 2), 16);
+        const g = Number.parseInt(c.substring(2, 4), 16);
+        const b = Number.parseInt(c.substring(4, 6), 16);
         return `rgba(${r},${g},${b},${alpha})`;
     }
 
@@ -309,7 +298,7 @@
                         const v = d.data?.[i];
                         let cell = '<span style="color:#333">—</span>';
                         
-                        if (v != null && !isNaN(v)) {
+                        if (v != null && !Number.isNaN(v)) {
                             if (growth) {
                                 const c = v >= 0 ? '#00c853' : '#f44336';
                                 cell = `<span style="color:${c};font-weight:600;">${v >= 0 ? '+' : ''}${v.toFixed(2)}%</span>`;
@@ -468,11 +457,11 @@
 
     // ── PUBLIC API ────────────────────────────────────────────────────
 
-    window.HistorisChart = {
-        load: loadChart, render: renderChart, renderTable,
-        setChartType, showTable, hideTable,
-        getState: () => ({ ...State }),
-    };
+   globalThis.HistorisChart = {
+    load: loadChart, render: renderChart, renderTable,
+    setChartType, showTable, hideTable,
+    getState: () => ({ ...State }),
+};
 
     // ── INIT ──────────────────────────────────────────────────────────
 

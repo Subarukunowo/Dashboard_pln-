@@ -6,11 +6,13 @@ use App\Mail\DeviceRequestMail;
 use App\Models\User;
 use App\Models\UserDevice;
 use App\Helpers\ActivityLogger;
+use hisorange\BrowserDetect\Parser as Browser;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
 use Illuminate\Support\Facades\Mail;
 use Laravel\Socialite\Facades\Socialite;
+use Laravel\Socialite\Two\AbstractProvider;
 
 class AuthController extends Controller
 {
@@ -19,7 +21,9 @@ class AuthController extends Controller
      */
     public function redirectToGoogle()
     {
-        return Socialite::driver('google')->stateless()->redirect();
+        /** @var AbstractProvider $driver */
+        $driver = Socialite::driver('google');
+        return $driver->stateless()->redirect();
     }
 
     /**
@@ -27,74 +31,12 @@ class AuthController extends Controller
      */
     public function handleGoogleCallback(Request $request)
     {
-        // Brute-force / scraping protection per IP
-        $ipKey    = 'oauth_cb_' . md5($request->ip());
-        $attempts = cache()->get($ipKey, 0);
-        if ($attempts >= 20) {
+        if ($this->isRateLimited($request)) {
             return redirect()->route('login')->with('error', 'Terlalu banyak percobaan. Coba lagi nanti.');
         }
-        cache()->put($ipKey, $attempts + 1, now()->addMinutes(10));
 
         try {
-            $googleUser = Socialite::driver('google')->stateless()->user();
-
-            $user = User::where('email', $googleUser->getEmail())->first();
-
-            if ($user) {
-                $user->update([
-                    'google_id' => $googleUser->getId(),
-                    'avatar'    => $googleUser->avatar_original ?? $googleUser->getAvatar(),
-                ]);
-            } else {
-                $user = User::create([
-                    'google_id' => $googleUser->getId(),
-                    'name'      => $googleUser->getName(),
-                    'email'     => $googleUser->getEmail(),
-                    'avatar'    => $googleUser->avatar_original ?? $googleUser->getAvatar(),
-                    'password'  => bcrypt(str()->random(24)),
-                    'is_active' => true,
-                ]);
-            }
-
-            if (!$user->is_active) {
-                return $this->abortLogin('Akun Anda dinonaktifkan oleh admin.');
-            }
-
-            Auth::login($user, true);
-
-            // Reset IP attempt counter setelah login berhasil
-            cache()->forget('oauth_cb_' . md5($request->ip()));
-
-            // Admin bypass device check
-            if ($user->hasRole('admin')) {
-                ActivityLogger::log('login', 'Admin login via Google', ['email' => $user->email], $request);
-                return $this->redirectAfterLogin($user);
-            }
-
-            $token      = $this->getDeviceToken($request);
-            $deviceName = $this->getDeviceName($request);
-            $existing   = UserDevice::where('user_id', $user->id)->get();
-            $known      = $existing->firstWhere('device_token', $token);
-
-            if ($known) {
-                if ($known->status === 'approved') {
-                    $known->update([
-                        'ip_address'   => $request->ip(),
-                        'last_seen_at' => now(),
-                    ]);
-                    ActivityLogger::log('login', 'User login via Google', ['email' => $user->email], $request);
-                    return $this->redirectAfterLogin($user);
-                }
-
-                $message = $known->status === 'rejected'
-                    ? 'Perangkat ditolak: ' . ($known->reject_reason ?? 'Akses tidak diizinkan.')
-                    : 'Perangkat ini masih menunggu persetujuan admin.';
-
-                return $this->abortLogin($message, $known->status === 'pending' ? 'pending' : 'error');
-            }
-
-            return $this->handleNewDevice($request, $user, $existing, $token, $deviceName);
-
+            return $this->processGoogleCallback($request);
         } catch (\Exception $e) {
             Log::error('Google Auth Error', [
                 'message' => $e->getMessage(),
@@ -102,6 +44,112 @@ class AuthController extends Controller
             ]);
             return redirect()->route('login')->with('error', 'Terjadi kesalahan sistem saat login.');
         }
+    }
+
+    /**
+     * Proses utama setelah callback Google diterima
+     */
+    private function processGoogleCallback(Request $request)
+    {
+        /** @var AbstractProvider $driver */
+        $driver     = Socialite::driver('google');
+        $googleUser = $driver->stateless()->user();
+        $user       = $this->findOrCreateUser($googleUser);
+
+        if (!$user->is_active) {
+            return $this->abortLogin('Akun Anda dinonaktifkan oleh admin.');
+        }
+
+        Auth::login($user, true);
+        $this->clearRateLimit($request);
+
+        if ($user->hasRole('admin')) {
+            ActivityLogger::log('login', 'Admin login via Google', ['email' => $user->email], $request);
+            return $this->redirectAfterLogin($user);
+        }
+
+        return $this->handleDeviceCheck($request, $user);
+    }
+
+    /**
+     * Cek rate limit per IP untuk callback OAuth
+     */
+    private function isRateLimited(Request $request): bool
+    {
+        $ipKey    = 'oauth_cb_' . hash('sha256', $request->ip());
+        $attempts = cache()->get($ipKey, 0);
+
+        if ($attempts >= 20) {
+            return true;
+        }
+
+        cache()->put($ipKey, $attempts + 1, now()->addMinutes(10));
+        return false;
+    }
+
+    /**
+     * Reset counter rate limit setelah login berhasil
+     */
+    private function clearRateLimit(Request $request): void
+    {
+        cache()->forget('oauth_cb_' . hash('sha256', $request->ip()));
+    }
+
+    /**
+     * Cari user berdasarkan email Google, atau buat baru jika belum ada
+     */
+    private function findOrCreateUser($googleUser): User
+    {
+        $user = User::where('email', $googleUser->getEmail())->first();
+
+        if ($user) {
+            $user->update([
+                'google_id' => $googleUser->getId(),
+                'avatar'    => $googleUser->avatar_original ?? $googleUser->getAvatar(),
+            ]);
+            return $user;
+        }
+
+        return User::create([
+            'google_id' => $googleUser->getId(),
+            'name'      => $googleUser->getName(),
+            'email'     => $googleUser->getEmail(),
+            'avatar'    => $googleUser->avatar_original ?? $googleUser->getAvatar(),
+            'password'  => bcrypt(str()->random(24)),
+            'is_active' => true,
+        ]);
+    }
+
+    /**
+     * Cek status device (known/baru) dan tentukan alur login
+     */
+    private function handleDeviceCheck(Request $request, User $user)
+    {
+        $token      = $this->getDeviceToken($request);
+        $deviceName = $this->getDeviceName();
+        $existing   = UserDevice::where('user_id', $user->id)->get();
+
+        /** @var UserDevice|null $known */
+        $known = $existing->firstWhere('device_token', $token);
+
+        if (!$known) {
+            return $this->handleNewDevice($request, $user, $existing, $token, $deviceName);
+        }
+
+        if ($known->status === 'approved') {
+            $known->update([
+                'ip_address'   => $request->ip(),
+                'last_seen_at' => now(),
+            ]);
+            ActivityLogger::log('login', 'User login via Google', ['email' => $user->email], $request);
+            return $this->redirectAfterLogin($user);
+        }
+
+        $message = $known->status === 'rejected'
+            ? 'Perangkat ditolak: ' . ($known->reject_reason ?? 'Akses tidak diizinkan.')
+            : 'Perangkat ini masih menunggu persetujuan admin.';
+
+        return $this->abortLogin($message, $known->status === 'pending' ? 'pending' : 'error');
     }
 
     /**
@@ -193,22 +241,22 @@ class AuthController extends Controller
         );
     }
 
-    private function getDeviceName(Request $request): string
+    private function getDeviceName(): string
     {
-        if (\Browser::isMobile() || \Browser::isTablet()) {
-            $vendor   = \Browser::deviceFamily();
-            $model    = \Browser::deviceModel();
+        if (Browser::isMobile() || Browser::isTablet()) {
+            $vendor   = Browser::deviceFamily();
+            $model    = Browser::deviceModel();
             $fullName = trim($vendor . ' ' . $model);
 
             if ($fullName && !str_contains(strtolower($fullName), 'unknown')) {
                 return $fullName;
             }
 
-            return \Browser::platformName() . ' Mobile Device';
+            return Browser::platformName() . ' Mobile Device';
         }
 
-        $os      = \Browser::platformName() ?: 'Windows/macOS';
-        $browser = \Browser::browserName() ?: 'Browser';
+        $os      = Browser::platformName() ?: 'Windows/macOS';
+        $browser = Browser::browserName() ?: 'Browser';
 
         return "Laptop/PC ($os) — $browser";
     }

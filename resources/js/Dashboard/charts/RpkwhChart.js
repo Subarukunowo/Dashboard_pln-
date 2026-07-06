@@ -51,14 +51,16 @@ export default class RpkwhChart extends BaseChart {
      * @param {boolean} akum
      */
     renderKwhDelta(data, akum) {
-        this.make('chartDelta', 'bar', LABELS, [
-            {
-                label           : 'Delta KWH',
-                data            : data.map(d => akum ? d.deltaAkumKwh : d.deltaKwh),
-                backgroundColor : data.map(d => (akum ? d.deltaAkumKwh : d.deltaKwh) >= 0 ? '#00ff88' : '#f44336'),
-            },
-        ], v => (v / 1_000_000).toFixed(2) + ' GWh')
-    }
+    const values = data.map(d => akum ? d.deltaAkumKwh : d.deltaKwh);
+
+    this.make('chartDelta', 'bar', LABELS, [
+        {
+            label           : 'Delta KWH',
+            data            : values,
+            backgroundColor : values.map(v => v >= 0 ? '#00ff88' : '#f44336'),
+        },
+    ], v => (v / 1_000_000).toFixed(2) + ' GWh')
+}
 
     /**
      * Chart garis % Pencapaian Target dan Realisasi.

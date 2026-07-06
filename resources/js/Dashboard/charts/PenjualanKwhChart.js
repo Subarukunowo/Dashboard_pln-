@@ -12,15 +12,17 @@ export default class PenjualanKwhChart extends BaseChart {
         ], v => (v / 1_000_000).toFixed(2) + ' GWh')
     }
 
-    renderDelta(data, akum) {
-        this.make('chartDelta', 'bar', LABELS, [
-            {
-                label: 'Delta KWH',
-                data:  data.map(d => akum ? d.deltaAkumKwh : d.deltaKwh),
-                backgroundColor: data.map(d => (akum ? d.deltaAkumKwh : d.deltaKwh) >= 0 ? '#00ff88' : '#f44336'),
-            },
-        ], v => (v / 1_000_000).toFixed(2) + ' GWh')
-    }
+renderDelta(data, akum) {
+    const getValue = d => akum ? d.deltaAkumKwh : d.deltaKwh;
+
+    this.make('chartDelta', 'bar', LABELS, [
+        {
+            label: 'Delta KWH',
+            data:  data.map(getValue),
+            backgroundColor: data.map(d => getValue(d) >= 0 ? '#00ff88' : '#f44336'),
+        },
+    ], v => (v / 1_000_000).toFixed(2) + ' GWh')
+}
 
     renderPencapaian(data) {
         this.make('chartPencapaian', 'line', LABELS, [
