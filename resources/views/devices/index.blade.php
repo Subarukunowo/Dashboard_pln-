@@ -39,7 +39,7 @@
                     @endif
                 </div>
                 <div class="device-meta">
-                    IP: {{ $device->ip_address }} · 
+                    IP: {{ $device->ip_address }} ·
                     Terakhir aktif: {{ $device->last_seen_at->diffForHumans() }}
                 </div>
             </div>

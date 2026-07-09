@@ -84,15 +84,34 @@ Route::prefix('v1')->middleware(['internal.api', 'auth:sanctum'])->group(functio
     Route::apiResource('fact/babin',       RtFactBabinController::class);
     Route::apiResource('fact/bpp',         RtFactBppController::class);
     Route::apiResource('fact/hjr',         RtFactHjrController::class);
-    Route::apiResource('fact/jam-nyala',   RtFactJamNyalaController::class);
     Route::apiResource('fact/losses',      RtFactLossesController::class);
     Route::apiResource('rt-fact-produksi', RtFactProduksiController::class);
     Route::apiResource('fact/p2tl',        RtFactP2tlController::class);
-    Route::apiResource('fact/pelanggan',   RtFactPelangganController::class);
+
+    Route::post('fact/pelanggan/buat-tahun', [RtFactPelangganController::class, 'buatTahun']);
+    Route::apiResource('fact/pelanggan',     RtFactPelangganController::class);
+
     Route::apiResource('fact/pendapatan',  RtFactPendapatanController::class);
+    Route::post('fact/penjualan/buat-tahun', [RtFactPenjualanController::class, 'buatTahun']);
     Route::apiResource('fact/penjualan',   RtFactPenjualanController::class);
-    Route::apiResource('fact/rpkwh',       RtFactRpkwhController::class);
+
+    Route::post('fact/rpkwh/buat-tahun', [RtFactRpkwhController::class, 'buatTahun']);
+    Route::apiResource('fact/rpkwh',     RtFactRpkwhController::class);
+
+    // ── Jam Nyala — route khusus HARUS sebelum apiResource (hindari konflik {id}) ──
+    Route::get('fact/jam-nyala/tahun-tersedia', [RtFactJamNyalaController::class, 'tahunTersedia']);
+    Route::get('fact/jam-nyala/detail',         [RtFactJamNyalaController::class, 'detail']);
+    Route::post('fact/jam-nyala/buat-tahun',    [RtFactJamNyalaController::class, 'buatTahun']);
+    Route::get('fact/jam-nyala/summary',        [RtFactJamNyalaController::class, 'summary']);
+    Route::apiResource('fact/jam-nyala',        RtFactJamNyalaController::class);   // ← cuma sekali di sini
+
+    Route::post('fact/kva/buat-tahun',    [RtFactKvaController::class, 'buatTahun']);
+    Route::post('fact/kva/hapus-tahun',   [RtFactKvaController::class, 'destroyByFilter']);
+    Route::post('fact/kva/update-nilai',  [RtFactKvaController::class, 'updateNilai']);
+
     Route::apiResource('fact/tunggakan',   RtFactTunggakanController::class);
+    Route::post('fact/tunggakan/create-tahun', [RtFactTunggakanController::class, 'createTahun']);
+Route::apiResource('fact/tunggakan',   RtFactTunggakanController::class);
 
     Route::apiResource('import-logs', RtImportLogsController::class)
         ->except(['update']);

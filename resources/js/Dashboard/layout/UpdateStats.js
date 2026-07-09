@@ -23,10 +23,10 @@ const fmt = {
         if (abs >= 1_000_000_000)     return sign + 'Rp ' + (abs / 1_000_000_000).toFixed(2) + ' M'
         return sign + 'Rp ' + (abs / 1_000_000).toFixed(2) + ' jt'
     },
-    pct    : v => parseFloat(v).toFixed(2) + '%',
-    pctDiff: v => (v >= 0 ? '+' : '') + parseFloat(v).toFixed(4) + '%',
-    jam    : v => parseFloat(v).toFixed(2) + ' jam',
-    jamDiff: v => (v >= 0 ? '+' : '') + parseFloat(v).toFixed(2) + ' jam',
+    pct    : v => Number.parseFloat(v).toFixed(2) + '%',
+    pctDiff: v => (v >= 0 ? '+' : '') + Number.parseFloat(v).toFixed(4) + '%',
+    jam    : v => Number.parseFloat(v).toFixed(2) + ' jam',
+    jamDiff: v => (v >= 0 ? '+' : '') + Number.parseFloat(v).toFixed(2) + ' jam',
     rpkwh  : v => 'Rp ' + Number(Math.round(v)).toLocaleString('id-ID') + '/kWh',
     rpkwhDiff: v => (v >= 0 ? '+' : '') + 'Rp ' + Number(Math.round(Math.abs(v))).toLocaleString('id-ID') + '/kWh',
     kva    : v => Number(Math.round(v)).toLocaleString('id-ID') + ' kVA',
@@ -44,10 +44,18 @@ const color = {
 }
 
 // ── DOM helpers ───────────────────────────────────────────────────────────────
-function setHTML(id, html)  { const el = document.getElementById(id); if (el) el.innerHTML = html }
-function setText(id, text)  { const el = document.getElementById(id); if (el) el.textContent = text }
-function setLoading(ids)    { ids.forEach(id => setHTML(id, '<span style="color:#555;font-size:0.8rem;">Memuat...</span>')) }
-function setError(ids)      { ids.forEach(id => setHTML(id, '<span style="color:#f44336;font-size:0.75rem;">—</span>')) }
+function setHTML(id, html) {
+    const el = document.getElementById(id)
+    if (!el) { console.warn('[Stats] DOM element not found:', id); return }
+    el.innerHTML = html
+}
+function setText(id, text) {
+    const el = document.getElementById(id)
+    if (!el) { console.warn('[Stats] DOM element not found:', id); return }
+    el.textContent = text
+}
+function setLoading(ids) { ids.forEach(id => setHTML(id, '<span style="color:#555;font-size:0.8rem;">Memuat...</span>')) }
+function setError(ids)   { ids.forEach(id => setHTML(id, '<span style="color:#f44336;font-size:0.75rem;">—</span>')) }
 
 // ── MoM helper ────────────────────────────────────────────────────────────────
 /**
@@ -62,7 +70,7 @@ function momHTML(selisih, pct, fmtFn, positifBagus = true, bulan) {
     const c      = selisih === 0 ? color.muted : (good ? color.green : color.red)
     const icon   = selisih > 0 ? '▲' : selisih < 0 ? '▼' : '–'
     const pctStr = pct !== null && pct !== undefined
-        ? ` <span style="font-size:0.72rem;color:${color.sub};">(${pct >= 0 ? '+' : ''}${parseFloat(pct).toFixed(1)}%)</span>`
+        ? ` <span style="font-size:0.72rem;color:${color.sub};">(${pct >= 0 ? '+' : ''}${Number.parseFloat(pct).toFixed(1)}%)</span>`
         : ''
     return `<span style="color:${c};">${icon} ${fmtFn(selisih)}</span>${pctStr}`
 }
@@ -87,9 +95,14 @@ function setFallbackBadge(isFallback, periodLabel) {
 
 // ── Fetch ─────────────────────────────────────────────────────────────────────
 async function fetchStats(section, tahun, bulan) {
-    const res = await fetch(`/api/stats/${section}?tahun=${tahun}&bulan=${bulan}`)
+    const url = `/api/stats/${section}?tahun=${tahun}&bulan=${bulan}`
+    console.log('[Stats] fetch →', url)
+    const res = await fetch(url)
+    console.log('[Stats] response:', res.status, res.ok ? 'OK' : 'ERROR')
     if (!res.ok) throw new Error(`/api/stats/${section} → ${res.status}`)
-    return res.json()
+    const json = await res.json()
+    console.log('[Stats] data received for', section, ':', json)
+    return json
 }
 
 // ── Renderers ─────────────────────────────────────────────────────────────────

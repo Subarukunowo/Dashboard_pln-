@@ -11,6 +11,7 @@ use App\Models\RtFactP2tl;
 use App\Models\RtFactPelanggan;
 use App\Models\RtFactPendapatan;
 use App\Models\RtFactPenjualan;
+use App\Models\RtFactProduksi;
 use App\Models\RtFactRpkwh;
 use App\Models\RtFactTunggakan;
 use App\Repositories\Contracts\StatsRepositoryInterface;
@@ -31,7 +32,9 @@ class StatsRepository implements StatsRepositoryInterface
                     'fallback_label' => $offset > 0 ? "data dari tahun $t" : null];
             }
             $lb = $model::where('tahun', $t);
-            foreach ($extra as $k => $v) $lb->where($k, $v);
+            foreach ($extra as $k => $v) {
+                $lb->where($k, $v);
+            }
             $maxBulan = $lb->max('bulan');
             if ($maxBulan !== null) {
                 return ['tahun' => $t, 'bulan' => (int) $maxBulan,
@@ -45,7 +48,9 @@ class StatsRepository implements StatsRepositoryInterface
     private function queryExists(string $model, int $tahun, int $bulan, array $extra): bool
     {
         $q = $model::where('tahun', $tahun)->where('bulan', $bulan);
-        foreach ($extra as $k => $v) $q->where($k, $v);
+        foreach ($extra as $k => $v) {
+            $q->where($k, $v);
+        }
         return $q->exists();
     }
 
@@ -64,8 +69,66 @@ class StatsRepository implements StatsRepositoryInterface
 
     private function selisihPct(float $now, float $prev): ?float
     {
-        if ($prev == 0) return null;
+        if ($prev == 0) {
+            return null;
+        }
         return round((($now - $prev) / abs($prev)) * 100, 2);
+    }
+
+    // =========================================================================
+    // LOSSES JARINGAN — helper hitung dari rt_fact_produksi
+    // ── CATATAN REVISI ───────────────────────────────────────────────────────
+    // Sejak refactor arsitektur losses, rt_fact_losses TIDAK LAGI menyimpan
+    // baris realisasi (tipe='realisasi') — nilai kWh & % losses sekarang
+    // dihitung langsung dari data produksi mentah di rt_fact_produksi.
+    // Satu-satunya nilai yang tetap disimpan manual di rt_fact_losses adalah
+    // Target % (kategori='jaringan', tipe='target').
+    // Rumus di bawah ini SAMA PERSIS dengan RtFactLossesService::buildSource().
+    // =========================================================================
+    private function hitungLossesJaringanPct(int $tahun, int $bulan, string $tipeLosses = 'dengan_emin'): float
+    {
+        $p = RtFactProduksi::where('tahun', $tahun)->where('bulan', $bulan)
+                ->where('tipe_losses', $tipeLosses)->first();
+
+        if (!$p) {
+            return 0.0;
+        }
+
+        $prodNetto = (float) ($p->prod_netto ?? 0);
+        $psGi      = (float) ($p->ps_gi ?? 0);
+        $interkon  = (float) ($p->interkoneksi ?? 0);
+        $psDist    = (float) ($p->ps_distribusi ?? 0);
+        $kirimLain = (float) ($p->blkg_padang ?? 0) + (float) ($p->sembulang ?? 0)
+                   + (float) ($p->buluh ?? 0) + (float) ($p->p_nguan ?? 0);
+        $penjualan = (float) ($p->penjualan_tul3_09 ?? 0);
+
+        $lossesJarKwh = $prodNetto - $psGi - $interkon - $psDist - $kirimLain - $penjualan;
+
+        return $prodNetto != 0 ? round(($lossesJarKwh / $prodNetto) * 100, 4) : 0.0;
+    }
+
+    private function hitungLossesJaringanAkumPct(int $tahun, int $bulan, string $tipeLosses = 'dengan_emin'): float
+    {
+        $rows = RtFactProduksi::where('tahun', $tahun)->where('bulan', '<=', $bulan)
+                    ->where('tipe_losses', $tipeLosses)->get();
+
+        $akumLosses = 0.0;
+        $akumNetto  = 0.0;
+
+        foreach ($rows as $p) {
+            $prodNetto = (float) ($p->prod_netto ?? 0);
+            $psGi      = (float) ($p->ps_gi ?? 0);
+            $interkon  = (float) ($p->interkoneksi ?? 0);
+            $psDist    = (float) ($p->ps_distribusi ?? 0);
+            $kirimLain = (float) ($p->blkg_padang ?? 0) + (float) ($p->sembulang ?? 0)
+                       + (float) ($p->buluh ?? 0) + (float) ($p->p_nguan ?? 0);
+            $penjualan = (float) ($p->penjualan_tul3_09 ?? 0);
+
+            $akumLosses += $prodNetto - $psGi - $interkon - $psDist - $kirimLain - $penjualan;
+            $akumNetto  += $prodNetto;
+        }
+
+        return $akumNetto != 0 ? round(($akumLosses / $akumNetto) * 100, 4) : 0.0;
     }
 
     // =========================================================================
@@ -99,38 +162,38 @@ class StatsRepository implements StatsRepositoryInterface
     }
 
     // =========================================================================
-    // LOSSES: jaringan realisasi, akumulasi realisasi, selisih MoM
+    // LOSSES: jaringan realisasi, target %, selisih MoM
+    // ── REVISI ────────────────────────────────────────────────────────────
+    // Ketersediaan data & nilai realisasi sekarang dicek/dihitung dari
+    // rt_fact_produksi (bukan rt_fact_losses dengan tipe='realisasi', yang
+    // sudah tidak pernah diisi lagi sejak refactor). Target tetap diambil
+    // dari rt_fact_losses (kategori='jaringan', tipe='target') — satu-
+    // satunya nilai losses yang masih disimpan manual di sana.
     // =========================================================================
     public function getLossesStats(int $tahun, int $bulan): array
     {
-        $r = $this->resolveYearBulan(RtFactLosses::class, $tahun, $bulan,
-                ['tipe' => 'realisasi', 'tipe_losses' => 'dengan_emin', 'is_akumulasi' => 0]);
+        $r = $this->resolveYearBulan(RtFactProduksi::class, $tahun, $bulan,
+                ['tipe_losses' => 'dengan_emin']);
         [$t, $b] = [$r['tahun'], $r['bulan']];
         $prev = $this->prevMonth($t, $b);
 
-        $curReal  = RtFactLosses::where('tahun', $t)->where('bulan', $b)
-                        ->where('is_akumulasi', 0)->where('tipe', 'realisasi')->where('tipe_losses', 'dengan_emin')
-                        ->pluck('nilai_pct', 'kategori');
-        $curAkum  = RtFactLosses::where('tahun', $t)->where('bulan', $b)
-                        ->where('is_akumulasi', 1)->where('tipe', 'realisasi')->where('tipe_losses', 'dengan_emin')
-                        ->pluck('nilai_pct', 'kategori');
-        $lastReal = RtFactLosses::where('tahun', $prev['tahun'])->where('bulan', $prev['bulan'])
-                        ->where('is_akumulasi', 0)->where('tipe', 'realisasi')->where('tipe_losses', 'dengan_emin')
-                        ->pluck('nilai_pct', 'kategori');
+        $jaringan     = $this->hitungLossesJaringanPct($t, $b);
+        $akumulasi    = $this->hitungLossesJaringanAkumPct($t, $b);
+        $prevJaringan = $this->hitungLossesJaringanPct($prev['tahun'], $prev['bulan']);
 
-        $jaringan     = (float) ($curReal['jaringan'] ?? 0);
-        $akumulasi    = (float) ($curAkum['jaringan'] ?? 0);
-        $prevJaringan = (float) ($lastReal['jaringan'] ?? 0);
+        $target = (float) RtFactLosses::where('tahun', $t)->where('bulan', $b)
+                    ->where('tipe', 'target')->where('kategori', 'jaringan')
+                    ->where('tipe_losses', 'dengan_emin')->where('is_triwulan', 0)->where('is_akumulasi', 0)
+                    ->value('nilai_pct') ?? 0;
 
         return [
-            'realisasi'   => $jaringan,
-            'target'      => $akumulasi,
-            'mom_selisih' => $jaringan - $prevJaringan,
-            'mom_pct'     => $this->selisihPct($jaringan, $prevJaringan),
-            'losses_transmisi'  => (float) ($curReal['transmisi'] ?? 0),
-            'losses_distribusi' => (float) ($curReal['distribusi'] ?? 0),
-            'is_fallback' => $r['is_fallback'],
-            'period'      => $this->periodLabel($t, $b, $r['fallback_label']),
+            'realisasi'      => $jaringan,
+            'target'         => $target,
+            'mom_selisih'    => $jaringan - $prevJaringan,
+            'mom_pct'        => $this->selisihPct($jaringan, $prevJaringan),
+            'losses_akumulasi' => $akumulasi,
+            'is_fallback'    => $r['is_fallback'],
+            'period'         => $this->periodLabel($t, $b, $r['fallback_label']),
         ];
     }
 

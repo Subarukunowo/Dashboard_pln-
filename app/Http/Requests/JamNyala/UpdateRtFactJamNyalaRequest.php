@@ -19,7 +19,7 @@ class UpdateRtFactJamNyalaRequest extends FormRequest
             'is_triwulan'    => ['sometimes', 'boolean'],
             'is_akumulasi'   => ['sometimes', 'boolean'],
             'tipe'           => ['sometimes', 'string', 'max:50'],
-            'golongan_kode'  => ['sometimes', 'string', 'max:20'],
+            'golongan_kode'  => ['sometimes', 'string', 'max:40'],
             'nilai_jam'      => ['sometimes', 'numeric', 'min:0'],
             'pct_pencapaian' => ['nullable', 'numeric'],
             'sumber'         => ['nullable', 'string', 'max:100'],

@@ -20,7 +20,7 @@ class StoreRtFactPenjualanRequest extends FormRequest
             'is_akumulasi'     => ['required', 'boolean'],
             'tipe'             => ['required', 'string', 'max:50'],
             'sub_golongan_kode'=> ['nullable', 'string', 'max:20'],
-            'golongan_kode'    => ['required', 'string', 'max:20'],
+            'golongan_kode'    => ['nullable', 'string', 'max:20'],
             'nilai_kwh'        => ['required', 'numeric', 'min:0'],
             'nilai_kwh_lalu'   => ['nullable', 'numeric', 'min:0'],
             'pct_pencapaian'   => ['nullable', 'numeric'],

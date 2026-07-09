@@ -14,7 +14,7 @@ class RtFactTunggakanController extends BaseApiController
 
     public function index(Request $request): JsonResponse
     {
-        $filters = $request->only(['tahun', 'bulan', 'sumber']);
+        $filters = $request->only(['tahun', 'bulan', 'tipe', 'sumber']);
         $data    = $this->service->getPaginated($request->integer('per_page', 15), $filters);
 
         return $this->success($data);
@@ -53,6 +53,17 @@ class RtFactTunggakanController extends BaseApiController
         $tahun = $request->integer('tahun', now()->year);
 
         return $this->success($this->service->getChartData($tahun));
+    }
+
+    public function createTahun(Request $request): JsonResponse
+    {
+        $request->validate([
+            'tahun' => 'required|integer|min:2000|max:2100',
+        ]);
+
+        $this->service->createTahun($request->integer('tahun'));
+
+        return $this->success(null, 'Data tunggakan tahun baru berhasil dibuat (realisasi & target)');
     }
 
     public function destroyByFilter(Request $request): JsonResponse

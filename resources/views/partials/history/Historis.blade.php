@@ -32,7 +32,9 @@
             </div>
         </div>
 
-        <div class="filter-controls" role="group" aria-label="Filter data historis">
+        <fieldset class="filter-controls">
+            <legend class="sr-only">Filter data historis</legend>
+
             <div class="filter-group filter-group--wide">
                 <label class="hist-label" for="histMetrik">Metrik</label>
                 <select id="histMetrik" class="hist-select">
@@ -76,7 +78,7 @@
             <button id="histBtnGenerate" class="hist-btn-primary" type="button">
                 <i class="fas fa-chart-line"></i> Generate
             </button>
-        </div>
+        </fieldset>
 
         <div id="histWarning" class="hist-warning-box" role="alert" style="display:none;"></div>
     </section>
@@ -90,7 +92,8 @@
             </span>
         </div>
 
-        <div class="golongan-chips" role="group" aria-label="Pilihan golongan tarif">
+        <fieldset class="golongan-chips">
+            <legend class="sr-only">Pilihan golongan tarif</legend>
             @php
                 $golonganColors = [
                     'S'     => 'gol-sosial',
@@ -115,7 +118,7 @@
                     <span class="chip-indicator"></span>
                 </label>
             @endforeach
-        </div>
+        </fieldset>
     </section>
 
     {{-- SECTION 3: CHART --}}
@@ -125,17 +128,19 @@
                 <h3 id="chart-title" class="card-title">—</h3>
                 <span class="text-muted" id="histChartSubtitle"></span>
             </div>
-            <div class="chart-controls" role="group" aria-label="Tipe visualisasi">
+            <fieldset class="chart-controls">
+                <legend class="sr-only">Tipe visualisasi</legend>
                 <button class="hist-btn-sm active" data-chart-type="bar"  id="histBtnBar"  type="button">Bar</button>
                 <button class="hist-btn-sm"        data-chart-type="line" id="histBtnLine" type="button">Line</button>
                 <button class="hist-btn-sm" id="histBtnTable" type="button">
                     <i class="fas fa-table"></i> Tabel
                 </button>
-            </div>
+            </fieldset>
         </div>
-        <div id="histChartWrap" role="img" aria-label="Grafik data historis">
+        <figure id="histChartWrap" aria-label="Grafik data historis">
             <canvas id="histChart"></canvas>
-        </div>
+            <figcaption class="sr-only">Grafik data historis berdasarkan filter yang dipilih</figcaption>
+        </figure>
     </section>
 
     {{-- SECTION 4: TABLE --}}
@@ -148,7 +153,11 @@
         </div>
         <div class="table-wrapper custom-scroll">
             <table class="hist-table" aria-describedby="table-title">
-                <thead id="histThead"></thead>
+                <thead id="histThead">
+                    <tr>
+                        <th scope="col">Periode</th>
+                    </tr>
+                </thead>
                 <tbody id="histTbody"></tbody>
             </table>
         </div>
@@ -180,7 +189,8 @@
             </div>
 
             {{-- CONTROLS ROW --}}
-            <div class="entry-controls" role="group" aria-label="Kontrol input data">
+            <fieldset class="entry-controls">
+                <legend class="sr-only">Kontrol input data</legend>
 
                 <div class="filter-group">
                     <label class="hist-label" for="inputTahun">Tahun</label>
@@ -242,11 +252,10 @@
                 <button id="entrySaveBtn" class="hist-btn-primary green" type="button" style="display:none;">
                     <i class="fas fa-save"></i> Simpan
                 </button>
-            </div>
+            </fieldset>
 
             {{-- Import status bar --}}
-            <div id="importStatusBar" class="import-status-bar" style="display:none;"
-                 role="status" aria-live="polite">
+            <output id="importStatusBar" class="import-status-bar" style="display:none;">
                 <div class="import-status-inner">
                     <i class="fas fa-file-excel" style="color:#28a745;"></i>
                     <span id="importStatusText"></span>
@@ -257,10 +266,9 @@
                 <div class="import-progress-track" id="importProgressTrack" style="display:none;">
                     <div class="import-progress-fill" id="importProgressFill" style="width:0%;"></div>
                 </div>
-            </div>
+            </output>
 
-            <div id="entryStatus" class="entry-status" style="display:none;"
-                 role="status" aria-live="polite"></div>
+            <output id="entryStatus" class="entry-status" style="display:none;"></output>
 
             <div id="entryLocked" class="hist-error-box" style="display:none;" role="alert">
                 <i class="fas fa-lock"></i>
@@ -280,12 +288,16 @@
 
                 <div class="table-wrapper custom-scroll">
                     <table class="entry-table" aria-label="Form input data per golongan">
-                        <thead id="entryThead"></thead>
+                        <thead id="entryThead">
+                            <tr>
+                                <th scope="col">Golongan</th>
+                            </tr>
+                        </thead>
                         <tbody id="entryTbody"></tbody>
                     </table>
                 </div>
 
-                <div class="entry-actions" role="group" aria-label="Aksi form input">
+                <div class="entry-actions">
                     <button class="hist-btn-sm" id="btnFillAll"  type="button">Isi Nol</button>
                     <button class="hist-btn-sm" id="btnClearAll" type="button">
                         <i class="fas fa-eraser"></i> Reset
@@ -300,8 +312,12 @@
 @endsection
 
 @push('scripts')
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js" defer></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"
+            integrity="sha384-REPLACE_WITH_ACTUAL_SRI_HASH_FROM_JSDELIVR"
+            crossorigin="anonymous" defer></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"
+            integrity="sha512-REPLACE_WITH_ACTUAL_SRI_HASH_FROM_CDNJS"
+            crossorigin="anonymous"></script>
     @vite([
         'resources/js/Dashboard/charts/HistorisChart.js',
         'resources/js/Dashboard/pages/HistorisEntry.js',

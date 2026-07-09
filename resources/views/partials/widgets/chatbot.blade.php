@@ -1,4 +1,4 @@
-<div id="chat-wrapper" role="region" aria-label="Asisten Chat AI">
+<section id="chat-wrapper" aria-label="Asisten Chat AI">
     <button id="chat-bubble" aria-label="Buka obrolan asisten"
             aria-controls="chat-window" aria-expanded="false">
         <i class="fas fa-comment-dots" aria-hidden="true"></i>
@@ -34,7 +34,7 @@
             </button>
         </div>
     </div>
-</div>
+</section>
 @push('global-scripts')
     @vite(['resources/js/Dashboard/components/Chatbot.js'])
 @endpush

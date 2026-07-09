@@ -91,6 +91,18 @@
             background:#1a1400;
         }
 
+        .sr-only {
+            position:absolute;
+            width:1px;
+            height:1px;
+            padding:0;
+            margin:-1px;
+            overflow:hidden;
+            clip:rect(0,0,0,0);
+            white-space:nowrap;
+            border:0;
+        }
+
         /* Hidden real input untuk submit form */
         #otp-hidden { display:none; }
 
@@ -158,14 +170,27 @@
         @csrf
         <input type="hidden" name="otp" id="otp-hidden">
 
-        <div class="otp-group" id="otpGroup">
-            <input type="text" maxlength="1" inputmode="numeric" class="otp-box" autocomplete="off">
-            <input type="text" maxlength="1" inputmode="numeric" class="otp-box" autocomplete="off">
-            <input type="text" maxlength="1" inputmode="numeric" class="otp-box" autocomplete="off">
-            <input type="text" maxlength="1" inputmode="numeric" class="otp-box" autocomplete="off">
-            <input type="text" maxlength="1" inputmode="numeric" class="otp-box" autocomplete="off">
-            <input type="text" maxlength="1" inputmode="numeric" class="otp-box" autocomplete="off">
-        </div>
+        <fieldset class="otp-group" id="otpGroup" style="border:none; padding:0; margin:0 0 28px;">
+            <legend class="sr-only">Kode OTP 6 digit</legend>
+
+            <label for="otpDigit1" class="sr-only">Digit ke-1</label>
+            <input type="text" id="otpDigit1" maxlength="1" inputmode="numeric" class="otp-box" autocomplete="off">
+
+            <label for="otpDigit2" class="sr-only">Digit ke-2</label>
+            <input type="text" id="otpDigit2" maxlength="1" inputmode="numeric" class="otp-box" autocomplete="off">
+
+            <label for="otpDigit3" class="sr-only">Digit ke-3</label>
+            <input type="text" id="otpDigit3" maxlength="1" inputmode="numeric" class="otp-box" autocomplete="off">
+
+            <label for="otpDigit4" class="sr-only">Digit ke-4</label>
+            <input type="text" id="otpDigit4" maxlength="1" inputmode="numeric" class="otp-box" autocomplete="off">
+
+            <label for="otpDigit5" class="sr-only">Digit ke-5</label>
+            <input type="text" id="otpDigit5" maxlength="1" inputmode="numeric" class="otp-box" autocomplete="off">
+
+            <label for="otpDigit6" class="sr-only">Digit ke-6</label>
+            <input type="text" id="otpDigit6" maxlength="1" inputmode="numeric" class="otp-box" autocomplete="off">
+        </fieldset>
 
         <button type="submit">Verifikasi</button>
     </form>

@@ -5,25 +5,35 @@ const COLORS     = ['#ff9800','#00ff88','#2196f3','#e91e63','#9c27b0','#00bcd4']
 const API_RPKWH  = '/api/v1/fact/rpkwh'
 const BULAN_NAMA = ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI','JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER']
 
+const GRUP_ORDER = ['S', 'R', 'B', 'I', 'P', 'M']
+const GRUP_LABEL = { S: 'Sosial', R: 'Rumah Tangga', B: 'Bisnis', I: 'Industri', P: 'Publik', M: 'Multiguna' }
+
+const getGrup = (t) => {
+    if (t === 'JUMLAH' || t.startsWith('JUMLAH-') || t.toLowerCase().includes('jumlah')) return '__JUMLAH__'
+    const m = t.match(/^([A-Z])/)
+    return m?.[1] ?? 'LAIN'
+}
+
 export default class RpkwhModule {
     constructor(chart, service = null) {
-        this.chart   = chart
-        this.service = service
-        this._tahun  = TAHUN_INI
-        this._data   = null
+        this.chart      = chart
+        this.service    = service
+        this._tahun     = TAHUN_INI
+        this._tahunLalu = TAHUN_INI - 1
+        this._data      = null
     }
 
     render(data, state) {
         if (!data) return
-        this._data  = data
-        this._tahun = data.tahun_efektif ?? TAHUN_INI
+        this._data      = data
+        this._tahun     = data.tahun_efektif ?? TAHUN_INI
+        this._tahunLalu = data.tahun_lalu    ?? (this._tahun - 1)
 
         if (!state.tarif || !data.rencanaData?.[state.tarif]) {
-            state.tarif = data.tarif?.[0] ?? null
-            const sel = document.getElementById('filterTarifRpkwh')
-            if (sel && sel.options.length > 0) sel.value = state.tarif
+            state.tarif = data.rencanaData?.['JUMLAH'] ? 'JUMLAH' : (data.tarif?.[0] ?? null)
         }
 
+        this._populateTahunOptions(data)
         this._renderKwh(data, state)
         this._populateTarif(data, state.tarif)
         this._renderRencanaRealisasi(data, state)
@@ -32,6 +42,7 @@ export default class RpkwhModule {
         this._renderBppHjr(data, state)
         this._renderAnalisa(data, state)
         this._renderPersen(data)
+        this._populateGolonganEdit(data, state)
         this._renderEditTable(data, state)
     }
 
@@ -42,7 +53,42 @@ export default class RpkwhModule {
         document.getElementById('filterTahunRpkwh')?.addEventListener('change', e => { state.tahun = e.target.value; onChange() })
         document.getElementById('filterBulanKwh')?.addEventListener('change',   e => { state.kwhBulan = e.target.value; onChange() })
         document.getElementById('filterViewKwh')?.addEventListener('change',    e => { state.kwhView  = e.target.value; onChange() })
+
+        document.getElementById('filterTahunRpkwhAtas')?.addEventListener('change', async e => {
+            const tahun = Number.parseInt(e.target.value)
+            this._tahun = tahun
+            if (this.service) {
+                const data = await this.service.getData(tahun)
+                if (data) { this._data = data; this.render(data, state); return }
+            }
+            onChange()
+        })
+
+        document.getElementById('filterGolonganRpkwhEdit')?.addEventListener('change', e => {
+            state.editTarif = e.target.value
+            this._renderEditTable(this._data, state)
+        })
+
         this._initCrud(onChange)
+    }
+
+    // ── Dropdown tahun (Card 1 atas + Card 2), scan dari availableYears ──────
+    _populateTahunOptions(data) {
+        if (!data.availableYears?.length) return
+        const key = data.availableYears.join(',')
+
+        const fillSelect = (id) => {
+            const sel = document.getElementById(id)
+            if (!sel) return
+            if (sel.dataset.populated !== key) {
+                sel.innerHTML = data.availableYears.map(y => `<option value="${y}">${y}</option>`).join('')
+                sel.dataset.populated = key
+            }
+            sel.value = String(this._tahun)
+        }
+
+        fillSelect('filterTahunRpkwhAtas')
+        fillSelect('filterTahunRpkwh')
     }
 
     // ── KWH SECTION ──────────────────────────────────────────────────────────
@@ -54,7 +100,7 @@ export default class RpkwhModule {
         const filtered = (state.kwhBulan !== undefined && state.kwhBulan !== 'all')
             ? [kwhData[Number.parseInt(state.kwhBulan)]] : kwhData
 
-        this.chart.renderKwhTargetRealisasi(filtered, akum)
+        this.chart.renderKwhTargetRealisasi(filtered, akum, this._tahun, this._tahunLalu)
         this.chart.renderKwhDelta(filtered, akum)
         this.chart.renderKwhPencapaian(filtered)
         this.chart.renderKwhPertumbuhan(filtered)
@@ -70,14 +116,18 @@ export default class RpkwhModule {
         if (!tbody) return
         const fmtGwh = v => v == null ? '—' : (v / 1_000_000).toFixed(2) + ' GWh'
         tbody.innerHTML = data.map(d => {
-            const tLalu = akum ? d.targetAkum2024    : d.target2024
-            const rLalu = akum ? d.realisasiAkum2024 : d.realisasi2024
-            const tIni  = akum ? d.targetAkum2025    : d.target2025
-            const rIni  = akum ? d.realisasiAkum2025 : d.realisasi2025
+            const tLalu = akum ? d.targetAkumLalu    : d.targetLalu
+            const rLalu = akum ? d.realisasiAkumLalu : d.realisasiLalu
+            const tIni  = akum ? d.targetAkumIni     : d.targetIni
+            const rIni  = akum ? d.realisasiAkumIni  : d.realisasiIni
             const sel   = (rIni ?? 0) - (tIni ?? 0)
             const c     = sel >= 0 ? 'var(--accent-green)' : '#f44336'
-            const sign  = sel >= 0 ? '+' : ''
-            const selCell = sel === 0 ? '—' : sign + fmtGwh(sel)
+            let selCell
+            if (sel === 0) {
+                selCell = '—'
+            } else {
+                selCell = (sel >= 0 ? '+' : '') + fmtGwh(sel)
+            }
             return '<tr>' +
                 '<td style="padding:8px 10px;color:#888;">' + d.bulan + '</td>' +
                 '<td style="padding:8px 10px;color:#555;text-align:right;">' + fmtGwh(tLalu) + '</td>' +
@@ -93,12 +143,11 @@ export default class RpkwhModule {
         const tbody = document.getElementById('tabelKwhDelta')
         if (!tbody) return
         tbody.innerHTML = data.map(d => {
-            const val = akum ? (d.deltaAkumKwh ?? 0) : (d.deltaKwh ?? 0)
+            // API returns deltaRpkwh (bulanan) and deltaAkum (akumulasi)
+            const val = akum ? (d.deltaAkum ?? 0) : (d.deltaRpkwh ?? 0)
             const c   = val >= 0 ? '#00ff88' : '#f44336'
-            return '<tr>' +
-                '<td style="padding:8px 10px;color:#888;">' + d.bulan + '</td>' +
-                '<td style="padding:8px 10px;color:' + c + ';font-weight:600;text-align:right;">' + (val >= 0 ? '+' : '') + (val / 1_000_000).toFixed(2) + ' GWh</td>' +
-                '</tr>'
+            return '<tr><td style="padding:8px 10px;color:#888;">' + d.bulan + '</td>' +
+                '<td style="padding:8px 10px;color:' + c + ';font-weight:600;text-align:right;">' + (val >= 0 ? '+' : '') + (val / 1_000_000).toFixed(2) + ' GWh</td></tr>'
         }).join('')
     }
 
@@ -106,12 +155,11 @@ export default class RpkwhModule {
         const tbody = document.getElementById('tabelKwhPencapaian')
         if (!tbody) return
         tbody.innerHTML = data.map(d => {
-            const val = (d.pencapaianTarget ?? 0) * 100
-            const c   = val >= 100 ? '#00ff88' : '#f44336'
-            return '<tr>' +
-                '<td style="padding:8px 10px;color:#888;">' + d.bulan + '</td>' +
-                '<td style="padding:8px 10px;color:' + c + ';font-weight:600;text-align:right;">' + val.toFixed(1) + '%</td>' +
-                '</tr>'
+            // pencapaianTarget = targetIni / targetLalu (ratio growth YoY)
+            const val = ((d.pencapaianTarget ?? 1) - 1) * 100
+            const c   = val >= 0 ? '#00ff88' : '#f44336'
+            return '<tr><td style="padding:8px 10px;color:#888;">' + d.bulan + '</td>' +
+                '<td style="padding:8px 10px;color:' + c + ';font-weight:600;text-align:right;">' + (val >= 0 ? '+' : '') + val.toFixed(1) + '%</td></tr>'
         }).join('')
     }
 
@@ -119,12 +167,11 @@ export default class RpkwhModule {
         const tbody = document.getElementById('tabelKwhPertumbuhan')
         if (!tbody) return
         tbody.innerHTML = data.map(d => {
-            const val = (d.pertumbuhanReal ?? 0) * 100
+            // API returns pencapaianRealisasi (ratio), convert ke persen
+            const val = ((d.pencapaianRealisasi ?? 0) - 1) * 100
             const c   = val >= 0 ? '#00ff88' : '#f44336'
-            return '<tr>' +
-                '<td style="padding:8px 10px;color:#888;">' + d.bulan + '</td>' +
-                '<td style="padding:8px 10px;color:' + c + ';font-weight:600;text-align:right;">' + (val >= 0 ? '+' : '') + val.toFixed(1) + '%</td>' +
-                '</tr>'
+            return '<tr><td style="padding:8px 10px;color:#888;">' + d.bulan + '</td>' +
+                '<td style="padding:8px 10px;color:' + c + ';font-weight:600;text-align:right;">' + (val >= 0 ? '+' : '') + val.toFixed(1) + '%</td></tr>'
         }).join('')
     }
 
@@ -134,14 +181,14 @@ export default class RpkwhModule {
         const fmtGwh = v => v == null ? '—' : (v / 1_000_000).toFixed(2)
         const fmtPct = v => v == null ? '—' : (v * 100).toFixed(1) + '%'
         tbody.innerHTML = data.map(d => {
-            const tLalu  = akum ? d.targetAkum2024    : d.target2024
-            const rLalu  = akum ? d.realisasiAkum2024 : d.realisasi2024
-            const tIni   = akum ? d.targetAkum2025    : d.target2025
-            const rIni   = akum ? d.realisasiAkum2025 : d.realisasi2025
-            const delta  = akum ? (d.deltaAkumKwh ?? 0)     : (d.deltaKwh ?? 0)
-            const selPct = akum ? (d.deltaAkumPersen ?? 0)   : (d.deltaPersen ?? 0)
-            const pen    = d.pencapaianTarget  ?? 0
-            const per    = d.pertumbuhanReal   ?? 0
+            const tLalu  = akum ? d.targetAkumLalu    : d.targetLalu
+            const rLalu  = akum ? d.realisasiAkumLalu : d.realisasiLalu
+            const tIni   = akum ? d.targetAkumIni     : d.targetIni
+            const rIni   = akum ? d.realisasiAkumIni  : d.realisasiIni
+            const delta  = akum ? (d.deltaAkum ?? 0)      : (d.deltaRpkwh ?? 0)
+            const selPct = akum ? (d.deltaAkumPct ?? 0)   : (d.deltaPct ?? 0)
+            const pen    = d.pencapaianTarget   ?? 0
+            const per    = (d.pencapaianRealisasi ?? 1) - 1  // ratio → persen growth
             const dc = delta >= 0 ? '#00ff88' : '#f44336'
             const pc = pen  >= 1 ? '#00ff88' : '#f44336'
             const gc = per  >= 0 ? '#00ff88' : '#f44336'
@@ -188,14 +235,44 @@ export default class RpkwhModule {
             btnHapus.addEventListener('click', () => { if (modalHapus) modalHapus.style.display = 'flex' })
             document.getElementById('btnBatalHapusRpkwh')?.addEventListener('click', () => { if (modalHapus) modalHapus.style.display = 'none' })
             document.getElementById('btnKonfirmasiHapusRpkwh')?.addEventListener('click', async () => {
+                const btnKonfirmasi = document.getElementById('btnKonfirmasiHapusRpkwh')
                 const tahun = document.getElementById('hapusTahunRpkwh')?.value
                 const tipe  = document.getElementById('hapusTipeRpkwh')?.value
                 if (!confirm('Hapus data RPKWH tahun ' + tahun + ' (' + tipe + ')? Tidak dapat dibatalkan.')) return
+
+                if (btnKonfirmasi) { btnKonfirmasi.disabled = true; btnKonfirmasi.textContent = 'Menghapus...' }
+
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content
                 try {
-                    await this.service?.hapusData(tahun, tipe)
-                    if (modalHapus) modalHapus.style.display = 'none'
-                    onChange()
-                } catch { alert('Gagal menghapus data') }
+                    let ok = false
+                    if (this.service?.hapusData) {
+                        await this.service.hapusData(tahun, tipe)
+                        ok = true
+                    } else {
+                        // fallback langsung ke API kalau service belum implement hapusData
+                        const res = await fetch(`${API_RPKWH}/hapus`, {
+                            method: 'POST',
+                            headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
+                            body: JSON.stringify({ tahun: Number.parseInt(tahun), tipe }),
+                        })
+                        const json = await res.json().catch(() => ({}))
+                        if (!res.ok) throw new Error(json.message ?? 'Gagal menghapus data')
+                        ok = true
+                    }
+
+                    if (ok) {
+                        if (modalHapus) modalHapus.style.display = 'none'
+                        alert(`Data RPKWH tahun ${tahun} (${tipe}) berhasil dihapus.`)
+                        // reset cache tarif/golongan biar dropdown re-populate sesuai data terbaru
+                        document.getElementById('filterTarifRpkwh')?.removeAttribute('data-populated')
+                        document.getElementById('filterGolonganRpkwhEdit')?.removeAttribute('data-populated')
+                        onChange()
+                    }
+                } catch (err) {
+                    alert(err?.message ?? 'Gagal menghapus data')
+                } finally {
+                    if (btnKonfirmasi) { btnKonfirmasi.disabled = false; btnKonfirmasi.textContent = 'Hapus' }
+                }
             })
         }
 
@@ -209,30 +286,33 @@ export default class RpkwhModule {
                 const tahun = Number.parseInt(document.getElementById('buatTahunRpkwh')?.value)
                 const tipe  = document.getElementById('buatTipeRpkwh')?.value
                 if (modalBuat) modalBuat.style.display = 'none'
-                const csrf  = document.querySelector('meta[name="csrf-token"]')?.content
-                const heads = { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }
-                let ok = true
-                for (let bulan = 1; bulan <= 12; bulan++) {
-                    try {
-                        const res = await fetch(API_RPKWH, {
-                            method: 'POST', headers: heads,
-                            body: JSON.stringify({ tahun, bulan, golongan_kode: 'TOTAL', sub_golongan_kode: 'JUMLAH', tipe, is_triwulan: 0, is_akumulasi: 0, sumber: 'manual', nilai_rpkwh: 0 }),
-                        })
-                        if (!res.ok) ok = false
-                    } catch { ok = false }
+
+                // 1 request ke backend — backend yang generate semua sub-golongan
+                // dari master rt_dim_sub_golongan (bukan loop 12x fetch di sini lagi)
+                const csrf = document.querySelector('meta[name="csrf-token"]')?.content
+                try {
+                    const res = await fetch(`${API_RPKWH}/buat-tahun`, {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
+                        body: JSON.stringify({ tahun, tipe }),
+                    })
+                    const json = await res.json()
+                    alert(res.ok ? (json.message ?? `Data RPKWH tahun ${tahun} berhasil dibuat.`) : (json.message ?? 'Gagal membuat data'))
+                } catch {
+                    alert('Gagal membuat data')
                 }
-                alert(ok ? `Data RPKWH tahun ${tahun} berhasil dibuat.` : 'Sebagian data gagal dibuat.')
+
                 this._tahun = tahun
                 onChange()
             })
         }
     }
 
-    // ── EDIT TABLE ────────────────────────────────────────────────────────────
+    // ── EDIT TABLE (pakai state.editTarif — independen dari filter chart) ────
 
     _renderEditTable(data, state) {
         const isReadOnly = this._tahun < TAHUN_INI
-        const tarif      = state.tarif ?? (data.tarif?.[0] ?? '')
+        const tarif      = state.editTarif ?? (data.tarif?.[0] ?? '')
         const rencana    = data.rencanaData?.[tarif]   ?? new Array(12).fill(null)
         const realisasi  = data.realisasiData?.[tarif] ?? new Array(12).fill(null)
 
@@ -264,11 +344,9 @@ export default class RpkwhModule {
                         { ...base, tipe: 'realisasi', nilai_rpkwh: values.nilai_realisasi })
             },
             ['Bulan', 'Target (Rp/kWh)', 'Realisasi (Rp/kWh)'],
-            // ── Live-recalc ──────────────────────────────────────────────────
             (ri, values) => {
                 if (values.nilai_target    !== null) rencana[ri]   = values.nilai_target
                 if (values.nilai_realisasi !== null) realisasi[ri] = values.nilai_realisasi
-
                 const delta = realisasi.map((v, i) => (v ?? 0) - (rencana[i] ?? 0))
                 this._renderRencanaTable(rencana, realisasi)
                 this._renderDeltaRencanaTable(LABELS, delta)
@@ -286,15 +364,15 @@ export default class RpkwhModule {
         if (w) w.style.display = isReadOnly ? 'inline-block' : 'none'
     }
 
-    // ── RPKWH RENDER HELPERS ─────────────────────────────────────────────────
+    // ── RENDER HELPERS ─────────────────────────────────────────────────────
 
     _renderRencanaRealisasi(data, state) {
-        const akum     = state.view === 'akumulasi'
-        const r        = data.rencanaData?.[state.tarif]   ?? new Array(12).fill(0)
-        const rl       = data.realisasiData?.[state.tarif] ?? new Array(12).fill(0)
-        const toAkum   = arr => arr.map((_, i) => arr.slice(0, i + 1).reduce((a, b) => a + b, 0))
-        const dR       = akum ? toAkum(r)  : r
-        const dRl      = akum ? toAkum(rl) : rl
+        const akum   = state.view === 'akumulasi'
+        const r      = data.rencanaData?.[state.tarif]   ?? new Array(12).fill(0)
+        const rl     = data.realisasiData?.[state.tarif] ?? new Array(12).fill(0)
+        const toAkum = arr => arr.map((_, i) => arr.slice(0, i + 1).reduce((a, b) => a + b, 0))
+        const dR     = akum ? toAkum(r)  : r
+        const dRl    = akum ? toAkum(rl) : rl
 
         this.chart.make('chartRencanaRealisasi', 'bar', LABELS, [
             { label: 'Rencana',   data: dR,  backgroundColor: '#ff9800' },
@@ -311,16 +389,16 @@ export default class RpkwhModule {
     }
 
     _renderGolongan(data, state) {
-        const akum   = state.view === 'akumulasi'
-        const idx    = (state.bulan && state.bulan !== 'all') ? Number.parseInt(state.bulan) : 11
-        const is2024 = state.tahun === '2024'
+        const akum        = state.view === 'akumulasi'
+        const idx          = (state.bulan && state.bulan !== 'all') ? Number.parseInt(state.bulan) : 11
+        const isTahunLalu   = String(state.tahun) === String(this._tahunLalu)
         const nilaiGol = (data.golongan ?? []).map(g => {
-            if (is2024) return akum ? (data.realisasiGolAkum?.[g]?.[idx] ?? 0) : (data.realisasiGolBul?.[g]?.[idx] ?? 0)
+            if (isTahunLalu) return akum ? (data.realisasiGolAkum?.[g]?.[idx] ?? 0) : (data.realisasiGolBul?.[g]?.[idx] ?? 0)
             return akum ? (data.targetGolAkum?.[g]?.[idx] ?? 0) : (data.targetGolBul?.[g]?.[idx] ?? 0)
         })
         const judulEl = document.getElementById('judulPieRpkwh')
         if (judulEl) judulEl.textContent =
-            (is2024 ? 'Realisasi' : 'Target') + ' RPKWH ' + state.tahun +
+            (isTahunLalu ? 'Realisasi' : 'Target') + ' RPKWH ' + state.tahun +
             (akum ? ' (Akumulasi)' : ' (Bulanan)') + ' — ' + (LABELS[idx] ?? '')
 
         this.chart.pie('chartPieRpkwh', (data.golongan ?? []).map(g => g.replace(/ \(.\) ?/, '')), nilaiGol)
@@ -351,14 +429,14 @@ export default class RpkwhModule {
     }
 
     _renderAnalisa(data, state) {
-        const a    = data.analisaData ?? []
+        const a = data.analisaData ?? []
         if (!a.length) return
         const akum = state.view === 'akumulasi'
-        this.chart.make('chartAnalisa2024vs2025', 'bar', a.map(d => d.bulan), [
-            { label: 'Target 2024',    data: a.map(d => akum ? (d.akum2024 ?? 0)          : (d.target2024 ?? 0)),    backgroundColor: '#555'    },
-            { label: 'Realisasi 2024', data: a.map(d => akum ? (d.realisasiAkum2024 ?? 0) : (d.realisasi2024 ?? 0)), backgroundColor: '#2196f3' },
-            { label: 'Target 2025',    data: a.map(d => akum ? (d.akum2025 ?? 0)          : (d.target2025 ?? 0)),    backgroundColor: '#ff9800' },
-            { label: 'Realisasi 2025', data: a.map(d => akum ? (d.realisasiAkum2025 ?? 0) : (d.realisasi2025 ?? 0)), backgroundColor: '#00ff88' },
+        this.chart.make('chartAnalisaTargetRealisasi', 'bar', a.map(d => d.bulan), [
+            { label: `Target ${this._tahunLalu}`,    data: a.map(d => akum ? (d.akumLalu ?? 0)          : (d.targetLalu ?? 0)),    backgroundColor: '#555'    },
+            { label: `Realisasi ${this._tahunLalu}`, data: a.map(d => akum ? (d.realisasiAkumLalu ?? 0) : (d.realisasiLalu ?? 0)), backgroundColor: '#2196f3' },
+            { label: `Target ${this._tahun}`,        data: a.map(d => akum ? (d.akumIni ?? 0)           : (d.targetIni ?? 0)),     backgroundColor: '#ff9800' },
+            { label: `Realisasi ${this._tahun}`,     data: a.map(d => akum ? (d.realisasiAkumIni ?? 0)  : (d.realisasiIni ?? 0)),  backgroundColor: '#00ff88' },
         ], v => v.toFixed(0) + ' Rp/kWh')
         const delta = a.map(d => akum ? (d.deltaAkum ?? 0) : (d.deltaRpkwh ?? 0))
         this.chart.make('chartAnalisaDelta', 'bar', a.map(d => d.bulan), [
@@ -379,16 +457,80 @@ export default class RpkwhModule {
         this._renderPersenTable(p)
     }
 
+    // ── Filter tarif chart utama — selalu sinkron per render, gak "hilang" ───
     _populateTarif(data, currentTarif) {
         const sel = document.getElementById('filterTarifRpkwh')
-        if (sel?.options.length === 0 && data.tarif) {
+        if (!sel || !data.tarif) return
+
+        const key = data.tarif.join(',')
+        if (sel.dataset.populated !== key) {
+            sel.innerHTML = ''
+
+            const optAll = document.createElement('option')
+            optAll.value = 'JUMLAH'
+            optAll.textContent = 'Semua Golongan'
+            sel.appendChild(optAll)
+
+            const grouped = {}
             data.tarif.forEach(t => {
-                const opt = document.createElement('option')
-                opt.value = t; opt.textContent = t
-                sel.appendChild(opt)
+                const g = getGrup(t)
+                if (g === '__JUMLAH__') return
+                grouped[g] ??= []
+                grouped[g].push(t)
             })
-            sel.value = currentTarif
+
+            GRUP_ORDER.forEach(g => {
+                if (!grouped[g]?.length) return
+                const grp = document.createElement('optgroup')
+                grp.label = GRUP_LABEL[g] ?? g
+                grouped[g].forEach(t => {
+                    const opt = document.createElement('option')
+                    opt.value = t; opt.textContent = t
+                    grp.appendChild(opt)
+                })
+                sel.appendChild(grp)
+            })
+
+            sel.dataset.populated = key
         }
+
+        const validValues = [...sel.querySelectorAll('option')].map(o => o.value)
+        sel.value = validValues.includes(currentTarif) ? currentTarif : 'JUMLAH'
+    }
+
+    // ── Dropdown golongan khusus Edit Data — independen dari filter chart ───
+    _populateGolonganEdit(data, state) {
+        const sel = document.getElementById('filterGolonganRpkwhEdit')
+        if (!sel || !data.tarif) return
+
+        const key = data.tarif.join(',')
+        if (sel.dataset.populated !== key) {
+            sel.innerHTML = ''
+            const grouped = {}
+            data.tarif.forEach(t => {
+                const g = getGrup(t)
+                if (g === '__JUMLAH__') return
+                grouped[g] ??= []
+                grouped[g].push(t)
+            })
+            GRUP_ORDER.forEach(g => {
+                if (!grouped[g]?.length) return
+                const grp = document.createElement('optgroup')
+                grp.label = GRUP_LABEL[g] ?? g
+                grouped[g].forEach(t => {
+                    const opt = document.createElement('option')
+                    opt.value = t; opt.textContent = t
+                    grp.appendChild(opt)
+                })
+                sel.appendChild(grp)
+            })
+            sel.dataset.populated = key
+        }
+
+        if (!state.editTarif) state.editTarif = sel.options[0]?.value ?? null
+        const validValues = [...sel.querySelectorAll('option')].map(o => o.value)
+        sel.value = validValues.includes(state.editTarif) ? state.editTarif : (sel.options[0]?.value ?? '')
+        state.editTarif = sel.value
     }
 
     // ── TABLE HELPERS ─────────────────────────────────────────────────────────
@@ -399,12 +541,10 @@ export default class RpkwhModule {
         tbody.innerHTML = LABELS.map((bln, i) => {
             const d = (rl[i] ?? 0) - (r[i] ?? 0)
             const c = d >= 0 ? 'var(--accent-green)' : '#f44336'
-            return '<tr>' +
-                '<td>' + bln + '</td>' +
+            return '<tr><td>' + bln + '</td>' +
                 '<td style="color:#ff9800;">' + (r[i] ?? 0).toFixed(0) + '</td>' +
                 '<td style="color:var(--accent-green);">' + (rl[i] ?? 0).toFixed(0) + '</td>' +
-                '<td style="color:' + c + ';font-weight:600;">' + (d >= 0 ? '+' : '') + d.toFixed(0) + '</td>' +
-                '</tr>'
+                '<td style="color:' + c + ';font-weight:600;">' + (d >= 0 ? '+' : '') + d.toFixed(0) + '</td></tr>'
         }).join('')
     }
 
@@ -447,12 +587,10 @@ export default class RpkwhModule {
             const bppVal  = bpp[i] ?? 0
             const selisih = hjrVal - bppVal
             const c       = selisih >= 0 ? '#4caf50' : '#f44336'
-            return '<tr>' +
-                '<td>' + bln + '</td>' +
+            return '<tr><td>' + bln + '</td>' +
                 '<td style="color:#2196f3;">' + hjrVal.toLocaleString('id-ID') + '</td>' +
                 '<td style="color:#ff9800;">' + bppVal.toLocaleString('id-ID') + '</td>' +
-                '<td style="color:' + c + ';font-weight:600;">' + (selisih >= 0 ? '+' : '') + selisih.toLocaleString('id-ID') + '</td>' +
-                '</tr>'
+                '<td style="color:' + c + ';font-weight:600;">' + (selisih >= 0 ? '+' : '') + selisih.toLocaleString('id-ID') + '</td></tr>'
         }).join('')
     }
 
@@ -462,14 +600,12 @@ export default class RpkwhModule {
         tbody.innerHTML = a.map(d => {
             const delta = akum ? (d.deltaAkum ?? 0) : (d.deltaRpkwh ?? 0)
             const c     = delta >= 0 ? 'var(--accent-green)' : '#f44336'
-            return '<tr>' +
-                '<td>' + d.bulan + '</td>' +
-                '<td style="color:#555;">' + (akum ? (d.akum2024 ?? 0) : (d.target2024 ?? 0)).toFixed(0) + '</td>' +
-                '<td style="color:#2196f3;">' + (akum ? (d.realisasiAkum2024 ?? 0) : (d.realisasi2024 ?? 0)).toFixed(0) + '</td>' +
-                '<td style="color:#ff9800;">' + (akum ? (d.akum2025 ?? 0) : (d.target2025 ?? 0)).toFixed(0) + '</td>' +
-                '<td style="color:var(--accent-green);">' + (akum ? (d.realisasiAkum2025 ?? 0) : (d.realisasi2025 ?? 0)).toFixed(0) + '</td>' +
-                '<td style="color:' + c + ';font-weight:600;">' + (delta >= 0 ? '+' : '') + delta.toFixed(0) + '</td>' +
-                '</tr>'
+            return '<tr><td>' + d.bulan + '</td>' +
+                '<td style="color:#555;">' + (akum ? (d.akumLalu ?? 0) : (d.targetLalu ?? 0)).toFixed(0) + '</td>' +
+                '<td style="color:#2196f3;">' + (akum ? (d.realisasiAkumLalu ?? 0) : (d.realisasiLalu ?? 0)).toFixed(0) + '</td>' +
+                '<td style="color:#ff9800;">' + (akum ? (d.akumIni ?? 0) : (d.targetIni ?? 0)).toFixed(0) + '</td>' +
+                '<td style="color:var(--accent-green);">' + (akum ? (d.realisasiAkumIni ?? 0) : (d.realisasiIni ?? 0)).toFixed(0) + '</td>' +
+                '<td style="color:' + c + ';font-weight:600;">' + (delta >= 0 ? '+' : '') + delta.toFixed(0) + '</td></tr>'
         }).join('')
     }
 
@@ -489,8 +625,7 @@ export default class RpkwhModule {
             '<tr><td>' + d.bulan + '</td>' +
             '<td style="color:#ff9800;">' + (d.target ?? 0).toFixed(2) + '</td>' +
             '<td style="color:var(--accent-green);">' + (d.realisasi ?? 0).toFixed(2) + '</td>' +
-            '<td style="color:' + ((d.delta ?? 0) >= 0 ? '#00ff88' : '#f44336') + ';">' + (d.delta ?? 0).toFixed(2) + '</td>' +
-            '</tr>'
+            '<td style="color:' + ((d.delta ?? 0) >= 0 ? '#00ff88' : '#f44336') + ';">' + (d.delta ?? 0).toFixed(2) + '</td></tr>'
         ).join('')
     }
 
@@ -502,17 +637,15 @@ export default class RpkwhModule {
             const dlt  = akum ? (d.deltaAkum    ?? 0) : (d.deltaRpkwh ?? 0)
             const dPct = akum ? (d.deltaAkumPct ?? 0) : (d.deltaPct   ?? 0)
             const c    = dlt >= 0 ? '#00ff88' : '#f44336'
-            return '<tr>' +
-                '<td>' + d.bulan + '</td>' +
-                '<td style="color:#555;">'                + (akum ? (d.akum2024 ?? 0)          : (d.target2024 ?? 0)).toFixed(2)    + '</td>' +
-                '<td style="color:#2196f3;">'             + (akum ? (d.realisasiAkum2024 ?? 0) : (d.realisasi2024 ?? 0)).toFixed(2) + '</td>' +
-                '<td style="color:#ff9800;">'             + (akum ? (d.akum2025 ?? 0)          : (d.target2025 ?? 0)).toFixed(2)    + '</td>' +
-                '<td style="color:var(--accent-green);">' + (akum ? (d.realisasiAkum2025 ?? 0) : (d.realisasi2025 ?? 0)).toFixed(2) + '</td>' +
+            return '<tr><td>' + d.bulan + '</td>' +
+                '<td style="color:#555;">'                + (akum ? (d.akumLalu ?? 0)          : (d.targetLalu ?? 0)).toFixed(2)    + '</td>' +
+                '<td style="color:#2196f3;">'             + (akum ? (d.realisasiAkumLalu ?? 0) : (d.realisasiLalu ?? 0)).toFixed(2) + '</td>' +
+                '<td style="color:#ff9800;">'             + (akum ? (d.akumIni ?? 0)           : (d.targetIni ?? 0)).toFixed(2)     + '</td>' +
+                '<td style="color:var(--accent-green);">' + (akum ? (d.realisasiAkumIni ?? 0)  : (d.realisasiIni ?? 0)).toFixed(2)  + '</td>' +
                 '<td style="color:' + c + ';">' + dlt.toFixed(2) + '</td>' +
                 '<td style="color:' + c + ';">' + fmtPct(dPct - 1) + '</td>' +
                 '<td>' + fmtPct(d.pencapaianTarget   ?? 0) + '</td>' +
-                '<td>' + fmtPct(d.pencapaianRealisasi ?? 0) + '</td>' +
-                '</tr>'
+                '<td>' + fmtPct(d.pencapaianRealisasi ?? 0) + '</td></tr>'
         }).join('')
     }
 }

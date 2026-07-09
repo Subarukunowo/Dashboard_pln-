@@ -45,7 +45,8 @@
 
     <form method="POST" action="{{ route('2fa.enable') }}">
         @csrf
-        <input type="text" name="otp" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
+        <label for="otp">Kode OTP</label>
+        <input id="otp" type="text" name="otp" placeholder="000000" maxlength="6" inputmode="numeric" autocomplete="one-time-code">
         <button type="submit">Verifikasi & Aktifkan</button>
     </form>
 </div>

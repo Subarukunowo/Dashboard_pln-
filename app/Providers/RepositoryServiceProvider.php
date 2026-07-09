@@ -13,7 +13,6 @@ use App\Repositories\RtFactPelangganRepository;
 use App\Repositories\RtFactPendapatanRepository;
 use App\Repositories\RtFactPenjualanRepository;
 use App\Repositories\RtFactRpkwhRepository;
-use App\Repositories\RtImportLogsRepository;
 use App\Services\RtDimSubGolonganService;
 use App\Services\RtFactBabinService;
 use App\Services\RtFactBppService;
@@ -48,9 +47,12 @@ class RepositoryServiceProvider extends ServiceProvider
             [RtFactPendapatanRepository::class, RtFactPendapatanService::class],
             [RtFactPenjualanRepository::class,  RtFactPenjualanService::class],
             [RtFactRpkwhRepository::class,      RtFactRpkwhService::class],
-            [RtImportLogsRepository::class,     RtImportLogsService::class],
+            // RtImportLogsRepository tidak dibuat karena belum ada kebutuhan untuk mengakses repository ini secara langsung, cukup melalui service-nya saja.
+            [null,                              RtImportLogsService::class],
         ] as [$repo, $service]) {
-            $this->app->bind($repo);
+            if ($repo !== null) {
+                $this->app->bind($repo);
+            }
             $this->app->bind($service);
         }
     }

@@ -20,7 +20,7 @@ class UpdateRtFactPenjualanRequest extends FormRequest
             'is_akumulasi'     => ['sometimes', 'boolean'],
             'tipe'             => ['sometimes', 'string', 'max:50'],
             'sub_golongan_kode'=> ['nullable', 'string', 'max:20'],
-            'golongan_kode'    => ['sometimes', 'string', 'max:20'],
+            'golongan_kode'    => ['nullable', 'string', 'max:20'],
             'nilai_kwh'        => ['sometimes', 'numeric', 'min:0'],
             'nilai_kwh_lalu'   => ['nullable', 'numeric', 'min:0'],
             'pct_pencapaian'   => ['nullable', 'numeric'],

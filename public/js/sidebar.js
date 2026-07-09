@@ -17,6 +17,10 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     })
 
+    // Load awal: tampilkan semua section (all-mode)
+    document.body.classList.add('all-mode')
+    sections.forEach(s => s.classList.add('active'))
+
     // Section switching
     items.forEach(item => {
         item.addEventListener('click', function () {
@@ -32,11 +36,16 @@ document.addEventListener('DOMContentLoaded', function () {
                 sections.forEach(s => {
                     s.classList.toggle('active', s.dataset.sectionContent === target)
                 })
+                // Hapus all-mode DULU sebelum dispatch event
                 document.body.classList.remove('all-mode')
             }
 
             if (window.innerWidth <= 900) sidebar.classList.remove('open')
             content?.scrollTo({ top: 0, behavior: 'smooth' })
+
+            // Dispatch SETELAH DOM class berubah
+            console.log('[Sidebar] dispatching sectionChange:', target, '| all-mode after:', document.body.classList.contains('all-mode'))
+            document.dispatchEvent(new CustomEvent('sectionChange', { detail: { section: target } }))
         })
     })
 })

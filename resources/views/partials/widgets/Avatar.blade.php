@@ -29,10 +29,23 @@
     }
 @endphp
 
-<div
-    class="avatar avatar--{{ $avatarSize }}"
-    style="{{ $inlineStyle }}"
-    data-initials="{{ $initials }}"
-    aria-label="{{ $avatarUser->name ?? 'User' }}"
-    role="img"
-></div>
+@if ($avatarUrl)
+    <img
+        class="avatar avatar--{{ $avatarSize }}"
+        src="{{ $avatarUrl }}"
+        alt="{{ $avatarUser->name ?? 'User' }}"
+        style="{{ $inlineStyle }}"
+    />
+@else
+    <svg
+        class="avatar avatar--{{ $avatarSize }}"
+        style="{{ $inlineStyle }}"
+        xmlns="http://www.w3.org/2000/svg"
+        viewBox="0 0 100 100"
+        role="img"
+        aria-label="{{ $avatarUser->name ?? 'User' }}"
+    >
+        <rect width="100" height="100" fill="var(--avatar-bg)" />
+        <text x="50%" y="50%" dominant-baseline="central" text-anchor="middle" fill="#fff" font-family="Arial, Helvetica, sans-serif" font-size="40">{{ $initials }}</text>
+    </svg>
+@endif

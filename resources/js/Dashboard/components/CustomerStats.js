@@ -81,7 +81,7 @@ export default class CustomerStats {
         const el = this._getElement(id);
         if (!el) return;
         
-        if (value === null || value === undefined || isNaN(value)) {
+        if (value === null || value === undefined || Number.isNaN(value)) {
             el.style.color = this.colors.muted;
         } else if (value >= 0) {
             el.style.color = this.colors.positive;
@@ -91,18 +91,18 @@ export default class CustomerStats {
     }
     
     _formatNumber(num) {
-        if (num === null || num === undefined || isNaN(num)) return '---';
+        if (num === null || num === undefined || Number.isNaN(num)) return '---';
         return new Intl.NumberFormat('id-ID').format(Math.round(num));
     }
     
     _formatChange(value) {
-        if (value === null || value === undefined || isNaN(value)) return '---';
+        if (value === null || value === undefined || Number.isNaN(value)) return '---';
         const sign = value >= 0 ? '+' : '';
         return `${sign}${this._formatNumber(value)}`;
     }
     
     _formatPercent(value) {
-        if (value === null || value === undefined || isNaN(value)) return '---';
+        if (value === null || value === undefined || Number.isNaN(value)) return '---';
         const sign = value >= 0 ? '+' : '';
         const color = value >= 0 ? this.colors.positive : this.colors.negative;
         return `<span style="color: ${color}">${sign}${value}%</span>`;
@@ -143,7 +143,7 @@ export default class CustomerStats {
      */
     _sumHistorical(data) {
         if (!data || typeof data !== 'object') return 0;
-        return Object.values(data).reduce((sum, val) => sum + (parseFloat(val) || 0), 0);
+        return Object.values(data).reduce((sum, val) => sum + (Number.parseFloat(val) || 0), 0);
     }
     
     /**
@@ -171,9 +171,9 @@ export default class CustomerStats {
         try {
             // 1. Get data dari Google Sheets via PelangganService
             const data = await this.service.getData();
-            if (!data || !data.realisasiData) {
-                throw new Error('Data realisasi tidak tersedia');
-            }
+           if (!data?.realisasiData) {
+    throw new Error('Data realisasi tidak tersedia');
+}
             
             const { realisasiData } = data;
             const monthIdx = this.service.getCurrentMonthIndex(realisasiData);
@@ -252,6 +252,6 @@ export default class CustomerStats {
 // 🌐 GLOBAL EXPOSURE (Optional - untuk non-module usage)
 // ─────────────────────────────────────────────────────────────
 
-if (typeof window !== 'undefined') {
-    window.CustomerStats = CustomerStats;
+if (typeof globalThis !== 'undefined') {
+    globalThis.CustomerStats = CustomerStats;
 }

@@ -6,7 +6,7 @@ use App\Models\RtFactJamNyala;
 
 class RtFactJamNyalaRepository extends BaseRepository
 {
-    public function __construct(RtFactJamNyala $model)  
+    public function __construct(RtFactJamNyala $model)
     {
         parent::__construct($model);
     }

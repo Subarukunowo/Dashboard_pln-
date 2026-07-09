@@ -16,9 +16,7 @@
     <div class="account-content">
 
         <button class="acc-sidebar-toggle" id="accSidebarToggle" aria-label="Toggle menu">
-            <i class="fa-solid fa-bars">
-                
-            </i>
+            <i class="fa-solid fa-bars"></i>
         </button>
 
         <div class="account-content-inner">
@@ -51,7 +49,7 @@
 
                     <div class="setting-row">
                         <div class="setting-info">
-                            <div class="setting-label"><i class="fa-solid fa-user"></i> Nama Tampilan</div>
+                            <label for="inputName" class="setting-label"><i class="fa-solid fa-user"></i> Nama Tampilan</label>
                             <div class="setting-desc">Nama yang ditampilkan di seluruh sistem.</div>
                         </div>
                         <div style="flex-shrink:0;min-width:200px;">
@@ -100,22 +98,53 @@
 
                     <div class="setting-row">
                         <div class="setting-info">
-                            <div class="setting-label"><i class="fa-solid fa-droplet"></i> Warna Aksen</div>
+                            <div class="setting-label" id="accentPickerLabel"><i class="fa-solid fa-droplet"></i> Warna Aksen</div>
                             <div class="setting-desc">Warna utama untuk tombol dan highlight.</div>
                         </div>
-                        <div class="accent-picker" id="accentPicker">
-                            <div class="accent-swatch selected" data-color="orange" style="background:#ff9800;" title="Orange" onclick="setAccent('orange','#ff9800')"></div>
-                            <div class="accent-swatch" data-color="green"  style="background:#00ff88;" title="Green"  onclick="setAccent('green','#00ff88')"></div>
-                            <div class="accent-swatch" data-color="blue"   style="background:#3b82f6;" title="Blue"   onclick="setAccent('blue','#3b82f6')"></div>
-                            <div class="accent-swatch" data-color="cyan"   style="background:#06b6d4;" title="Cyan"   onclick="setAccent('cyan','#06b6d4')"></div>
-                            <div class="accent-swatch" data-color="violet" style="background:#8b5cf6;" title="Violet" onclick="setAccent('violet','#8b5cf6')"></div>
-                            <div class="accent-swatch" data-color="rose"   style="background:#f43f5e;" title="Rose"   onclick="setAccent('rose','#f43f5e')"></div>
+                        <div class="accent-picker" id="accentPicker" role="radiogroup" aria-labelledby="accentPickerLabel">
+
+                            <input type="radio" name="accentColor" id="accentOrange" value="orange" class="sr-only accent-radio-input" checked
+                                   onchange="setAccent('orange','#ff9800')">
+                            <label for="accentOrange" class="accent-swatch" style="background:#ff9800;" title="Orange">
+                                <span class="sr-only">Orange</span>
+                            </label>
+
+                            <input type="radio" name="accentColor" id="accentGreen" value="green" class="sr-only accent-radio-input"
+                                   onchange="setAccent('green','#00ff88')">
+                            <label for="accentGreen" class="accent-swatch" style="background:#00ff88;" title="Green">
+                                <span class="sr-only">Green</span>
+                            </label>
+
+                            <input type="radio" name="accentColor" id="accentBlue" value="blue" class="sr-only accent-radio-input"
+                                   onchange="setAccent('blue','#3b82f6')">
+                            <label for="accentBlue" class="accent-swatch" style="background:#3b82f6;" title="Blue">
+                                <span class="sr-only">Blue</span>
+                            </label>
+
+                            <input type="radio" name="accentColor" id="accentCyan" value="cyan" class="sr-only accent-radio-input"
+                                   onchange="setAccent('cyan','#06b6d4')">
+                            <label for="accentCyan" class="accent-swatch" style="background:#06b6d4;" title="Cyan">
+                                <span class="sr-only">Cyan</span>
+                            </label>
+
+                            <input type="radio" name="accentColor" id="accentViolet" value="violet" class="sr-only accent-radio-input"
+                                   onchange="setAccent('violet','#8b5cf6')">
+                            <label for="accentViolet" class="accent-swatch" style="background:#8b5cf6;" title="Violet">
+                                <span class="sr-only">Violet</span>
+                            </label>
+
+                            <input type="radio" name="accentColor" id="accentRose" value="rose" class="sr-only accent-radio-input"
+                                   onchange="setAccent('rose','#f43f5e')">
+                            <label for="accentRose" class="accent-swatch" style="background:#f43f5e;" title="Rose">
+                                <span class="sr-only">Rose</span>
+                            </label>
+
                         </div>
                     </div>
 
                     <div class="setting-row">
                         <div class="setting-info">
-                            <div class="setting-label"><i class="fa-solid fa-text-height"></i> Ukuran Teks</div>
+                            <label for="fontSizeSelect" class="setting-label"><i class="fa-solid fa-text-height"></i> Ukuran Teks</label>
                             <div class="setting-desc">Ukuran font konten halaman.</div>
                         </div>
                         <select class="settings-select" id="fontSizeSelect" onchange="setFontSize(this.value)">
@@ -126,15 +155,16 @@
                     </div>
 
                     <div class="setting-row">
-                        <div class="setting-info">
-                            <div class="setting-label"><i class="fa-solid fa-wand-magic-sparkles"></i> Animasi UI</div>
-                            <div class="setting-desc">Nonaktifkan jika perangkat terasa lambat.</div>
-                        </div>
-                        <label class="toggle-switch">
-                            <input type="checkbox" id="animToggle" checked onchange="setAnimation(this.checked)">
-                            <span class="toggle-slider"></span>
-                        </label>
-                    </div>
+    <div class="setting-info">
+        <label for="animToggle" class="setting-label"><i class="fa-solid fa-wand-magic-sparkles"></i> Animasi UI</label>
+        <div class="setting-desc">Nonaktifkan jika perangkat terasa lambat.</div>
+    </div>
+    <label class="toggle-switch">
+        <input type="checkbox" id="animToggle" checked onchange="setAnimation(this.checked)">
+        <span class="toggle-slider"></span>
+        <span class="sr-only">Aktifkan animasi UI</span>
+    </label>
+</div>
 
                 </div>
             </div>
@@ -147,22 +177,24 @@
                 <div class="settings-card-body">
                     <div class="setting-row">
                         <div class="setting-info">
-                            <div class="setting-label"><i class="fa-solid fa-envelope"></i> Email Perangkat Baru</div>
+                            <label for="notifNewDevice" class="setting-label"><i class="fa-solid fa-envelope"></i> Email Perangkat Baru</label>
                             <div class="setting-desc">Kirim email saat ada login dari perangkat baru.</div>
                         </div>
                         <label class="toggle-switch">
-                            <input type="checkbox" checked disabled>
+                            <input type="checkbox" id="notifNewDevice" checked disabled>
                             <span class="toggle-slider"></span>
+                            <span class="sr-only">Aktifkan notifikasi perangkat baru</span>
                         </label>
                     </div>
                     <div class="setting-row">
                         <div class="setting-info">
-                            <div class="setting-label"><i class="fa-solid fa-shield"></i> Peringatan Keamanan</div>
+                            <label for="notifSecurityAlert" class="setting-label"><i class="fa-solid fa-shield"></i> Peringatan Keamanan</label>
                             <div class="setting-desc">Notifikasi perubahan status perangkat.</div>
                         </div>
                         <label class="toggle-switch">
-                            <input type="checkbox" checked disabled>
+                            <input type="checkbox" id="notifSecurityAlert" checked disabled>
                             <span class="toggle-slider"></span>
+                            <span class="sr-only">Aktifkan peringatan keamanan</span>
                         </label>
                     </div>
                 </div>

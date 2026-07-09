@@ -45,7 +45,9 @@ class HistorisPelangganStatsController extends Controller
             $tahun, $tahun, 'pelanggan', self::GOLONGAN_ALL, 'bulanan'
         );
 
-        if (empty($chartData['datasets'])) return 0;
+        if (empty($chartData['datasets'])) {
+            return 0;
+        }
 
         $bulanNames    = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des'];
         $targetBulans  = array_slice($bulanNames, 0, $sampaibulan); // ['Jan','Feb',...] s.d bulan ke-N

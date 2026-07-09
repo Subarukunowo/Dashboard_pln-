@@ -1,19 +1,19 @@
-import { apiFetch } from '@/Dashboard/utils/apiClient'
+    import { apiFetch } from '@/Dashboard/utils/apiClient'
 
-export default class PelangganService {
-   
-    baseUrl = '/api/chart/pelanggan'
+    export default class PelangganService {
     
+        baseUrl = '/api/chart/pelanggan'
+        
 
-    async getData(tahun = new Date().getFullYear(), tahunLalu = null) {
-        try {
-            const tl     = tahunLalu ?? tahun - 1
-            const res    = await apiFetch(`${this.baseUrl}?tahun=${tahun}&tahun_lalu=${tl}`)
-            const result = await res.json()
-            return result.data
-        } catch (error) {
-            console.error('Gagal memuat data Pelanggan dari MySQL:', error)
-            return null
+        async getData(tahun = new Date().getFullYear(), tahunLalu = null) {
+            try {
+                const tl     = tahunLalu ?? tahun - 1
+                const res    = await apiFetch(`${this.baseUrl}?tahun=${tahun}&tahun_lalu=${tl}`)
+                const result = await res.json()
+                return result.data
+            } catch (error) {
+                console.error('Gagal memuat data Pelanggan dari MySQL:', error)
+                return null
+            }
         }
     }
-}

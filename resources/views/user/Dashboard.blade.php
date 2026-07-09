@@ -34,6 +34,23 @@
             <div id="clock" style="color:var(--text-muted); font-size:0.72rem;"></div>
         </div>
     </div>
+    <div class="filters" style="display:flex; gap:8px; align-items:center;">
+        <select id="filterYear" aria-label="{{ __('dashboard.filter.tahun') }}"
+            style="font-size:0.75rem; padding:4px 8px;">
+            @foreach(range(date('Y'), 2020) as $y)
+                <option value="{{ $y }}" {{ $y == date('Y') ? 'selected' : '' }}>{{ $y }}</option>
+            @endforeach
+        </select>
+        <select id="filterMonth" aria-label="{{ __('dashboard.filter.bulan') }}"
+            style="font-size:0.75rem; padding:4px 8px;">
+            <option value="all">{{ __('dashboard.filter.semua_bulan') }}</option>
+            @foreach(range(0, 11) as $i)
+                <option value="{{ $i }}">
+                    {{ \Carbon\Carbon::create()->month($i + 1)->translatedFormat('F') }}
+                </option>
+            @endforeach
+        </select>
+    </div>
 </header>
 
 <div class="dashboard-layout" id="dashboardLayout">
@@ -43,9 +60,9 @@
     <main class="dash-content" id="mainContent">
         <div class="dashboard-grid">
 
-            {{-- Stats container — di-swap JS saat sidebar diklik --}}
+            {{-- Stats container — semua card ada di DOM, ditampilkan per section --}}
             <div class="stats-row" id="statsContainer">
-                @include('dashboard.partials.stats.bpp')
+                @include('partials.widgets.Stats')
             </div>
 
             @foreach([
@@ -62,7 +79,7 @@
                 'tunggakan'  => 'Tunggakan',
                 'p2tl'       => 'P2tl',
             ] as $section => $partial)
-                <div class="dash-section {{ $loop->first ? 'active' : '' }}"
+                <div class="dash-section active"
                      data-section-content="{{ $section }}">
                     @include("partials.dashboard.{$partial}")
                 </div>

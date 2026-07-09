@@ -29,19 +29,25 @@ export default class RpkwhChart extends BaseChart {
         ], v => v.toLocaleString('id-ID', { maximumFractionDigits: 0 }) + ' Rp/kWh')
     }
 
-    // ─── KWH (merged dari PenjualanKwhChart) ─────────────────────────────────
+    // ─── KWH ──────────────────────────────────────────────────────────────
+    // Field data mengikuti nama asli dari backend (buildAnalisa):
+    // targetLalu, akumLalu, realisasiLalu, realisasiAkumLalu,
+    // targetIni,  akumIni,  realisasiIni,  realisasiAkumIni,
+    // deltaRpkwh, deltaAkum, pencapaianTarget, pencapaianRealisasi
 
     /**
-     * Chart batang Target vs Realisasi KWH (4 dataset: 2 tahun).
-     * @param {Array}   data  – array hasil getKwhData()
-     * @param {boolean} akum  – mode akumulasi
+     * Chart batang Target vs Realisasi KWH (4 dataset: tahun lalu vs ini).
+     * @param {Array}   data
+     * @param {boolean} akum
+     * @param {number|string} tahunIni
+     * @param {number|string} tahunLalu
      */
-    renderKwhTargetRealisasi(data, akum) {
+    renderKwhTargetRealisasi(data, akum, tahunIni, tahunLalu) {
         this.make('chartTargetRealisasi', 'bar', LABELS, [
-            { label: 'Target 2024',    data: data.map(d => akum ? d.targetAkum2024    : d.target2024),    backgroundColor: '#555'    },
-            { label: 'Realisasi 2024', data: data.map(d => akum ? d.realisasiAkum2024 : d.realisasi2024), backgroundColor: '#2196f3' },
-            { label: 'Target 2025',    data: data.map(d => akum ? d.targetAkum2025    : d.target2025),    backgroundColor: '#ff9800' },
-            { label: 'Realisasi 2025', data: data.map(d => akum ? d.realisasiAkum2025 : d.realisasi2025), backgroundColor: '#00ff88' },
+            { label: `Target ${tahunLalu}`,    data: data.map(d => akum ? d.akumLalu          : d.targetLalu),       backgroundColor: '#555'    },
+            { label: `Realisasi ${tahunLalu}`, data: data.map(d => akum ? d.realisasiAkumLalu : d.realisasiLalu),    backgroundColor: '#2196f3' },
+            { label: `Target ${tahunIni}`,     data: data.map(d => akum ? d.akumIni           : d.targetIni),       backgroundColor: '#ff9800' },
+            { label: `Realisasi ${tahunIni}`,  data: data.map(d => akum ? d.realisasiAkumIni  : d.realisasiIni),    backgroundColor: '#00ff88' },
         ], v => (v / 1_000_000).toFixed(2) + ' GWh')
     }
 
@@ -51,16 +57,17 @@ export default class RpkwhChart extends BaseChart {
      * @param {boolean} akum
      */
     renderKwhDelta(data, akum) {
-    const values = data.map(d => akum ? d.deltaAkumKwh : d.deltaKwh);
+        const getValue = d => akum ? d.deltaAkum : d.deltaRpkwh
+        const values = data.map(getValue)
 
-    this.make('chartDelta', 'bar', LABELS, [
-        {
-            label           : 'Delta KWH',
-            data            : values,
-            backgroundColor : values.map(v => v >= 0 ? '#00ff88' : '#f44336'),
-        },
-    ], v => (v / 1_000_000).toFixed(2) + ' GWh')
-}
+        this.make('chartDelta', 'bar', LABELS, [
+            {
+                label           : 'Delta KWH',
+                data            : values,
+                backgroundColor : values.map(v => v >= 0 ? '#00ff88' : '#f44336'),
+            },
+        ], v => (v / 1_000_000).toFixed(2) + ' GWh')
+    }
 
     /**
      * Chart garis % Pencapaian Target dan Realisasi.
@@ -68,21 +75,23 @@ export default class RpkwhChart extends BaseChart {
      */
     renderKwhPencapaian(data) {
         this.make('chartPencapaian', 'line', LABELS, [
-            { label: '% Pencapaian Target',    data: data.map(d => d.pencapaianTarget * 100), borderColor: '#ff9800', tension: 0.4, fill: false, pointRadius: 4 },
-            { label: '% Pencapaian Realisasi', data: data.map(d => d.pertumbuhanReal * 100),  borderColor: '#00ff88', tension: 0.4, fill: false, pointRadius: 4 },
+            { label: '% Growth Target',    data: data.map(d => ((d.pencapaianTarget    ?? 1) - 1) * 100), borderColor: '#ff9800', tension: 0.4, fill: false, pointRadius: 4 },
+            { label: '% Growth Realisasi', data: data.map(d => ((d.pencapaianRealisasi ?? 1) - 1) * 100), borderColor: '#00ff88', tension: 0.4, fill: false, pointRadius: 4 },
         ], v => v.toFixed(1) + '%')
     }
 
     /**
-     * Chart garis pertumbuhan (4 seri: target bulanan/akumulasi, realisasi bulanan/akumulasi).
+     * Chart garis pertumbuhan (dihitung di frontend, tidak perlu field baru dari backend).
+     * growth = (nilaiIni - nilaiLalu) / nilaiLalu
      * @param {Array} data
      */
     renderKwhPertumbuhan(data) {
+        // pencapaianTarget  = targetIni / targetLalu  (ratio)
+        // pencapaianRealisasi = realisasiIni / realisasiLalu (ratio)
+        // Convert ke % growth: (ratio - 1) * 100
         this.make('chartPertumbuhan', 'line', LABELS, [
-            { label: 'Target Bulanan',      data: data.map(d => d.pertumbuhanTarget     * 100), borderColor: '#888',    tension: 0.4, fill: false, pointRadius: 3 },
-            { label: 'Target Akumulasi',    data: data.map(d => d.pertumbuhanTargetAkum * 100), borderColor: '#2196f3', tension: 0.4, fill: false, pointRadius: 3 },
-            { label: 'Realisasi Bulanan',   data: data.map(d => d.pertumbuhanReal       * 100), borderColor: '#ff9800', tension: 0.4, fill: false, pointRadius: 3 },
-            { label: 'Realisasi Akumulasi', data: data.map(d => d.pertumbuhanRealAkum   * 100), borderColor: '#00ff88', tension: 0.4, fill: false, pointRadius: 3 },
+            { label: 'Pertumbuhan Target',    data: data.map(d => ((d.pencapaianTarget    ?? 1) - 1) * 100), borderColor: '#888',    tension: 0.4, fill: false, pointRadius: 3 },
+            { label: 'Pertumbuhan Realisasi', data: data.map(d => ((d.pencapaianRealisasi ?? 1) - 1) * 100), borderColor: '#00ff88', tension: 0.4, fill: false, pointRadius: 3 },
         ], v => v.toFixed(1) + '%')
     }
 }

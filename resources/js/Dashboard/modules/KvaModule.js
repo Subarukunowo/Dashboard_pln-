@@ -1,26 +1,31 @@
 import { renderEditTable, upsert, deleteByFilter, TAHUN_INI } from '../utils/CrudHelper.js'
 
-const API         = '/api/v1/fact/kva'
-const API_PELANGGAN = '/api/v1/fact/pelanggan'
-const BULAN_NAMA  = ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI',
+const API            = '/api/v1/fact/kva'
+const API_PELANGGAN  = '/api/v1/fact/pelanggan'
+const API_KVA_UPDATE  = '/api/v1/fact/kva/update-nilai'
+const API_KVA_TAHUN   = '/api/v1/fact/kva/buat-tahun'
+const API_KVA_DELETE  = '/api/v1/fact/kva/hapus-tahun'
+
+const BULAN_NAMA = ['JANUARI','FEBRUARI','MARET','APRIL','MEI','JUNI',
                      'JULI','AGUSTUS','SEPTEMBER','OKTOBER','NOVEMBER','DESEMBER']
+
 const GRUP_ORDER = ['S', 'R', 'B', 'I', 'P', 'M']
 const GRUP_LABEL = { S: 'Sosial', R: 'Rumah Tangga', B: 'Bisnis', I: 'Industri', P: 'Publik', M: 'Multiguna' }
-
-const getGrup = (t) => {
-    if (t === 'JUMLAH' || t.startsWith('JUMLAH-')) return '__JUMLAH__'
-    const m = t.match(/^([A-Z])/)
-    return m?.[1] ?? 'LAIN'
-}
 
 const sumUpTo = (arr, upToIndex) => arr.slice(0, upToIndex + 1).reduce((a, b) => a + b, 0)
 const toAkum  = (arr) => arr.map((_, i) => sumUpTo(arr, i))
 
+function csrfHeaders() {
+    const csrf = document.querySelector('meta[name="csrf-token"]')?.content
+    return { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }
+}
+
 export default class KvaModule {
     constructor(chart) {
-        this.chart    = chart
-        this._rawData = null
-        this._tahun   = TAHUN_INI
+        this.chart      = chart
+        this._rawData   = null
+        this._tahun     = TAHUN_INI
+        this._editTarif = null   // tarif khusus untuk tabel Edit Data (Card 5), independen dari filter atas
     }
 
     #getLabels() {
@@ -47,7 +52,7 @@ export default class KvaModule {
         const labels       = this.#getLabels()
         const slicedLabels = labels.slice(0, sliceIdx)
         const slicedR      = displayR.slice(0, sliceIdx)
-        const slicedRl     = displayRl.slice(0, sliceIdx)
+        const slicedRl      = displayRl.slice(0, sliceIdx)
 
         this.chart.make('chartKvaBar', 'bar', slicedLabels, [
             { label: 'Rencana',   data: slicedR,  backgroundColor: '#ff9800' },
@@ -83,7 +88,13 @@ export default class KvaModule {
             { label: 'Delta', data: deltaPerb, backgroundColor: deltaPerb.map(v => v >= 0 ? '#00ff88' : '#f44336') }
         ])
 
-        this.#populateTarif(data, state.tarif)
+        this.#populateTarifDropdown(data, 'filterTarifKva', state.tarif)
+
+        if (this._editTarif === null) {
+            this._editTarif = state.tarif || data.tarif?.[0] || 'JUMLAH'
+        }
+        this.#populateTarifDropdown(data, 'filterTarifKvaEdit', this._editTarif)
+
         this.#renderBarTable(slicedLabels, slicedR, slicedRl)
         this.#renderDeltaTable(slicedLabels, delta)
         this.#renderPieTable(pieLabels, pieData)
@@ -101,48 +112,44 @@ export default class KvaModule {
         document.getElementById('filterTarifKva')?.addEventListener('change', e => { state.tarif = e.target.value;          onChange() })
         document.getElementById('filterBulanKva')?.addEventListener('change', e => { state.bulan = Number.parseInt(e.target.value); onChange() })
         document.getElementById('filterViewKva')?.addEventListener('change',  e => { state.view  = e.target.value;          onChange() })
+
+        // Dropdown tarif khusus tabel Edit Data (Card 5) — tidak memicu reload chart,
+        // cukup render ulang tabel edit itu sendiri.
+        document.getElementById('filterTarifKvaEdit')?.addEventListener('change', e => {
+            this._editTarif = e.target.value
+            if (this._rawData) this.#renderEditTable(this._rawData, state)
+        })
+
         this.#initCrud(state, onChange)
     }
 
-    #populateTarif(data, currentTarif) {
-        const sel = document.getElementById('filterTarifKva')
-        if (!sel || sel.options.length > 0 || !data.tarif) return
+    /**
+     * Populate dropdown tarif dari data.golonganDropdown (hasil rt_dim_sub_golongan),
+     * dikirim backend via RtFactKvaService::golonganDropdown().
+     * Generic — dipakai untuk #filterTarifKva (filter chart) maupun
+     * #filterTarifKvaEdit (dropdown khusus tabel Edit Data di Card 5).
+     */
+    #populateTarifDropdown(data, selectId, currentTarif) {
+        const sel = document.getElementById(selectId)
+        if (!sel || sel.options.length > 0 || !data.golonganDropdown) return
 
         const optAll = document.createElement('option')
         optAll.value = 'JUMLAH'; optAll.textContent = 'Semua'
         sel.appendChild(optAll)
 
-        // Kelompokkan tarif per grup
-        const grouped = {}
-        const jumlahItems = {}
-        data.tarif.forEach(t => {
-            if (t === 'JUMLAH') return
-            const key = getGrup(t)
-            if (key === '__JUMLAH__') {
-                // JUMLAH-S, JUMLAH-R, dst — petakan ke huruf grupnya
-                const sufiks = t.replace('JUMLAH-', '')
-                jumlahItems[sufiks] = t
-            } else {
-                if (!grouped[key]) grouped[key] = []
-                grouped[key].push(t)
-            }
-        })
-
-        // Render sesuai urutan GRUP_ORDER
         GRUP_ORDER.forEach(key => {
-            if (!grouped[key]?.length && !jumlahItems[key]) return
+            const items = data.golonganDropdown[key]
+            if (!items?.length) return
+
             const grp = document.createElement('optgroup')
             grp.label = GRUP_LABEL[key] ?? key
-            ;(grouped[key] ?? []).forEach(t => {
+
+            items.forEach(item => {
                 const opt = document.createElement('option')
-                opt.value = t; opt.textContent = t
+                opt.value = item.kode
+                opt.textContent = item.nama ? `${item.kode} — ${item.nama}` : item.kode
                 grp.appendChild(opt)
             })
-            if (jumlahItems[key]) {
-                const opt = document.createElement('option')
-                opt.value = jumlahItems[key]; opt.textContent = jumlahItems[key]
-                grp.appendChild(opt)
-            }
             sel.appendChild(grp)
         })
 
@@ -346,16 +353,17 @@ export default class KvaModule {
                 const inputs = container.querySelectorAll(`input[data-row="${ri}"]`)
                 const values = {}
                 inputs.forEach(inp => { values[inp.dataset.field] = inp.value === '' ? null : Number.parseFloat(inp.value) })
+
+                // Kode JUMLAH-{golongan}, contoh: "Jumlah Sosial (S)" -> "JUMLAH-S"
+                const kodeGolongan = 'JUMLAH-' + gol.match(/\(([A-Z])\)/)?.[1]
+
                 try {
-                    const base = {
-                        tahun: this._tahun, bulan: bulanIdx + 1,
-                        sub_golongan_kode: gol, golongan_kode: gol.charAt(0),
-                        is_triwulan: 0, is_akumulasi: 1, sumber: 'manual', nilai_pelanggan: 0,
+                    if (values.nilai_kva_target !== null) {
+                        await this.#saveNilaiKva(this._tahun, bulanIdx + 1, kodeGolongan, 'target', values.nilai_kva_target)
                     }
-                    if (values.nilai_kva_target !== null)
-                        await upsert(API_PELANGGAN, { ...base, tipe: 'target'    }, { ...base, tipe: 'target',    nilai_kva: values.nilai_kva_target })
-                    if (values.nilai_kva_realisasi !== null)
-                        await upsert(API_PELANGGAN, { ...base, tipe: 'realisasi' }, { ...base, tipe: 'realisasi', nilai_kva: values.nilai_kva_realisasi })
+                    if (values.nilai_kva_realisasi !== null) {
+                        await this.#saveNilaiKva(this._tahun, bulanIdx + 1, kodeGolongan, 'realisasi', values.nilai_kva_realisasi)
+                    }
                     btn.textContent = '✓ OK'; btn.style.background = '#00ff88'
                 } catch {
                     btn.textContent = '✗ Error'; btn.style.background = '#f44336'
@@ -369,7 +377,7 @@ export default class KvaModule {
 
     #renderEditTable(data, state) {
         const isReadOnly   = this._tahun < TAHUN_INI
-        const subGolKode   = state.tarif ?? (data.tarif?.[0] ?? '')
+        const subGolKode   = this._editTarif ?? state.tarif ?? (data.tarif?.[0] ?? '')
         const targetArr    = data.rencanaData?.[subGolKode]   ?? new Array(12).fill(null)
         const realisasiArr = data.realisasiData?.[subGolKode] ?? new Array(12).fill(null)
 
@@ -386,13 +394,13 @@ export default class KvaModule {
             rows,
             isReadOnly,
             async (ri, values) => {
-                const bulan       = ri + 1
-                const baseParams  = { tahun: this._tahun, bulan, sub_golongan_kode: subGolKode, is_triwulan: 0, is_akumulasi: 0 }
-                const basePayload = { ...baseParams, golongan_kode: subGolKode.charAt(0), sumber: 'manual', nilai_pelanggan: 0 }
-                if (values.nilai_kva_target !== null)
-                    await upsert(API_PELANGGAN, { ...baseParams, tipe: 'target'    }, { ...basePayload, tipe: 'target',    nilai_kva: values.nilai_kva_target })
-                if (values.nilai_kva_realisasi !== null)
-                    await upsert(API_PELANGGAN, { ...baseParams, tipe: 'realisasi' }, { ...basePayload, tipe: 'realisasi', nilai_kva: values.nilai_kva_realisasi })
+                const bulan = ri + 1
+                if (values.nilai_kva_target !== null) {
+                    await this.#saveNilaiKva(this._tahun, bulan, subGolKode, 'target', values.nilai_kva_target)
+                }
+                if (values.nilai_kva_realisasi !== null) {
+                    await this.#saveNilaiKva(this._tahun, bulan, subGolKode, 'realisasi', values.nilai_kva_realisasi)
+                }
             },
             ['Bulan', 'Target KVA', 'Realisasi KVA'],
             (ri, values) => {
@@ -419,6 +427,20 @@ export default class KvaModule {
                 ])
             }
         )
+    }
+
+    /**
+     * Panggil endpoint khusus /fact/kva/update-nilai — backend otomatis
+     * rehitung JUMLAH-{golongan}, JUMLAH total, triwulan, dan akumulasi.
+     */
+    async #saveNilaiKva(tahun, bulan, subGolonganKode, tipe, nilaiKva) {
+        const res = await fetch(API_KVA_UPDATE, {
+            method: 'POST',
+            headers: csrfHeaders(),
+            body: JSON.stringify({ tahun, bulan, sub_golongan_kode: subGolonganKode, tipe, nilai_kva: nilaiKva }),
+        })
+        if (!res.ok) throw new Error('Gagal menyimpan nilai KVA')
+        return res.json()
     }
 
     #updateEditWarning() {
@@ -458,8 +480,11 @@ export default class KvaModule {
                 if (!confirm(`Hapus data KVA tahun ${tahun} (${tipe})? Tindakan ini tidak dapat dibatalkan.`)) return
                 if (modalHapus) modalHapus.style.display = 'none'
                 try {
-                    const params = tipe === 'semua' ? { tahun } : { tahun, tipe }
-                    await deleteByFilter(API_PELANGGAN, params)
+                    const body = tipe === 'semua' ? { tahun } : { tahun, tipe }
+                    const res = await fetch(API_KVA_DELETE, {
+                        method: 'POST', headers: csrfHeaders(), body: JSON.stringify(body),
+                    })
+                    if (!res.ok) throw new Error()
                     onChange()
                 } catch {
                     alert('Gagal menghapus data KVA')
@@ -474,23 +499,19 @@ export default class KvaModule {
             btnBuat.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'flex' })
             document.getElementById('btnBatalBuatKva')?.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiBuatKva')?.addEventListener('click', async () => {
-                const tahun  = Number.parseInt(document.getElementById('buatTahunKva')?.value)
-                const tipe   = document.getElementById('buatTipeKva')?.value
-                const subGol = document.getElementById('buatSubGolKva')?.value || 'JUMLAH'
+                const tahun = Number.parseInt(document.getElementById('buatTahunKva')?.value)
+                const tipe  = document.getElementById('buatTipeKva')?.value
                 if (modalBuat) modalBuat.style.display = 'none'
-                const csrf  = document.querySelector('meta[name="csrf-token"]')?.content
-                const heads = { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }
+
                 let ok = true
-                for (let bulan = 1; bulan <= 12; bulan++) {
-                    try {
-                        const res = await fetch(API_PELANGGAN, {
-                            method: 'POST', headers: heads,
-                            body: JSON.stringify({ tahun, bulan, tipe, sub_golongan_kode: subGol, golongan_kode: subGol.charAt(0), is_triwulan: 0, is_akumulasi: 0, sumber: 'manual', nilai_pelanggan: 0, nilai_kva: 0 }),
-                        })
-                        if (!res.ok) ok = false
-                    } catch { ok = false }
-                }
-                alert(ok ? `Data KVA tahun ${tahun} berhasil dibuat.` : 'Sebagian data gagal dibuat.')
+                try {
+                    const res = await fetch(API_KVA_TAHUN, {
+                        method: 'POST', headers: csrfHeaders(), body: JSON.stringify({ tahun, tipe }),
+                    })
+                    ok = res.ok
+                } catch { ok = false }
+
+                alert(ok ? `Data KVA tahun ${tahun} berhasil dibuat.` : 'Gagal membuat data KVA.')
                 this._tahun = tahun
                 state.tahun = tahun
                 onChange()

@@ -8,8 +8,8 @@ export default class KwhModule {
         if (!data) return
 
         const akum     = state.view === 'akumulasi'
-        const filtered = state.bulan === 'all'
-            ? data.slice(0, Number.parseInt(state.bulan) + 1)
+        const filtered = (state.bulan !== undefined && state.bulan !== 'all')
+            ? [data[Number.parseInt(state.bulan)]]
             : data
 
         this.chart.renderTargetRealisasi(filtered, akum)
@@ -39,10 +39,10 @@ export default class KwhModule {
             const color = delta >= 0 ? 'var(--accent-green)' : '#f44336'
             return `<tr>
                 <td>${d.bulan}</td>
-                <td style="color:#555;">${fmt(akum ? d.targetAkum2024    : d.target2024)}</td>
-                <td style="color:#2196f3;">${fmt(akum ? d.realisasiAkum2024 : d.realisasi2024)}</td>
-                <td style="color:#ff9800;">${fmt(akum ? d.targetAkum2025    : d.target2025)}</td>
-                <td style="color:var(--accent-green);">${fmt(akum ? d.realisasiAkum2025 : d.realisasi2025)}</td>
+                <td style="color:#555;">${fmt(akum ? d.targetAkumLalu    : d.targetLalu)}</td>
+                <td style="color:#2196f3;">${fmt(akum ? d.realisasiAkumLalu : d.realisasiLalu)}</td>
+                <td style="color:#ff9800;">${fmt(akum ? d.targetAkumIni    : d.targetIni)}</td>
+                <td style="color:var(--accent-green);">${fmt(akum ? d.realisasiAkumIni : d.realisasiIni)}</td>
                 <td style="color:${color}; font-weight:600;">${delta >= 0 ? '+' : ''}${fmt(delta)}</td>
             </tr>`
         }).join('')
@@ -97,10 +97,10 @@ export default class KwhModule {
             const color = deltaValue >= 0 ? '#00ff88' : '#f44336'
             return `<tr>
                 <td>${d.bulan}</td>
-                <td>${fmt(akum ? d.targetAkum2024    : d.target2024)}</td>
-                <td>${fmt(akum ? d.realisasiAkum2024 : d.realisasi2024)}</td>
-                <td>${fmt(akum ? d.targetAkum2025    : d.target2025)}</td>
-                <td>${fmt(akum ? d.realisasiAkum2025 : d.realisasi2025)}</td>
+                <td>${fmt(akum ? d.targetAkumLalu    : d.targetLalu)}</td>
+                <td>${fmt(akum ? d.realisasiAkumLalu : d.realisasiLalu)}</td>
+                <td>${fmt(akum ? d.targetAkumIni    : d.targetIni)}</td>
+                <td>${fmt(akum ? d.realisasiAkumIni : d.realisasiIni)}</td>
                 <td style="color:${color};">${fmt(deltaValue)}</td>
                 <td style="color:${color};">${fmtPct(deltaPersen)}</td>
                 <td>${fmtPct(d.pencapaianTarget)}</td>

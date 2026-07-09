@@ -35,10 +35,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'internal.api' => \App\Http\Middleware\InternalApiOnly::class,
         ]);
     })
-    ->withExceptions(function (Exceptions $exceptions): void {
+    ->withExceptions(function (): void {
         //
     })
     ->withCommands([
-        \App\Console\Commands\CacheUserAvatars::class,
+        // Removed unknown command class to avoid error:
+        // \App\Console\Commands\CacheUserAvatars::class,
     ])
     ->create();

@@ -2,24 +2,101 @@
 
 namespace App\Services;
 
-use App\Repositories\RtFactPelangganRepository;
+use App\Models\RtDimSubGolongan;
+use App\Repositories\RtFactKvaRepository;
+use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Database\Eloquent\Collection;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Collection as SupportCollection;
 
 class RtFactKvaService extends BaseService
 {
     protected array $golonganList = ['S', 'R', 'B', 'I', 'P', 'M'];
+
     protected array $golonganJumlahKode = [
         'S' => 'JUMLAH-S', 'R' => 'JUMLAH-R', 'B' => 'JUMLAH-B',
         'I' => 'JUMLAH-I', 'P' => 'JUMLAH-P', 'M' => 'JUMLAH-M',
     ];
 
-    public function __construct( RtFactPelangganRepository $repository)
+    /** Pemetaan bulan -> triwulan (Q1: Jan-Mar, Q2: Apr-Jun, Q3: Jul-Sep, Q4: Okt-Des) */
+    protected array $triwulanMap = [
+        1 => [1, 2, 3],
+        2 => [4, 5, 6],
+        3 => [7, 8, 9],
+        4 => [10, 11, 12],
+    ];
+
+    public function __construct(RtFactKvaRepository $repository)
     {
         parent::__construct($repository);
     }
 
+    // ============================================================
+    // QUERY HELPERS (menggantikan applyFilters/updateOrCreate/deleteByFilter
+    // yang tidak tersedia di BaseRepository bawaan)
+    // ============================================================
+
+    /**
+     * Bangun Eloquent Builder dari model repository dengan filter key => value.
+     * Value array/Collection otomatis pakai whereIn().
+     */
+    protected function filteredQuery(array $filters = []): Builder
+    {
+        $query = $this->repository->getModel()->newQuery();
+
+        foreach ($filters as $column => $value) {
+            if ($value === null) {
+                continue;
+            }
+
+            if ($value instanceof SupportCollection) {
+                $value = $value->all();
+            }
+
+            if (is_array($value)) {
+                $query->whereIn($column, $value);
+            } else {
+                $query->where($column, $value);
+            }
+        }
+
+        return $query;
+    }
+
+    /**
+     * Pengganti $this->repository->all($filters) — dipakai di seluruh service ini
+     * karena BaseRepository::all() tidak benar-benar memfilter (applyFilters stub kosong).
+     */
+    protected function allFiltered(array $filters = []): Collection
+    {
+        return $this->filteredQuery($filters)->get();
+    }
+
+    /**
+     * Pengganti $this->repository->updateOrCreate($attributes, $values).
+     */
+    protected function updateOrCreateRow(array $attributes, array $values = []): Model
+    {
+        return $this->filteredQuery($attributes)->first()
+            ? tap($this->filteredQuery($attributes)->first())->update($values)
+            : $this->repository->create(array_merge($attributes, $values));
+    }
+
+    /**
+     * Pengganti $this->repository->deleteByFilter($filters).
+     */
+    protected function deleteFiltered(array $filters): int
+    {
+        return $this->filteredQuery($filters)->delete();
+    }
+
+    // ============================================================
+    // CHART DATA
+    // ============================================================
+
     public function getChartData(int $tahun, ?int $tahunLalu = null): array
     {
-        $cek = $this->repository->all([
+        $cek = $this->allFiltered([
             'tahun' => $tahun, 'tipe' => 'realisasi', 'is_triwulan' => 0, 'is_akumulasi' => 0,
         ]);
         if ($cek->isEmpty()) {
@@ -27,11 +104,10 @@ class RtFactKvaService extends BaseService
         }
         $tahunLalu = $tahunLalu ?? $tahun - 1;
 
-        // 1. Rencana & Realisasi per sub_golongan_kode pakai nilai_kva
-        $rencanaRows = $this->repository->all([
+        $rencanaRows = $this->allFiltered([
             'tahun' => $tahun, 'tipe' => 'target', 'is_triwulan' => 0, 'is_akumulasi' => 0,
         ]);
-        $realisasiRows = $this->repository->all([
+        $realisasiRows = $this->allFiltered([
             'tahun' => $tahun, 'tipe' => 'realisasi', 'is_triwulan' => 0, 'is_akumulasi' => 0,
         ]);
 
@@ -45,11 +121,10 @@ class RtFactKvaService extends BaseService
             $realisasiData[$t] = $realisasiData[$t] ?? array_fill(0, 12, 0);
         }
 
-        // 2. Target & realisasi golongan akumulasi (KVA)
-        $targetGolRows = $this->repository->all([
+        $targetGolRows = $this->allFiltered([
             'tahun' => $tahun, 'tipe' => 'target', 'is_triwulan' => 0, 'is_akumulasi' => 1,
         ]);
-        $realisasiGolRowsLalu = $this->repository->all([
+        $realisasiGolRowsLalu = $this->allFiltered([
             'tahun' => $tahunLalu, 'tipe' => 'realisasi', 'is_triwulan' => 0, 'is_akumulasi' => 1,
         ]);
 
@@ -65,23 +140,33 @@ class RtFactKvaService extends BaseService
             $realisasiGolAkum[$key] = $realisasiGolAkum[$key] ?? array_fill(0, 12, 0);
         }
 
-        // 3. RKAP KVA
-        $rkapData = $this->buildRkapKva($tahun);
-
-        // 4. Perbandingan KVA tahun ini vs tahun lalu (per bulan, golongan TOTAL/JUMLAH)
-        $perbandinganData = $this->buildPerbandingan($tahun, $tahunLalu);
-
         return [
             'tarif'             => $tarif,
             'golongan'          => $golongan,
+            'golonganDropdown'  => $this->golonganDropdown(),
             'rencanaData'       => $rencanaData,
             'realisasiData'     => $realisasiData,
             'targetGolAkum'     => $targetGolAkum,
             'realisasiGolAkum'  => $realisasiGolAkum,
-            'rkapData'          => $rkapData,
-            'perbandinganData'  => $perbandinganData,
+            'rkapData'          => $this->buildRkapKva($tahun),
+            'perbandinganData'  => $this->buildPerbandingan($tahun, $tahunLalu),
             'tahun_efektif'     => $tahun,
         ];
+    }
+
+    /**
+     * Dropdown kode sub golongan dari rt_dim_sub_golongan (read-only, tabel sudah ada).
+     */
+    protected function golonganDropdown(): array
+    {
+        return RtDimSubGolongan::orderBy('golongan_kode')->orderBy('urutan')->get()
+            ->groupBy('golongan_kode')
+            ->map(fn ($items) => $items->map(fn ($i) => [
+                'kode'   => $i->kode,
+                'nama'   => $i->nama,
+                'jumlah' => str_starts_with($i->kode, 'JUMLAH'),
+            ])->values())
+            ->toArray();
     }
 
     protected function pivotKva($rows): array
@@ -98,26 +183,25 @@ class RtFactKvaService extends BaseService
     }
 
     protected function pivotGolonganKva($rows): array
-{
-    $result = [];
-    $map = array_flip($this->golonganJumlahKode);
+    {
+        $result = [];
+        $map = array_flip($this->golonganJumlahKode);
 
-    foreach ($rows as $row) {
-        $kode = $row->sub_golongan_kode;
-        if (!isset($map[$kode])) {
-            continue;
+        foreach ($rows as $row) {
+            $kode = $row->sub_golongan_kode;
+            if (!isset($map[$kode])) {
+                continue;
+            }
+            $g   = $map[$kode];
+            $key = 'Jumlah ' . $this->golonganNama($g) . ' (' . $g . ')';
+
+            if (!isset($result[$key])) {
+                $result[$key] = array_fill(0, 12, 0);
+            }
+            $result[$key][$row->bulan - 1] = (float) ($row->nilai_kva ?? 0);
         }
-
-        $g   = $map[$kode];
-        $key = 'Jumlah ' . $this->golonganNama($g) . ' (' . $g . ')';
-
-        if (!isset($result[$key])) {
-            $result[$key] = array_fill(0, 12, 0);
-        }
-        $result[$key][$row->bulan - 1] = (float) ($row->nilai_kva ?? 0);
+        return $result;
     }
-    return $result;
-}
 
     protected function golonganNama(string $kode): string
     {
@@ -128,6 +212,217 @@ class RtFactKvaService extends BaseService
         };
     }
 
+    // ============================================================
+    // TRIWULAN & PERSENTASE (util umum)
+    // ============================================================
+
+    protected function getTriwulan(int $bulan): int
+    {
+        foreach ($this->triwulanMap as $tw => $bulans) {
+            if (in_array($bulan, $bulans, true)) {
+                return $tw;
+            }
+        }
+        throw new \InvalidArgumentException("Bulan tidak valid: {$bulan}");
+    }
+
+    protected function hitungPersentase(float $target, float $real): float
+    {
+        return $target > 0 ? round($real / $target, 4) : 0.0;
+    }
+
+    /**
+     * Hitung ulang nilai per-triwulan (is_triwulan=1) dari data bulanan (is_triwulan=0)
+     * untuk satu sub_golongan_kode + tipe + tahun tertentu.
+     */
+    protected function hitungTriwulan(int $tahun, string $tipe, string $subGolonganKode): void
+    {
+        $bulanan = $this->allFiltered([
+            'tahun' => $tahun, 'tipe' => $tipe, 'sub_golongan_kode' => $subGolonganKode,
+            'is_triwulan' => 0, 'is_akumulasi' => 0,
+        ])->keyBy('bulan');
+
+        $golonganKode = $this->resolveGolonganKode($subGolonganKode);
+
+        foreach ($this->triwulanMap as $tw => $bulans) {
+            $total = collect($bulans)->sum(
+                fn ($b) => (float) ($bulanan->get($b)->nilai_kva ?? 0)
+            );
+
+            $this->updateOrCreateRow(
+                [
+                    'tahun' => $tahun, 'tipe' => $tipe, 'sub_golongan_kode' => $subGolonganKode,
+                    'bulan' => $tw, 'is_triwulan' => 1, 'is_akumulasi' => 0,
+                ],
+                [
+                    'nilai_kva' => $total, 'golongan_kode' => $golonganKode,
+                    'sumber' => 'manual',
+                ]
+            );
+        }
+    }
+
+    /**
+     * Hitung ulang running total (akumulasi Jan..Des) untuk satu sub_golongan_kode.
+     */
+    protected function hitungAkumulasi(int $tahun, string $tipe, string $subGolonganKode): void
+    {
+        $bulanan = $this->allFiltered([
+            'tahun' => $tahun, 'tipe' => $tipe, 'sub_golongan_kode' => $subGolonganKode,
+            'is_triwulan' => 0, 'is_akumulasi' => 0,
+        ])->keyBy('bulan');
+
+        $golonganKode = $this->resolveGolonganKode($subGolonganKode);
+        $running = 0.0;
+
+        for ($b = 1; $b <= 12; $b++) {
+            $running += (float) ($bulanan->get($b)->nilai_kva ?? 0);
+
+            $this->updateOrCreateRow(
+                [
+                    'tahun' => $tahun, 'tipe' => $tipe, 'sub_golongan_kode' => $subGolonganKode,
+                    'bulan' => $b, 'is_triwulan' => 0, 'is_akumulasi' => 1,
+                ],
+                [
+                    'nilai_kva' => $running, 'golongan_kode' => $golonganKode,
+                    'sumber' => 'manual',
+                ]
+            );
+        }
+    }
+
+    protected function resolveGolonganKode(string $subGolonganKode): string
+    {
+        if ($subGolonganKode === 'JUMLAH') {
+            return 'TOTAL';
+        }
+        if (str_starts_with($subGolonganKode, 'JUMLAH-')) {
+            return substr($subGolonganKode, 7);
+        }
+        $dim = RtDimSubGolongan::find($subGolonganKode);
+        return $dim->golongan_kode ?? substr($subGolonganKode, 0, 1);
+    }
+
+    // ============================================================
+    // UPDATE SATU TITIK DATA + AUTO REHITUNG (poin 3 & 5)
+    // ============================================================
+
+    /**
+     * Entry point saat user edit nilai_kva di blade (level sub golongan, bulanan, non-akumulasi).
+     * Tidak mengubah nilai sub golongan lain — hanya menulis ulang baris JUMLAH-{golongan},
+     * JUMLAH total, triwulan, dan akumulasi.
+     */
+    public function updateNilaiDanRehitung(
+        int $tahun,
+        int $bulan,
+        string $subGolonganKode,
+        string $tipe,
+        float $nilaiKva
+    ): array {
+        $isJumlahBaris = $subGolonganKode === 'JUMLAH' || str_starts_with($subGolonganKode, 'JUMLAH-');
+        $golonganKode  = $this->resolveGolonganKode($subGolonganKode);
+
+        // 1. Simpan nilai bulanan mentah untuk sub golongan yang diedit
+        $this->updateOrCreateRow(
+            [
+                'tahun' => $tahun, 'tipe' => $tipe, 'sub_golongan_kode' => $subGolonganKode,
+                'bulan' => $bulan, 'is_triwulan' => 0, 'is_akumulasi' => 0,
+            ],
+            [
+                'nilai_kva' => $nilaiKva, 'golongan_kode' => $golonganKode,
+                'sumber' => 'manual',
+            ]
+        );
+
+        $terpengaruh = [$subGolonganKode];
+
+        // 2. Jika yang diedit BUKAN baris JUMLAH, rehitung agregat di atasnya
+        if (!$isJumlahBaris) {
+            $this->rehitungJumlahGolongan($tahun, $tipe, $golonganKode, $bulan);
+            $this->rehitungJumlahTotal($tahun, $tipe, $bulan);
+            $terpengaruh[] = 'JUMLAH-' . $golonganKode;
+            $terpengaruh[] = 'JUMLAH';
+        } elseif ($subGolonganKode !== 'JUMLAH') {
+            // Yang diedit JUMLAH-{golongan} langsung -> tetap rehitung JUMLAH total
+            $this->rehitungJumlahTotal($tahun, $tipe, $bulan);
+            $terpengaruh[] = 'JUMLAH';
+        }
+
+        // 3. Rehitung triwulan & akumulasi untuk semua kode yang terpengaruh
+        foreach (array_unique($terpengaruh) as $kode) {
+            $this->hitungTriwulan($tahun, $tipe, $kode);
+            $this->hitungAkumulasi($tahun, $tipe, $kode);
+        }
+
+        return [
+            'tahun'             => $tahun,
+            'bulan'             => $bulan,
+            'tipe'              => $tipe,
+            'sub_golongan_kode' => $subGolonganKode,
+            'nilai_kva'         => $nilaiKva,
+            'terpengaruh'       => array_values(array_unique($terpengaruh)),
+        ];
+    }
+
+    /**
+     * JUMLAH-{golongan} bulanan = sum semua sub golongan anggota golongan tsb (bukan JUMLAH-*).
+     */
+    protected function rehitungJumlahGolongan(int $tahun, string $tipe, string $golonganKode, int $bulan): void
+    {
+        $kodeAnggota = RtDimSubGolongan::where('golongan_kode', $golonganKode)
+            ->where('kode', 'not like', 'JUMLAH%')
+            ->pluck('kode');
+
+        $total = $this->allFiltered([
+            'tahun' => $tahun, 'tipe' => $tipe, 'bulan' => $bulan,
+            'is_triwulan' => 0, 'is_akumulasi' => 0,
+            'sub_golongan_kode' => $kodeAnggota,
+        ])->sum(fn ($r) => (float) ($r->nilai_kva ?? 0));
+
+        $this->updateOrCreateRow(
+            [
+                'tahun' => $tahun, 'tipe' => $tipe, 'bulan' => $bulan,
+                'sub_golongan_kode' => 'JUMLAH-' . $golonganKode,
+                'is_triwulan' => 0, 'is_akumulasi' => 0,
+            ],
+            [
+                'nilai_kva' => $total, 'golongan_kode' => $golonganKode,
+                'sumber' => 'manual',
+            ]
+        );
+    }
+
+    /**
+     * JUMLAH total bulanan = sum seluruh JUMLAH-{golongan}.
+     */
+    protected function rehitungJumlahTotal(int $tahun, string $tipe, int $bulan): void
+    {
+        $total = 0.0;
+        foreach ($this->golonganList as $g) {
+            $row = $this->allFiltered([
+                'tahun' => $tahun, 'tipe' => $tipe, 'bulan' => $bulan,
+                'sub_golongan_kode' => 'JUMLAH-' . $g,
+                'is_triwulan' => 0, 'is_akumulasi' => 0,
+            ])->first();
+            $total += (float) ($row->nilai_kva ?? 0);
+        }
+
+        $this->updateOrCreateRow(
+            [
+                'tahun' => $tahun, 'tipe' => $tipe, 'bulan' => $bulan,
+                'sub_golongan_kode' => 'JUMLAH', 'is_triwulan' => 0, 'is_akumulasi' => 0,
+            ],
+            [
+                'nilai_kva' => $total, 'golongan_kode' => 'TOTAL',
+                'sumber' => 'manual',
+            ]
+        );
+    }
+
+    // ============================================================
+    // RKAP (poin 2 & 4)
+    // ============================================================
+
     protected function buildRkapKva(int $tahun): array
     {
         $rkapData = [];
@@ -136,104 +431,83 @@ class RtFactKvaService extends BaseService
             'I' => 'Industri (I)', 'P' => 'Publik (P)', 'M' => 'Multiguna (M)',
         ];
 
-        $targetAkum = $this->repository->all([
-            'tahun' => $tahun, 'tipe' => 'target', 'is_triwulan' => 0, 'is_akumulasi' => 1,
+        $targetTw = $this->allFiltered([
+            'tahun' => $tahun, 'tipe' => 'target', 'is_triwulan' => 1, 'is_akumulasi' => 0,
         ])->keyBy(fn ($r) => $r->sub_golongan_kode . '-' . $r->bulan);
 
-        $realAkum = $this->repository->all([
-            'tahun' => $tahun, 'tipe' => 'realisasi', 'is_triwulan' => 0, 'is_akumulasi' => 1,
+        $realTw = $this->allFiltered([
+            'tahun' => $tahun, 'tipe' => 'realisasi', 'is_triwulan' => 1, 'is_akumulasi' => 0,
         ])->keyBy(fn ($r) => $r->sub_golongan_kode . '-' . $r->bulan);
 
-        $twBulan = [1 => 3, 2 => 6, 3 => 9, 4 => 12];
+        $targetAkumDes = $this->allFiltered([
+            'tahun' => $tahun, 'tipe' => 'target', 'is_triwulan' => 0, 'is_akumulasi' => 1, 'bulan' => 12,
+        ])->keyBy('sub_golongan_kode');
+
+        $realAkumDes = $this->allFiltered([
+            'tahun' => $tahun, 'tipe' => 'realisasi', 'is_triwulan' => 0, 'is_akumulasi' => 1, 'bulan' => 12,
+        ])->keyBy('sub_golongan_kode');
 
         foreach ($golonganMap as $kode => $label) {
-            $jumlahKode = $this->golonganJumlahKode[$kode];
-
-            $target = [];
-            $real   = [];
-            foreach ($twBulan as $tw => $bln) {
-                $target[$tw] = (float) ($targetAkum->get($jumlahKode . '-' . $bln)->nilai_kva ?? 0);
-                $real[$tw]   = (float) ($realAkum->get($jumlahKode . '-' . $bln)->nilai_kva ?? 0);
-            }
-
-            // TW bukan akumulasi murni, jadi hitung selisih antar TW untuk nilai per-TW
-            $targetPerTw = [
-                1 => $target[1],
-                2 => $target[2] - $target[1],
-                3 => $target[3] - $target[2],
-                4 => $target[4] - $target[3],
-            ];
-            $realPerTw = [
-                1 => $real[1],
-                2 => $real[2] - $real[1],
-                3 => $real[3] - $real[2],
-                4 => $real[4] - $real[3],
-            ];
-
-            $targetTotal = $target[4];
-            $realTotal   = $real[4];
-
-            $rkapData[] = [
-                'golongan'    => $label,
-                'targetTw1'   => $targetPerTw[1],
-                'targetTw2'   => $targetPerTw[2],
-                'targetTw3'   => $targetPerTw[3],
-                'targetTw4'   => $targetPerTw[4],
-                'targetTotal' => $targetTotal,
-                'realTw1'     => $realPerTw[1],
-                'realTw2'     => $realPerTw[2],
-                'realTw3'     => $realPerTw[3],
-                'realTw4'     => $realPerTw[4],
-                'realTotal'   => $realTotal,
-                'pencapaian'  => $targetTotal > 0 ? $realTotal / $targetTotal : 0,
-            ];
+            $rkapData[] = $this->buildRkapBaris(
+                $label, $this->golonganJumlahKode[$kode],
+                $targetTw, $realTw, $targetAkumDes, $realAkumDes
+            );
         }
 
-        // Baris TOTAL
-        $targetAll = [];
-        $realAll   = [];
-        foreach ($twBulan as $tw => $bln) {
-            $targetAll[$tw] = (float) ($targetAkum->get('JUMLAH-' . $bln)->nilai_kva ?? 0);
-            $realAll[$tw]   = (float) ($realAkum->get('JUMLAH-' . $bln)->nilai_kva ?? 0);
-        }
-        $targetAllPerTw = [
-            1 => $targetAll[1],
-            2 => $targetAll[2] - $targetAll[1],
-            3 => $targetAll[3] - $targetAll[2],
-            4 => $targetAll[4] - $targetAll[3],
-        ];
-        $realAllPerTw = [
-            1 => $realAll[1],
-            2 => $realAll[2] - $realAll[1],
-            3 => $realAll[3] - $realAll[2],
-            4 => $realAll[4] - $realAll[3],
-        ];
-        $targetTotalAll = $targetAll[4];
-        $realTotalAll   = $realAll[4];
-
-        $rkapData[] = [
-            'golongan'    => 'TOTAL',
-            'targetTw1'   => $targetAllPerTw[1],
-            'targetTw2'   => $targetAllPerTw[2],
-            'targetTw3'   => $targetAllPerTw[3],
-            'targetTw4'   => $targetAllPerTw[4],
-            'targetTotal' => $targetTotalAll,
-            'realTw1'     => $realAllPerTw[1],
-            'realTw2'     => $realAllPerTw[2],
-            'realTw3'     => $realAllPerTw[3],
-            'realTw4'     => $realAllPerTw[4],
-            'realTotal'   => $realTotalAll,
-            'pencapaian'  => $targetTotalAll > 0 ? $realTotalAll / $targetTotalAll : 0,
-        ];
+        $rkapData[] = $this->buildRkapBaris(
+            'TOTAL', 'JUMLAH',
+            $targetTw, $realTw, $targetAkumDes, $realAkumDes
+        );
 
         return $rkapData;
     }
 
+    protected function buildRkapBaris(
+        string $label,
+        string $kode,
+        $targetTw,
+        $realTw,
+        $targetAkumDes,
+        $realAkumDes
+    ): array {
+        $target = [];
+        $real   = [];
+        foreach ([1, 2, 3, 4] as $tw) {
+            $target[$tw] = (float) ($targetTw->get($kode . '-' . $tw)->nilai_kva ?? 0);
+            $real[$tw]   = (float) ($realTw->get($kode . '-' . $tw)->nilai_kva ?? 0);
+        }
+
+        $targetTotal = (float) ($targetAkumDes->get($kode)->nilai_kva ?? 0);
+        $realTotal   = (float) ($realAkumDes->get($kode)->nilai_kva ?? 0);
+
+        return [
+            'golongan'      => $label,
+            'targetTw1'     => $target[1],
+            'targetTw2'     => $target[2],
+            'targetTw3'     => $target[3],
+            'targetTw4'     => $target[4],
+            'targetTotal'   => $targetTotal,
+            'realTw1'       => $real[1],
+            'realTw2'       => $real[2],
+            'realTw3'       => $real[3],
+            'realTw4'       => $real[4],
+            'realTotal'     => $realTotal,
+            'pencapaianTw1' => $this->hitungPersentase($target[1], $real[1]),
+            'pencapaianTw2' => $this->hitungPersentase($target[2], $real[2]),
+            'pencapaianTw3' => $this->hitungPersentase($target[3], $real[3]),
+            'pencapaianTw4' => $this->hitungPersentase($target[4], $real[4]),
+            'pencapaian'    => $this->hitungPersentase($targetTotal, $realTotal),
+        ];
+    }
+
+    // ============================================================
+    // PERBANDINGAN TAHUN INI VS TAHUN LALU
+    // ============================================================
+
     protected function buildPerbandingan(int $tahunIni, int $tahunLalu): array
     {
-        // Target & realisasi bulanan + akumulasi untuk golongan TOTAL (JUMLAH), kedua tahun
         $getSeries = function (int $tahun, string $tipe, int $akum) {
-            $rows = $this->repository->all([
+            $rows = $this->allFiltered([
                 'tahun' => $tahun, 'tipe' => $tipe, 'is_triwulan' => 0, 'is_akumulasi' => $akum,
                 'sub_golongan_kode' => 'JUMLAH',
             ]);
@@ -244,47 +518,90 @@ class RtFactKvaService extends BaseService
             return $arr;
         };
 
-        $targetIni      = $getSeries($tahunIni, 'target', 0);
-        $targetIniAkum  = $getSeries($tahunIni, 'target', 1);
-        $realIni        = $getSeries($tahunIni, 'realisasi', 0);
-        $realIniAkum    = $getSeries($tahunIni, 'realisasi', 1);
+        $targetIni     = $getSeries($tahunIni, 'target', 0);
+        $targetIniAkum = $getSeries($tahunIni, 'target', 1);
+        $realIni       = $getSeries($tahunIni, 'realisasi', 0);
+        $realIniAkum   = $getSeries($tahunIni, 'realisasi', 1);
 
-        $targetLalu      = $getSeries($tahunLalu, 'target', 0);
-        $targetLaluAkum  = $getSeries($tahunLalu, 'target', 1);
-        $realLalu        = $getSeries($tahunLalu, 'realisasi', 0);
-        $realLaluAkum    = $getSeries($tahunLalu, 'realisasi', 1);
+        $targetLalu     = $getSeries($tahunLalu, 'target', 0);
+        $targetLaluAkum = $getSeries($tahunLalu, 'target', 1);
+        $realLalu       = $getSeries($tahunLalu, 'realisasi', 0);
+        $realLaluAkum   = $getSeries($tahunLalu, 'realisasi', 1);
 
         $bulanNama = [
-            1=>'JANUARI',2=>'FEBRUARI',3=>'MARET',4=>'APRIL',5=>'MEI',6=>'JUNI',
-            7=>'JULI',8=>'AGUSTUS',9=>'SEPTEMBER',10=>'OKTOBER',11=>'NOVEMBER',12=>'DESEMBER',
+            1 => 'JANUARI', 2 => 'FEBRUARI', 3 => 'MARET', 4 => 'APRIL', 5 => 'MEI', 6 => 'JUNI',
+            7 => 'JULI', 8 => 'AGUSTUS', 9 => 'SEPTEMBER', 10 => 'OKTOBER', 11 => 'NOVEMBER', 12 => 'DESEMBER',
         ];
 
         $result = [];
         for ($i = 0; $i < 12; $i++) {
             $deltaKva     = $realIni[$i] - $targetIni[$i];
-            $deltaPct     = $targetIni[$i] != 0 ? $deltaKva / $targetIni[$i] : 0;
             $deltaAkumKva = $realIniAkum[$i] - $targetIniAkum[$i];
-            $deltaAkumPct = $targetIniAkum[$i] != 0 ? $deltaAkumKva / $targetIniAkum[$i] : 0;
 
             $result[] = [
-                'bulan'              => $bulanNama[$i + 1],
-                'target2024'         => $targetLalu[$i],
-                'akum2024'           => $targetLaluAkum[$i],
-                'realisasi2024'      => $realLalu[$i],
-                'realisasiAkum2024'  => $realLaluAkum[$i],
-                'target2025'         => $targetIni[$i],
-                'akum2025'           => $targetIniAkum[$i],
-                'realisasi2025'      => $realIni[$i],
-                'realisasiAkum2025'  => $realIniAkum[$i],
-                'deltaKva'           => $deltaKva,
-                'deltaPct'           => $deltaPct,
-                'deltaAkumKva'       => $deltaAkumKva,
-                'deltaAkumPct'       => $deltaAkumPct,
-                'pencapaianTarget'   => $targetLalu[$i] != 0 ? $targetIni[$i] / $targetLalu[$i] : 0,
-                'pencapaianRealisasi'=> $realLalu[$i] != 0 ? $realIni[$i] / $realLalu[$i] : 0,
+                'bulan'               => $bulanNama[$i + 1],
+                'target2024'          => $targetLalu[$i],
+                'akum2024'            => $targetLaluAkum[$i],
+                'realisasi2024'       => $realLalu[$i],
+                'realisasiAkum2024'   => $realLaluAkum[$i],
+                'target2025'          => $targetIni[$i],
+                'akum2025'            => $targetIniAkum[$i],
+                'realisasi2025'       => $realIni[$i],
+                'realisasiAkum2025'   => $realIniAkum[$i],
+                'deltaKva'            => $deltaKva,
+                'deltaPct'            => $this->hitungPersentase($targetIni[$i], $deltaKva),
+                'deltaAkumKva'        => $deltaAkumKva,
+                'deltaAkumPct'        => $this->hitungPersentase($targetIniAkum[$i], $deltaAkumKva),
+                'pencapaianTarget'    => $this->hitungPersentase($targetIniAkum[11], $targetIniAkum[$i]),
+                'pencapaianRealisasi' => $this->hitungPersentase($targetIniAkum[11], $realIniAkum[$i]),
             ];
         }
 
         return $result;
+    }
+
+    // ============================================================
+    // BUAT TAHUN & HAPUS TAHUN
+    // ============================================================
+
+    public function buatTahun(int $tahun, string $tipe): array
+    {
+        $kodeList = RtDimSubGolongan::orderBy('golongan_kode')->orderBy('urutan')->pluck('kode');
+        $created  = 0;
+
+        foreach ($kodeList as $kode) {
+            $golonganKode = $this->resolveGolonganKode($kode);
+
+            for ($bulan = 1; $bulan <= 12; $bulan++) {
+                $this->updateOrCreateRow(
+                    [
+                        'tahun' => $tahun, 'tipe' => $tipe, 'sub_golongan_kode' => $kode,
+                        'bulan' => $bulan, 'is_triwulan' => 0, 'is_akumulasi' => 0,
+                    ],
+                    [
+                        'nilai_kva' => 0, 'golongan_kode' => $golonganKode,
+                        'sumber' => 'manual',
+                    ]
+                );
+                $created++;
+            }
+
+            $this->hitungTriwulan($tahun, $tipe, $kode);
+            $this->hitungAkumulasi($tahun, $tipe, $kode);
+        }
+
+        return ['tahun' => $tahun, 'tipe' => $tipe, 'rows_created' => $created];
+    }
+
+    public function hapusTahun(int $tahun, ?string $tipe = null): array
+    {
+        $filter = ['tahun' => $tahun];
+        if ($tipe) {
+            $filter['tipe'] = $tipe;
+        }
+
+        $deleted = $this->deleteFiltered($filter);
+
+        return ['tahun' => $tahun, 'tipe' => $tipe ?? 'semua', 'rows_deleted' => $deleted];
     }
 }

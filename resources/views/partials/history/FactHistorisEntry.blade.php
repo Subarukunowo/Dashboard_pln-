@@ -43,7 +43,7 @@
     <div class="card">
         <div class="filter-row">
             <div class="filter-group">
-                <label class="filter-label">TAHUN</label>
+                <label class="filter-label" for="inputTahun">TAHUN</label>
                 <select id="inputTahun" class="form-select">
                     <option value="">Pilih Tahun</option>
                     @for($y = 2026; $y <= now()->year + 2; $y++)
@@ -58,7 +58,7 @@
             </div>
 
             <div class="filter-group">
-                <label class="filter-label">BULAN</label>
+                <label class="filter-label" for="inputBulan">BULAN</label>
                 <select id="inputBulan" class="form-select">
                     <option value="">Pilih Bulan</option>
                     @php
@@ -188,7 +188,11 @@
         <div id="entryTableWrap" class="entry-form" style="display:none;">
             <div class="table-responsive">
                 <table class="entry-table">
-                    <thead id="entryThead"></thead>
+                    <thead id="entryThead">
+                        <tr>
+                            <th scope="col">Golongan</th>
+                        </tr>
+                    </thead>
                     <tbody id="entryTbody"></tbody>
                 </table>
             </div>

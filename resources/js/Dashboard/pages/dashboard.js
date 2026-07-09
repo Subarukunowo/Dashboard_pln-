@@ -62,7 +62,10 @@ class Dashboard {
         this.rpkwhModule      = new RpkwhModule(new RpkwhChart(), this.rpkwhService)
         this.pelangganModule  = new PelangganModule(new PelangganChart(), this.pelangganService)
         this.kvaModule        = new KvaModule(new KvaChart())
-        this.babinModule      = new BabinModule(new BabinChart())
+        this.babinModule = new BabinModule(
+            new BabinChart(),
+            (tahun) => this.babinService.getData(tahun)
+        )
         this.jamNyalaModule   = new JamNyalaModule(new JamNyalaChart())
         this.lossesModule     = new LossesModule(new LossesChart())
         this.tunggakanModule  = new TunggakanModule(new TunggakanChart(), this.tunggakanService)
@@ -111,6 +114,11 @@ class Dashboard {
     }
 
     _loadAllModules() {
+        // JamNyalaModule butuh init() eksplisit untuk load daftar golongan
+        // (beda dari module lain yang datanya di-load lewat render() via fetcher).
+        // state & callback dioper supaya chart utama ikut refresh setelah simpan di Edit Data.
+        this.jamNyalaModule.init(this.state.jamNyala, () => this.jamNyalaModule.render(this.jamNyalaData, this.state.jamNyala))
+
         const configs = [
             { key: 'pendapatanData', fetcher: () => this.pendapatanService.getData(), module: this.pendapatanModule, state: this.state.pendapatan },
             { key: 'golTarifData',   fetcher: () => this.golTarifService.getData(),   module: this.golTarifModule,   state: this.state.golTarif },
@@ -138,12 +146,10 @@ class Dashboard {
                 .catch(err => console.warn(`[Dashboard] Gagal load ${cfg.key}:`, err))
         })
 
-        const now           = new Date()
-        const activeSection = document.querySelector('.sidebar-item.active')?.dataset?.section ?? 'bpp'
-        initStats(activeSection, { year: now.getFullYear(), month: now.getMonth() + 1 })
-
         this._initStatsSwap()
         this._initThemeRerender()
+        // Saat load awal mode all — stats semua tersembunyi
+        this._showStatsForSection('all')
     }
 
     _initThemeRerender() {
@@ -181,23 +187,60 @@ class Dashboard {
     }
 
     _initStatsSwap() {
-        document.querySelectorAll('.sidebar-item[data-section]').forEach(item => {
-            item.addEventListener('click', () => {
-                const section = item.dataset.section
-                const now     = new Date()
-
-                // Mode "all" — stats tidak ditampilkan
-                if (section === 'all') return
-
-                fetch(`/dashboard/stats-partial/${section}`)
-                    .then(r => r.text())
-                    .then(html => {
-                        document.getElementById('statsContainer').innerHTML = html
-                        initStats(section, { year: now.getFullYear(), month: now.getMonth() + 1 })
-                    })
-                    .catch(err => console.warn(`[Stats] Gagal swap ${section}:`, err))
-            })
+        // Listen sectionChange dari sidebar.js — event dispatch SETELAH all-mode dihapus dari DOM
+        document.addEventListener('sectionChange', (e) => {
+            console.log('[Stats] sectionChange received:', e.detail.section, '| body.all-mode:', document.body.classList.contains('all-mode'))
+            this._showStatsForSection(e.detail.section)
         })
+    }
+
+    _showStatsForSection(section) {
+        console.log('[Stats] _showStatsForSection:', section)
+
+        // Sembunyikan semua stat cards
+        document.querySelectorAll('[data-stat-section]').forEach(el => {
+            el.style.display = 'none'
+        })
+        console.log('[Stats] cards hidden, all-mode on body:', document.body.classList.contains('all-mode'))
+
+        if (section === 'all') {
+            console.log('[Stats] mode all — stats hidden')
+            return
+        }
+
+        const statsKeyMap = {
+            bpp:       'bpp',
+            losses:    'losses',
+            penjualan: 'penjualan',
+            babin:     'babin',
+            jamnyala:  'jamnyala',
+            goltarif:  'goltarif',
+            pendapatan:'pendapatan',
+            rpkwh:     'rpkwh',
+            pelanggan: 'pelanggan',
+            kva:       'kva',
+            tunggakan: 'tunggakan',
+            p2tl:      'p2tl',
+        }
+        const statsSection = statsKeyMap[section]
+        if (!statsSection) {
+            console.warn('[Stats] no statsSection for:', section)
+            return
+        }
+
+        // Tampilkan card untuk section ini
+        const cards = document.querySelectorAll('[data-stat-section="' + statsSection + '"]')
+        console.log('[Stats] showing', cards.length, 'cards for section:', statsSection)
+        cards.forEach(el => {
+            el.style.display = 'block'
+            console.log('[Stats] card shown:', el.id || el.className)
+        })
+
+        // Fetch & render stats
+        const year  = parseInt(this.state.global.year) || new Date().getFullYear()
+        const month = new Date().getMonth() + 1
+        console.log('[Stats] calling initStats(', statsSection, ', { year:', year, ', month:', month, '})')
+        initStats(statsSection, { year, month })
     }
 
     _initClock() {
@@ -230,22 +273,99 @@ class Dashboard {
 
     _initGlobalFilters() {
         document.getElementById('filterMonth')?.addEventListener('change', e => {
-            this.state.global.month    = e.target.value
-            this.state.bpp.month       = e.target.value
-            this.state.penjualan.month = e.target.value
+            const month = e.target.value
+            this.state.global.month    = month
+            this.state.bpp.month       = month
+            this.state.penjualan.month = month
+            this.state.p2tl.bulan      = month
+            this.state.losses.bulan    = month
+            this.state.tunggakan.bulan = month
+            this.state.babin.bulan     = month
+            this.state.jamNyala.bulan  = month
+            this.state.rpkwh.bulan     = month
+            this.state.kva.bulan       = month === 'all' ? 11 : parseInt(month)
+            this.state.pelanggan.bulan = month === 'all' ? 11 : parseInt(month)
+            this.state.pendapatan.bulan = month
+            this.state.golTarif.bulanRealisasi = month
+
+            // Sync ke select DOM masing-masing modul
+            this._syncSelectValue('filterBulanBpp',       month)
+            this._syncSelectValue('filterBulanPenjualan', month)
+            this._syncSelectValue('filterBulanP2tl',      month)
+            this._syncSelectValue('filterBulanLosses',    month)
+            this._syncSelectValue('filterBulanTunggakan', month)
+            this._syncSelectValue('filterBulanBabin',     month)
+            this._syncSelectValue('filterBulanJamNyala',  month)
+            this._syncSelectValue('filterBulanRpkwh',     month)
+            this._syncSelectValue('filterBulanKva',       month)
+            this._syncSelectValue('filterBulanPelanggan', month)
+            this._syncSelectValue('filterBulanPendapatan', month)
+            this._syncSelectValue('filterBulanRealisasiGol', month)
+
             this.bppModule.render(this.state.bpp)
             this.penjualanModule.render(this.state.penjualan)
+            if (this.p2tlData)       this.p2tlModule.render(this.p2tlData, this.state.p2tl)
+            if (this.lossesData)     this.lossesModule.render(this.lossesData, this.state.losses)
+            if (this.tunggakanData)  this.tunggakanModule.render(this.tunggakanData, this.state.tunggakan)
+            if (this.babinData)      this.babinModule.render(this.babinData, this.state.babin)
+            if (this.jamNyalaData)   this.jamNyalaModule.render(this.jamNyalaData, this.state.jamNyala)
+            if (this.rpkwhData)      this.rpkwhModule.render(this.rpkwhData, this.state.rpkwh)
+            if (this.kvaData)        this.kvaModule.render(this.kvaData, this.state.kva)
+            if (this.pelangganData)  this.pelangganModule.render(this.pelangganData, this.state.pelanggan)
+            if (this.pendapatanData) this.pendapatanModule.render(this.pendapatanData, this.state.pendapatan)
+            if (this.golTarifData)   this.golTarifModule.render(this.golTarifData, this.state.golTarif)
         })
 
         document.getElementById('filterYear')?.addEventListener('change', async e => {
             const year = parseInt(e.target.value)
             this.state.global.year = String(year)
-            this.state.bpp.year    = year
 
+            // Update state semua modul
+            this.state.bpp.year         = year
+            this.state.babin.tahun      = year
+            this.state.jamNyala.tahun   = year
+            this.state.losses.tahun     = year
+            this.state.tunggakan.tahun  = year
+            this.state.p2tl.tahun       = year
+
+            // Sync ke select DOM
+            this._syncSelectValue('filterTahunBabin',   String(year))
+            this._syncSelectValue('muatTahunJamNyala',  String(year))
+
+            // Re-fetch semua modul yang tahunnya berpengaruh
             await this.bppModule.load(year)
             this.bppModule.render(this.state.bpp)
             this.penjualanModule.render(this.state.penjualan)
+
+            const reloads = [
+                { key: 'jamNyalaData',  fetcher: () => this.jamNyalaService.getData(year),  module: this.jamNyalaModule,  state: this.state.jamNyala },
+                { key: 'lossesData',    fetcher: () => this.lossesService.getData(year),    module: this.lossesModule,    state: this.state.losses },
+                { key: 'tunggakanData', fetcher: () => this.tunggakanService.getData(year), module: this.tunggakanModule, state: this.state.tunggakan },
+                { key: 'p2tlData',      fetcher: () => this.p2tlService.getData(year),      module: this.p2tlModule,      state: this.state.p2tl },
+                { key: 'babinData',     fetcher: () => this.babinService.getData(year),     module: this.babinModule,     state: this.state.babin },
+                { key: 'pelangganData', fetcher: () => this.pelangganService.getData(year), module: this.pelangganModule, state: this.state.pelanggan },
+                { key: 'kvaData',       fetcher: () => this.kvaService.getData(year),       module: this.kvaModule,       state: this.state.kva },
+                { key: 'rpkwhData',     fetcher: () => this.rpkwhService.getData(year),     module: this.rpkwhModule,     state: this.state.rpkwh },
+                { key: 'pendapatanData',fetcher: () => this.pendapatanService.getData(year),module: this.pendapatanModule,state: this.state.pendapatan },
+                { key: 'golTarifData',  fetcher: () => this.golTarifService.getData(year),  module: this.golTarifModule,  state: this.state.golTarif },
+            ]
+
+            reloads.forEach(cfg => {
+                cfg.fetcher()
+                    .then(data => {
+                        if (!data) return
+                        this[cfg.key] = data
+                        cfg.module.render(data, cfg.state)
+                    })
+                    .catch(err => console.warn('[Dashboard] Gagal reload ' + cfg.key + ':', err))
+            })
         })
+    }
+
+    /** Sync nilai select DOM tanpa trigger event */
+    _syncSelectValue(id, value) {
+        const el = document.getElementById(id)
+        if (el) el.value = value
     }
 }
 

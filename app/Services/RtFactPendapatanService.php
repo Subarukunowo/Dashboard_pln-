@@ -12,28 +12,45 @@ class RtFactPendapatanService extends BaseService
         parent::__construct($repository);
     }
 
+    /**
+     * $tahun = tahun yang dipilih user di filter (state.tahun).
+     * Fungsi ini SELALU mengambil $tahun dan $tahun-1 sekaligus dari database,
+     * tanpa asumsi "tahun berjalan" — murni berdasarkan apa yang tersedia di data.
+     */
     public function getChartData(int $tahun): array
     {
-        $hasData      = $this->repository->all(['tahun' => $tahun, 'is_triwulan' => 0])->isNotEmpty();
-        $tahunEfektif = $hasData ? $tahun : $tahun - 1;
+        $tahunLalu = $tahun - 1;
 
-        $allData = $this->repository->all(['tahun' => $tahunEfektif, 'is_triwulan' => 0]);
+        // Ambil kedua tahun sekaligus dalam satu query.
+        // Catatan: is_akumulasi tidak lagi difilter di sini karena akumulasi
+        // sekarang selalu dihitung (cumsum) dari data bulanan, bukan diquery manual.
+        $allData = $this->repository->all([
+            'tahun'       => [$tahun, $tahunLalu],
+            'is_triwulan' => 0,
+            'is_akumulasi' => 0,
+        ]);
 
-        // Dim table untuk urutan & metadata
+        // Fallback: kalau tahun yang diminta benar-benar kosong di kedua tahun, jangan diam-diam
+        // ganti tahun (itu sumber bug sebelumnya) — cukup laporkan lewat flag ke frontend.
+        $hasIni  = $allData->where('tahun', $tahun)->isNotEmpty();
+        $hasLalu = $allData->where('tahun', $tahunLalu)->isNotEmpty();
+
         $dimSubs = DB::table('rt_dim_sub_golongan')
             ->orderByRaw("FIELD(golongan_kode,'S','R','B','I','P','M','TOTAL')")
             ->orderBy('urutan')
             ->get()
             ->keyBy('kode');
 
-        $bulananTarget    = $allData->where('is_akumulasi', 0)->where('tipe', 'target')->groupBy('sub_golongan_kode');
-        $bulananRealisasi = $allData->where('is_akumulasi', 0)->where('tipe', 'realisasi')->groupBy('sub_golongan_kode');
-        $akumTarget       = $allData->where('is_akumulasi', 1)->where('tipe', 'target')->groupBy('sub_golongan_kode');
-        $akumRealisasi    = $allData->where('is_akumulasi', 1)->where('tipe', 'realisasi')->groupBy('sub_golongan_kode');
+        // ---------- Section: daftar sub-golongan (dipakai modul Pendapatan Batam / detail) ----------
+        $bulanan = fn ($tahunX, $tipe) => $allData
+            ->where('tahun', $tahunX)->where('tipe', $tipe)
+            ->groupBy('sub_golongan_kode');
 
-        // Urutan dari dim table, fallback ke kode dari data jika tidak ada di dim
+        $bulTargetIni    = $bulanan($tahun, 'target');
+        $bulRealisasiIni = $bulanan($tahun, 'realisasi');
+
         $allKodes = $dimSubs->keys()
-            ->merge($bulananTarget->keys()->merge($bulananRealisasi->keys())->unique()->values())
+            ->merge($bulTargetIni->keys()->merge($bulRealisasiIni->keys())->unique()->values())
             ->unique()->values();
 
         $tarif = [];
@@ -41,23 +58,27 @@ class RtFactPendapatanService extends BaseService
 
         foreach ($allKodes as $kode) {
             $tarif[] = $kode;
+
+            $rencanaMonthly   = $this->toMonthly($bulTargetIni[$kode]    ?? collect());
+            $realisasiMonthly = $this->toMonthly($bulRealisasiIni[$kode] ?? collect());
+
             $data[$kode] = [
                 'nama'          => $dimSubs[$kode]->nama          ?? $kode,
                 'golongan_kode' => $dimSubs[$kode]->golongan_kode ?? 'TOTAL',
-                'rencana'       => $this->toMonthly($bulananTarget[$kode]    ?? collect()),
-                'realisasi'     => $this->toMonthly($bulananRealisasi[$kode] ?? collect()),
-                'rencanaAkum'   => $this->toMonthly($akumTarget[$kode]       ?? collect()),
-                'realisasiAkum' => $this->toMonthly($akumRealisasi[$kode]    ?? collect()),
+                'rencana'       => $rencanaMonthly,
+                'realisasi'     => $realisasiMonthly,
+                'rencanaAkum'   => $this->toCumulative($rencanaMonthly),
+                'realisasiAkum' => $this->toCumulative($realisasiMonthly),
             ];
         }
 
-        // Realisasi bulanan total (JUMLAH)
+        // ---------- Section 2: Realisasi bulanan TOTAL (JUMLAH) — tahun yang dipilih ----------
         $realisasiBulanan = [];
         for ($m = 1; $m <= 12; $m++) {
-            $tRow = $allData->where('is_akumulasi', 0)->where('tipe', 'target')
-                ->where('sub_golongan_kode', 'JUMLAH')->where('bulan', $m)->first();
-            $rRow = $allData->where('is_akumulasi', 0)->where('tipe', 'realisasi')
-                ->where('sub_golongan_kode', 'JUMLAH')->where('bulan', $m)->first();
+            $tRow = $allData->where('tahun', $tahun)
+                ->where('tipe', 'target')->where('sub_golongan_kode', 'JUMLAH')->where('bulan', $m)->first();
+            $rRow = $allData->where('tahun', $tahun)
+                ->where('tipe', 'realisasi')->where('sub_golongan_kode', 'JUMLAH')->where('bulan', $m)->first();
 
             $t = (float) ($tRow?->nilai_rp ?? 0);
             $r = (float) ($rRow?->nilai_rp ?? 0);
@@ -71,27 +92,78 @@ class RtFactPendapatanService extends BaseService
             ];
         }
 
-        // Data per golongan besar untuk GolTarif pie
-        $golList      = ['S', 'R', 'B', 'I', 'P', 'M'];
+        // ---------- Section 1: Pie per golongan besar (S,R,B,I,P,M) ----------
+        // Dibuat lengkap 4 series per golongan: target/realisasi × bulanan/akumulasi,
+        // untuk tahun ini DAN tahun lalu, supaya kombinasi filter (tahun × view) apa pun tetap valid.
+        // Akumulasi = cumsum dari series bulanan, tidak lagi diquery dari is_akumulasi=1.
+        $golList  = ['S', 'R', 'B', 'I', 'P', 'M'];
+        $golLabel = [
+            'S' => 'Sosial', 'R' => 'Rumah Tangga', 'B' => 'Bisnis',
+            'I' => 'Industri', 'P' => 'Publik', 'M' => 'Multiguna',
+        ];
         $golonganData = [];
 
         foreach ($golList as $gol) {
-            $rows       = $allData->where('is_akumulasi', 0)->where('golongan_kode', $gol);
             $jumlahKode = 'JUMLAH-' . $gol;
 
-            $golonganData[$gol] = [
-                'target'    => $this->toMonthly($rows->where('tipe', 'target')->where('sub_golongan_kode', $jumlahKode)),
-                'realisasi' => $this->toMonthly($rows->where('tipe', 'realisasi')->where('sub_golongan_kode', $jumlahKode)),
+            $seriesFor = function (int $tahunX, string $tipe) use ($allData, $gol, $jumlahKode) {
+                $rows = $allData->where('tahun', $tahunX)
+                    ->where('golongan_kode', $gol)->where('tipe', $tipe)
+                    ->where('sub_golongan_kode', $jumlahKode);
+                return $this->toMonthly($rows);
+            };
+
+            $targetIniBul      = $seriesFor($tahun,     'target');
+            $realisasiIniBul   = $seriesFor($tahun,     'realisasi');
+            $targetLaluBul     = $seriesFor($tahunLalu, 'target');
+            $realisasiLaluBul  = $seriesFor($tahunLalu, 'realisasi');
+
+            $golonganData[] = [
+                'kode'               => $gol,
+                'nama'               => $golLabel[$gol],
+                'targetIniBul'       => $targetIniBul,
+                'targetIniAkum'      => $this->toCumulative($targetIniBul),
+                'realisasiIniBul'    => $realisasiIniBul,
+                'realisasiIniAkum'   => $this->toCumulative($realisasiIniBul),
+                'targetLaluBul'      => $targetLaluBul,
+                'targetLaluAkum'     => $this->toCumulative($targetLaluBul),
+                'realisasiLaluBul'   => $realisasiLaluBul,
+                'realisasiLaluAkum'  => $this->toCumulative($realisasiLaluBul),
+            ];
+        }
+
+        // ---------- Section 3: Total TOTAL/JUMLAH — tahun lalu vs tahun ini, per bulan ----------
+        $total = [];
+        for ($m = 1; $m <= 12; $m++) {
+            $find = fn ($tahunX, $tipe) => $allData->where('tahun', $tahunX)
+                ->where('tipe', $tipe)->where('sub_golongan_kode', 'JUMLAH')->where('bulan', $m)->first();
+
+            $targetLalu    = (float) ($find($tahunLalu, 'target')?->nilai_rp    ?? 0);
+            $realisasiLalu = (float) ($find($tahunLalu, 'realisasi')?->nilai_rp ?? 0);
+            $targetIni     = (float) ($find($tahun,     'target')?->nilai_rp    ?? 0);
+            $realisasiIni  = (float) ($find($tahun,     'realisasi')?->nilai_rp ?? 0);
+
+            $total[] = [
+                'bulan'         => $m,
+                'targetLalu'    => $targetLalu,
+                'realisasiLalu' => $realisasiLalu,
+                'targetIni'     => $targetIni,
+                'realisasiIni'  => $realisasiIni,
+                'deltaKwh'      => $realisasiIni - $targetIni,
+                'deltaPct'      => $targetIni > 0 ? $realisasiIni / $targetIni : 1,
             ];
         }
 
         return [
-            'tahun_efektif'    => $tahunEfektif,
-            'is_fallback'      => !$hasData,
+            'tahun'            => $tahun,
+            'tahunLalu'        => $tahunLalu,
+            'hasDataTahunIni'  => $hasIni,
+            'hasDataTahunLalu' => $hasLalu,
             'tarif'            => $tarif,
             'data'             => $data,
             'realisasiBulanan' => $realisasiBulanan,
             'golongan'         => $golonganData,
+            'total'            => $total,
         ];
     }
 
@@ -101,6 +173,29 @@ class RtFactPendapatanService extends BaseService
         foreach ($rows as $row) {
             $result[$row->bulan - 1] = (float) $row->nilai_rp;
         }
+        return $result;
+    }
+
+    /**
+     * Ubah array 12 nilai bulanan (boleh null) menjadi running total (cumsum),
+     * setara rumus Excel semacam D7 = D6 + C7.
+     * Bulan yang null dilewati (tidak menambah 0) dan tetap null di hasil,
+     * supaya bulan yang belum ada datanya tidak seolah-olah sudah "0 tercapai".
+     */
+    private function toCumulative(array $monthly): array
+    {
+        $result = [];
+        $running = 0.0;
+        $adaData = false;
+
+        foreach ($monthly as $val) {
+            if ($val !== null) {
+                $running += $val;
+                $adaData = true;
+            }
+            $result[] = $adaData ? round($running, 2) : null;
+        }
+
         return $result;
     }
 }

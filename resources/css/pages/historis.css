@@ -40,7 +40,7 @@
 
 .dash-header__sub {
     font-size: 0.68rem;
-    color: #555;
+    color: #909090;
     margin: 0;
 }
 
@@ -89,7 +89,7 @@
 .section-historis .card-title {
     font-size: 0.72rem;
     font-weight: 700;
-    color: #888;
+    color: #9a9a9a;
     margin: 0;
     text-transform: uppercase;
     letter-spacing: 1px;
@@ -97,7 +97,7 @@
 
 .section-historis .text-muted {
     font-size: 0.68rem;
-    color: #555;
+    color: #909090;
 }
 
 /* ─── FILTER CONTROLS ────────────────────────────────────── */
@@ -124,7 +124,7 @@
     display: block;
     font-size: 0.62rem;
     font-weight: 700;
-    color: #555;
+    color: #909090;
     letter-spacing: 0.08em;
     text-transform: uppercase;
 }
@@ -194,7 +194,7 @@
     background: #252525;
     border: 1px solid #333;
     border-radius: 6px;
-    color: #888;
+    color: #9a9a9a;
     font-size: 0.75rem;
     font-weight: 600;
     font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
@@ -250,7 +250,7 @@
     font-size: 0.78rem;
     font-weight: 500;
     font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
-    color: #555;
+    color: #909090;
     background: #161616;
     border: 1.5px solid #2a2a2a;
     user-select: none;
@@ -274,66 +274,68 @@
 
 .hist-gol-chip:hover {
     border-color: #444;
-    color: #999;
+    color: #bbb;
     background: #1e1e1e;
 }
 
-/* ── Warna per golongan saat AKTIF ── */
+/* ── Warna per golongan saat AKTIF ──
+   (opacity teks dinaikkan dari border-rgba versi lama agar
+    kontras terhadap background gelap memenuhi 4.5:1) */
 
 /* Sosial — teal */
 .hist-gol-chip.gol-sosial.checked {
-    background: rgba(0, 188, 212, 0.1);
+    background: #1b2e30;
     border-color: rgba(0, 188, 212, 0.6);
-    color: #00bcd4;
+    color: #4dd0e1;
 }
 
 /* Rumah Tangga — hijau */
 .hist-gol-chip.gol-rumah.checked {
-    background: rgba(0, 200, 83, 0.1);
+    background: #1b2f23;
     border-color: rgba(0, 200, 83, 0.6);
-    color: #00c853;
+    color: #4ddb85;
 }
 
 /* Bisnis — orange */
 .hist-gol-chip.gol-bisnis.checked {
-    background: rgba(255, 152, 0, 0.1);
+    background: #352a1b;
     border-color: rgba(255, 152, 0, 0.6);
-    color: #ff9800;
+    color: #ffb74d;
 }
 
 /* Industri — merah */
 .hist-gol-chip.gol-industri.checked {
-    background: rgba(244, 67, 54, 0.1);
+    background: #332220;
     border-color: rgba(244, 67, 54, 0.6);
-    color: #f44336;
+    color: #ef9a9a;
 }
 
 /* Publik — ungu */
 .hist-gol-chip.gol-publik.checked {
-    background: rgba(156, 39, 176, 0.12);
+    background: #2d1f30;
     border-color: rgba(156, 39, 176, 0.6);
     color: #ce93d8;
 }
 
 /* Multiguna — pink/magenta */
 .hist-gol-chip.gol-multiguna.checked {
-    background: rgba(233, 30, 99, 0.1);
+    background: #321e25;
     border-color: rgba(233, 30, 99, 0.6);
-    color: #f06292;
+    color: #f48fb1;
 }
 
 /* Total — kuning emas */
 .hist-gol-chip.gol-total.checked {
-    background: rgba(255, 193, 7, 0.1);
+    background: #352e1c;
     border-color: rgba(255, 193, 7, 0.6);
-    color: #ffc107;
+    color: #ffd54f;
 }
 
 /* Fallback */
 .hist-gol-chip.checked {
     background: rgba(255, 152, 0, 0.1);
     border-color: rgba(255, 152, 0, 0.5);
-    color: #ff9800;
+    color: #000000;
 }
 
 /* ─── CHART SECTION ──────────────────────────────────────── */
@@ -361,7 +363,7 @@
 
 .chart-info .text-muted {
     font-size: 0.7rem;
-    color: #555;
+    color: #909090;
 }
 
 .chart-controls {
@@ -400,7 +402,7 @@
 .section-table .card-title {
     font-size: 0.72rem;
     font-weight: 700;
-    color: #888;
+    color: #9a9a9a;
     text-transform: uppercase;
     letter-spacing: 1px;
     margin: 0;
@@ -426,7 +428,7 @@
     align-items: flex-start;
     gap: 10px;
     padding: 10px 14px;
-    background: rgba(33, 150, 243, 0.07);
+    background: #1e262d;
     border: 1px solid rgba(33, 150, 243, 0.2);
     border-radius: 8px;
     font-size: 0.78rem;
@@ -436,7 +438,7 @@
 
 .hist-error-box {
     padding: 10px 14px;
-    background: rgba(244, 67, 54, 0.08);
+    background: #2f2120;
     border: 1px solid rgba(244, 67, 54, 0.25);
     border-radius: 8px;
     font-size: 0.78rem;
@@ -483,13 +485,13 @@
 
 .toggle-info .text-muted {
     font-size: 0.7rem;
-    color: #555;
+    color: #909090;
     display: block;
     margin-top: 2px;
 }
 
 .toggle-icon {
-    color: #555;
+    color: #909090;
     transition: transform 0.2s;
     font-size: 0.85rem;
 }
@@ -545,49 +547,49 @@
     .historis-container { padding: 12px; }
     #histChartWrap      { height: 260px; }
 }
+
 /* ══════════════════════════════════════════════════════════
    TAMBAHAN ke historis.css
-   Paste di bagian BAWAH file historis.css yang sudah ada
    ══════════════════════════════════════════════════════════ */
 
 /* ─── BUTTON: Download Template (hijau outline) ───────────── */
 .hist-btn-primary.hist-btn-template {
     background: transparent;
-    color: #28a745;
+    color: #4cbb6a;
     border: 1.5px solid #28a745;
 }
 .hist-btn-primary.hist-btn-template:hover {
-    background: rgba(40, 167, 69, 0.12);
-    color: #4cbb6a;
+    background: #1f2e23;
+    color: #6fd88c;
     border-color: #4cbb6a;
 }
 
 /* ─── BUTTON: Import Excel (biru outline) ─────────────────── */
 .hist-btn-primary.hist-btn-import {
     background: transparent;
-    color: #2196f3;
+    color: #64b5f6;
     border: 1.5px solid #2196f3;
 }
 .hist-btn-primary.hist-btn-import:hover {
-    background: rgba(33, 150, 243, 0.12);
-    color: #64b5f6;
+    background: #1e2c38;
+    color: #90caf9;
     border-color: #64b5f6;
 }
 /* Saat panel import terbuka */
 .hist-btn-primary.hist-btn-import.active {
-    background: rgba(33, 150, 243, 0.18);
-    color: #90caf9;
+    background: #1f3444;
+    color: #bbdefb;
     border-color: #90caf9;
 }
 
 /* ─── BUTTON: Proses Import (biru solid) ──────────────────── */
 .hist-btn-primary.hist-btn-process {
-    background: #2196f3;
+    background: #1565c0;
     color: #fff;
     border: none;
 }
 .hist-btn-primary.hist-btn-process:hover {
-    background: #42a5f5;
+    background: #1976d2;
 }
 
 /* ─── IMPORT PANEL ────────────────────────────────────────── */
@@ -625,7 +627,7 @@
 }
 .import-panel-sub {
     font-size: 0.72rem;
-    color: #555;
+    color: #909090;
     flex: 1;
 }
 .import-close-btn {
@@ -634,7 +636,7 @@
     right: 0;
     background: none;
     border: none;
-    color: #555;
+    color: #909090;
     cursor: pointer;
     padding: 3px 6px;
     border-radius: 4px;
@@ -643,7 +645,7 @@
 }
 .import-close-btn:hover {
     color: #ff4444;
-    background: rgba(255, 68, 68, 0.1);
+    background: #1b1111;
 }
 
 /* Drop zone */
@@ -666,13 +668,13 @@
     flex-direction: column;
     align-items: center;
     gap: 6px;
-    color: #888;
+    color: #9a9a9a;
     font-size: 0.8rem;
     font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
 }
 .import-dropzone-label small {
     font-size: 0.68rem;
-    color: #444;
+    color: #767676;
 }
 .import-upload-icon {
     font-size: 2rem;
@@ -700,7 +702,7 @@
 .import-remove-btn {
     background: none;
     border: none;
-    color: #555;
+    color: #909090;
     cursor: pointer;
     padding: 2px 5px;
     border-radius: 3px;
@@ -732,7 +734,7 @@
 }
 .import-progress-text {
     display: block;
-    color: #555;
+    color: #909090;
     font-size: 0.68rem;
     margin-top: 5px;
 }
@@ -746,13 +748,13 @@
     font-family: 'Inter', 'Segoe UI', system-ui, sans-serif;
 }
 .import-result.success {
-    background: rgba(0, 200, 83, 0.08);
+    background: #1c2c22;
     border: 1px solid rgba(0, 200, 83, 0.3);
-    color: #00c853;
+    color: #4ddb85;
     display: block;
 }
 .import-result.error {
-    background: rgba(244, 67, 54, 0.08);
+    background: #2f2120;
     border: 1px solid rgba(244, 67, 54, 0.25);
     color: #ef9a9a;
     display: block;

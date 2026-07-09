@@ -56,6 +56,26 @@ class RtFactPelangganController extends BaseApiController
         return $this->success($this->service->getChartData($tahun, $tahunLalu));
     }
 
+    /**
+     * Generate 12 baris/bulan data kosong (nilai=0) untuk satu tahun+tipe,
+     * mencakup semua sub_golongan_kode dari rt_dim_sub_golongan
+     * (tarif asli + JUMLAH-S/R/B/I/P/M + JUMLAH/TOTAL).
+     */
+    public function buatTahun(Request $request): JsonResponse
+    {
+        $request->validate([
+            'tahun' => 'required|integer|min:2000|max:2100',
+            'tipe'  => 'required|in:realisasi,target',
+        ]);
+
+        $result = $this->service->buatTahun(
+            $request->integer('tahun'),
+            $request->input('tipe')
+        );
+
+        return $this->created($result, 'Data berhasil dibuat');
+    }
+
     public function destroyByFilter(Request $request): JsonResponse
     {
         $request->validate([

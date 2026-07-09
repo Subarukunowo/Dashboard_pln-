@@ -101,12 +101,16 @@ export default class PenjualanModule {
         document.getElementById('filterViewPenjualan')?.addEventListener('change',  e => { state.view  = e.target.value; onChange() })
         document.getElementById('filterBulanPenjualan')?.addEventListener('change', e => { state.month = e.target.value; onChange() })
 
-        // populate tarif filter dengan optgroup
-        const selTarif = document.getElementById('filterTarif')
-        if (selTarif?.options.length === 0 && this.data?.perTarif) {
+        // populate tarif filter dengan optgroup (dropdown atas + dropdown Edit Data)
+        // dua-duanya dicek & diisi independen supaya salah satu tidak kosong
+        // hanya karena yang lain sudah lebih dulu terisi
+        const selTarif     = document.getElementById('filterTarif')
+        const selTarifEdit = document.getElementById('filterTarifEditPenjualan')
+
+        const buildOptions = (target) => {
             const optAll = document.createElement('option')
             optAll.value = 'JUMLAH'; optAll.textContent = 'Semua'
-            selTarif.appendChild(optAll)
+            target.appendChild(optAll)
 
             const tarifs   = Object.keys(this.data.perTarif)
             const grouped  = {}
@@ -135,13 +139,31 @@ export default class PenjualanModule {
                     opt.value = jumlahItems[key]; opt.textContent = jumlahItems[key]
                     grp.appendChild(opt)
                 }
-                selTarif.appendChild(grp)
+                target.appendChild(grp)
             })
+        }
 
+        if (selTarif?.options.length === 0 && this.data?.perTarif) {
+            buildOptions(selTarif)
             selTarif.value = state.tarif || 'JUMLAH'
         }
 
-        selTarif?.addEventListener('change', e => { state.tarif = e.target.value; onChange() })
+        if (selTarifEdit?.options.length === 0 && this.data?.perTarif) {
+            buildOptions(selTarifEdit)
+            selTarifEdit.value = state.tarif || 'JUMLAH'
+        }
+
+        selTarif?.addEventListener('change', e => {
+            state.tarif = e.target.value
+            if (selTarifEdit) selTarifEdit.value = e.target.value
+            onChange()
+        })
+
+        selTarifEdit?.addEventListener('change', e => {
+            state.tarif = e.target.value
+            if (selTarif) selTarif.value = e.target.value
+            onChange()
+        })
 
         // Tombol muat data
         const btnMuat  = document.getElementById('btnMuatPenjualan')
@@ -186,19 +208,22 @@ export default class PenjualanModule {
             const tahun = Number.parseInt(document.getElementById('buatTahunPenjualan')?.value)
             const tipe  = document.getElementById('buatTipePenjualan')?.value
             if (modalBuat) modalBuat.style.display = 'none'
+
             const csrf  = document.querySelector('meta[name="csrf-token"]')?.content
             const heads = { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }
+
             let ok = true
-            for (let bulan = 1; bulan <= 12; bulan++) {
-                try {
-                    const res = await fetch('/api/v1/fact/penjualan', {
-                        method: 'POST', headers: heads,
-                        body: JSON.stringify({ tahun, bulan, tipe, sub_golongan_kode: 'JUMLAH', golongan_kode: 'TOTAL', nilai_kwh: 0, is_triwulan: 0, is_akumulasi: 0, sumber: 'manual' }),
-                    })
-                    if (!res.ok) ok = false
-                } catch { ok = false }
-            }
-            alert(ok ? `Data Penjualan tahun ${tahun} berhasil dibuat.` : 'Sebagian data gagal dibuat.')
+            try {
+                // Backend generate semua tarif + JUMLAH-S/R/B/I/P/M + JUMLAH/TOTAL
+                // dari rt_dim_sub_golongan, bukan loop manual di sini.
+                const res = await fetch('/api/v1/fact/penjualan/buat-tahun', {
+                    method: 'POST', headers: heads,
+                    body: JSON.stringify({ tahun, tipe }),
+                })
+                if (!res.ok) ok = false
+            } catch { ok = false }
+
+            alert(ok ? `Data Penjualan tahun ${tahun} berhasil dibuat.` : 'Gagal membuat data.')
             await this.load(tahun)
             onChange()
         })
@@ -378,12 +403,12 @@ export default class PenjualanModule {
 
                 if (nilai === null) return
 
-                const golMatch = tarif.match(/^(JUMLAH|[A-Z])/) 
-                const golKode  = golMatch?.[1] === 'JUMLAH' ? 'TOTAL' : (golMatch?.[1] ?? 'TOTAL')
+                // golongan_kode TIDAK dihitung di frontend — backend resolve dari
+                // sub_golongan_kode via rt_dim_sub_golongan (lihat RtFactPenjualanService).
                 const res = await fetch('/api/v1/fact/penjualan', {
                     method: 'POST',
                     headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrfToken },
-                    body: JSON.stringify({ tahun: tahunV, bulan, tipe: tipeV, sub_golongan_kode: tarif, golongan_kode: golKode, nilai_kwh: nilai, is_triwulan: 0, is_akumulasi: 0, sumber: 'manual' }),
+                    body: JSON.stringify({ tahun: tahunV, bulan, tipe: tipeV, sub_golongan_kode: tarif, nilai_kwh: nilai, is_triwulan: 0, is_akumulasi: 0, sumber: 'manual' }),
                 })
                 if (!res.ok) throw new Error(`Gagal membuat data penjualan (HTTP ${res.status})`)
             }

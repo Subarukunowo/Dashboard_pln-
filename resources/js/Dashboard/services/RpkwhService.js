@@ -1,9 +1,8 @@
 import { apiFetch } from '@/Dashboard/utils/apiClient'
 
 export default class RpkwhService {
-   
+
     baseUrl = '/api/chart/rpkwh'
-  
 
     async getData(tahun = new Date().getFullYear(), tahunLalu = null) {
         try {
@@ -27,14 +26,14 @@ export default class RpkwhService {
 
             return a.map(d => ({
                 bulan             : d.bulan,
-                target2024        : d.target2024,
-                targetAkum2024    : d.akum2024,
-                realisasi2024     : d.realisasi2024,
-                realisasiAkum2024 : d.realisasiAkum2024,
-                target2025        : d.target2025,
-                targetAkum2025    : d.akum2025,
-                realisasi2025     : d.realisasi2025,
-                realisasiAkum2025 : d.realisasiAkum2025,
+                targetLalu        : d.targetLalu,
+                targetAkumLalu    : d.akumLalu,
+                realisasiLalu     : d.realisasiLalu,
+                realisasiAkumLalu : d.realisasiAkumLalu,
+                targetIni         : d.targetIni,
+                targetAkumIni     : d.akumIni,
+                realisasiIni      : d.realisasiIni,
+                realisasiAkumIni  : d.realisasiAkumIni,
                 deltaKwh          : d.deltaRpkwh,
                 deltaPersen       : d.deltaPct,
                 deltaAkumKwh      : d.deltaAkum,

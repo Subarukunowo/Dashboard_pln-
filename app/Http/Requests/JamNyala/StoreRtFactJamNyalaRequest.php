@@ -19,7 +19,7 @@ class StoreRtFactJamNyalaRequest extends FormRequest
             'is_triwulan'    => ['required', 'boolean'],
             'is_akumulasi'   => ['required', 'boolean'],
             'tipe'           => ['required', 'string', 'max:50'],
-            'golongan_kode'  => ['required', 'string', 'max:20'],
+            'golongan_kode'  => ['required', 'string', 'max:40'],
             'nilai_jam'      => ['required', 'numeric', 'min:0'],
             'pct_pencapaian' => ['nullable', 'numeric'],
             'sumber'         => ['nullable', 'string', 'max:100'],

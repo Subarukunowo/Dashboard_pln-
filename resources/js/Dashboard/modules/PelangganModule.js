@@ -16,10 +16,12 @@ export default class PelangganModule {
         this.chart   = chart
         this.service = service
         this._tahun  = TAHUN_INI
+        this._data   = null
     }
 
     render(data, state) {
         if (!data) return
+        this._data  = data
         this._tahun = data.tahun_efektif ?? TAHUN_INI
 
         const warning = document.getElementById('pelangganWarning')
@@ -49,7 +51,9 @@ export default class PelangganModule {
             { label: 'Realisasi Lalu',   data: pieReal24, backgroundColor: '#2196f3' },
         ])
 
+        this.#populateTahunOptions(data)
         this.#populateTarif(data, state.tarif)
+        this.#populateGolonganEdit(data, state.tarif)
         this.#renderBarTable(r, rl)
         this.#renderDeltaTable(LABELS, delta)
         this.#renderPieTable(pieLabels, pieData)
@@ -59,14 +63,94 @@ export default class PelangganModule {
     }
 
     initFilters(state, onChange) {
-        document.getElementById('filterTarifPelanggan')?.addEventListener('change', e => { state.tarif = e.target.value;          onChange() })
+        document.getElementById('filterTarifPelanggan')?.addEventListener('change', e => {
+            state.tarif = e.target.value
+            const editSel = document.getElementById('filterGolonganEditPelanggan')
+            if (editSel) editSel.value = e.target.value
+            onChange()
+        })
+
+        document.getElementById('filterGolonganEditPelanggan')?.addEventListener('change', e => {
+            state.tarif = e.target.value
+            const topSel = document.getElementById('filterTarifPelanggan')
+            if (topSel) topSel.value = e.target.value
+            onChange()
+        })
+
         document.getElementById('filterBulanPelanggan')?.addEventListener('change', e => { state.bulan = Number.parseInt(e.target.value); onChange() })
+
+        document.getElementById('filterTahunPelanggan')?.addEventListener('change', async e => {
+            const tahun = Number.parseInt(e.target.value)
+            await this.#switchTahun(tahun, state, onChange)
+        })
+
         this.#initCrud(state, onChange)
+    }
+
+    // ── Dropdown tahun, scan dari availableYears (pola sama seperti RPKWH) ──
+    #populateTahunOptions(data) {
+        if (!data.availableYears?.length) return
+        const key = data.availableYears.join(',')
+
+        const sel = document.getElementById('filterTahunPelanggan')
+        if (!sel) return
+
+        if (sel.dataset.populated !== key) {
+            sel.innerHTML = data.availableYears.map(y => `<option value="${y}">${y}</option>`).join('')
+            sel.dataset.populated = key
+        }
+        sel.value = String(this._tahun)
     }
 
     #populateTarif(data, currentTarif) {
         const sel = document.getElementById('filterTarifPelanggan')
         if (!sel || sel.options.length > 0 || !data.tarif) return
+
+        const optAll = document.createElement('option')
+        optAll.value = 'JUMLAH'; optAll.textContent = 'Semua'
+        sel.appendChild(optAll)
+
+        const grouped = {}
+        const jumlahItems = {}
+        data.tarif.forEach(t => {
+            if (t === 'JUMLAH') return
+            const key = getGrup(t)
+            if (key === '__JUMLAH__') {
+                jumlahItems[t.replace('JUMLAH-', '')] = t
+            } else {
+                if (!grouped[key]) grouped[key] = []
+                grouped[key].push(t)
+            }
+        })
+
+        GRUP_ORDER.forEach(key => {
+            if (!grouped[key]?.length && !jumlahItems[key]) return
+            const grp = document.createElement('optgroup')
+            grp.label = GRUP_LABEL[key] ?? key
+            ;(grouped[key] ?? []).forEach(t => {
+                const opt = document.createElement('option')
+                opt.value = t; opt.textContent = t
+                grp.appendChild(opt)
+            })
+            if (jumlahItems[key]) {
+                const opt = document.createElement('option')
+                opt.value = jumlahItems[key]; opt.textContent = jumlahItems[key]
+                grp.appendChild(opt)
+            }
+            sel.appendChild(grp)
+        })
+
+        sel.value = currentTarif || 'JUMLAH'
+    }
+
+    // Dropdown khusus di section "Edit Data" — isinya sama seperti filterTarifPelanggan
+    // (dikelompokkan per golongan). Selalu di-refresh tiap render supaya sinkron
+    // dengan state.tarif, termasuk saat diganti dari dropdown atas.
+    #populateGolonganEdit(data, currentTarif) {
+        const sel = document.getElementById('filterGolonganEditPelanggan')
+        if (!sel || !data.tarif) return
+
+        sel.innerHTML = ''
 
         const optAll = document.createElement('option')
         optAll.value = 'JUMLAH'; optAll.textContent = 'Semua'
@@ -189,7 +273,8 @@ export default class PelangganModule {
         const tarif      = state.tarif
         const r          = data.rencanaData?.[tarif]   ?? new Array(12).fill(null)
         const rl         = data.realisasiData?.[tarif] ?? new Array(12).fill(null)
-        const golKode    = tarif?.charAt(0) ?? 'S'
+        // golongan_kode TIDAK dihitung di frontend — backend resolve dari
+        // sub_golongan_kode via rt_dim_sub_golongan (lihat RtFactPelangganService).
 
         const rows = LABELS.map((bln, i) => ({
             label: bln,
@@ -205,7 +290,7 @@ export default class PelangganModule {
             isReadOnly,
             async (ri, values) => {
                 const bulan = ri + 1
-                const base  = { tahun: this._tahun, bulan, golongan_kode: golKode, sub_golongan_kode: tarif, is_triwulan: 0, is_akumulasi: 0, sumber: 'manual', nilai_pelanggan: 0 }
+                const base  = { tahun: this._tahun, bulan, sub_golongan_kode: tarif, is_triwulan: 0, is_akumulasi: 0, sumber: 'manual', nilai_pelanggan: 0 }
                 if (values.nilai_target !== null)
                     await upsert(API, { tahun: this._tahun, bulan, sub_golongan_kode: tarif, tipe: 'target', is_triwulan: 0, is_akumulasi: 0 },
                         { ...base, tipe: 'target', nilai_pelanggan: values.nilai_target })
@@ -235,6 +320,30 @@ export default class PelangganModule {
         if (w) w.style.display = isReadOnly ? 'inline-block' : 'none'
     }
 
+    /**
+     * Refetch data untuk tahun tertentu lalu render ulang secara eksplisit.
+     * Dipakai oleh dropdown filterTahunPelanggan serta setelah
+     * "Muat Data" / "Buat Data" / "Hapus Data" berhasil — supaya UI
+     * langsung pindah ke tahun yang relevan, tidak bergantung pada
+     * onChange() generik yang belum tentu tahu tahun berubah.
+     */
+    async #switchTahun(tahun, state, onChange) {
+        this._tahun = tahun
+        state.tahun = tahun
+
+        if (this.service?.getData) {
+            const data = await this.service.getData(tahun)
+            if (data) {
+                this._data = data
+                this.render(data, state)
+                return
+            }
+        }
+
+        // fallback kalau service tidak menyediakan getData(tahun)
+        onChange()
+    }
+
     #initCrud(state, onChange) {
         const btnMuat    = document.getElementById('btnMuatPelanggan')
         const btnHapus   = document.getElementById('btnHapusPelanggan')
@@ -246,14 +355,12 @@ export default class PelangganModule {
             btnMuat.addEventListener('click', () => { modalMuat.style.display = 'flex' })
             document.getElementById('btnBatalMuatPelanggan')?.addEventListener('click', () => { modalMuat.style.display = 'none' })
             document.getElementById('btnKonfirmasiMuatPelanggan')?.addEventListener('click', async () => {
-                const tahun = document.getElementById('muatTahunPelanggan').value
+                const tahun = Number.parseInt(document.getElementById('muatTahunPelanggan').value)
                 const tipe  = document.getElementById('muatTipePelanggan').value
                 try {
                     await this.service.muatData(tahun, tipe)
                     modalMuat.style.display = 'none'
-                    this._tahun = Number.parseInt(tahun)
-                    state.tahun = Number.parseInt(tahun)
-                    onChange()
+                    await this.#switchTahun(tahun, state, onChange)
                 } catch { alert('Gagal memuat data') }
             })
         }
@@ -269,7 +376,7 @@ export default class PelangganModule {
                 try {
                     await this.service.hapusData(tahun, tipe)
                     modalHapus.style.display = 'none'
-                    onChange()
+                    await this.#switchTahun(Number.parseInt(tahun), state, onChange)
                 } catch { alert('Gagal menghapus data') }
             })
         }
@@ -284,22 +391,23 @@ export default class PelangganModule {
                 const tahun = Number.parseInt(document.getElementById('buatTahunPelanggan')?.value)
                 const tipe  = document.getElementById('buatTipePelanggan')?.value
                 if (modalBuat) modalBuat.style.display = 'none'
+
                 const csrf  = document.querySelector('meta[name="csrf-token"]')?.content
                 const heads = { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }
+
                 let ok = true
-                for (let bulan = 1; bulan <= 12; bulan++) {
-                    try {
-                        const res = await fetch(API, {
-                            method: 'POST', headers: heads,
-                            body: JSON.stringify({ tahun, bulan, tipe, golongan_kode: 'TOTAL', sub_golongan_kode: 'JUMLAH', is_triwulan: 0, is_akumulasi: 0, sumber: 'manual', nilai_pelanggan: 0 }),
-                        })
-                        if (!res.ok) ok = false
-                    } catch { ok = false }
-                }
-                alert(ok ? `Data Pelanggan tahun ${tahun} berhasil dibuat.` : 'Sebagian data gagal dibuat.')
-                this._tahun = tahun
-                state.tahun = tahun
-                onChange()
+                try {
+                    // Panggil endpoint khusus — backend generate semua tarif + JUMLAH-S/R/B/I/P/M
+                    // + JUMLAH/TOTAL dari rt_dim_sub_golongan, bukan loop manual di sini.
+                    const res = await fetch(`${API}/buat-tahun`, {
+                        method: 'POST', headers: heads,
+                        body: JSON.stringify({ tahun, tipe }),
+                    })
+                    if (!res.ok) ok = false
+                } catch { ok = false }
+
+                alert(ok ? `Data Pelanggan tahun ${tahun} berhasil dibuat.` : 'Gagal membuat data.')
+                await this.#switchTahun(tahun, state, onChange)
             })
         }
     }

@@ -1,0 +1,167 @@
+/* ============================================================
+   dashboard-buttons.css
+   Reusable action buttons (CRUD: Muat / Buat / Hapus) — Dark/Light Theme
+   Depends on: dashboard-components.css (untuk design tokens)
+   ============================================================ */
+
+/* ===== TOKENS TAMBAHAN (khusus warna aksi) ===== */
+:root {
+    --accent-blue:        #2196f3;
+    --accent-blue-hover:  #42a5f5;
+    --accent-blue-rgb:    33, 150, 243;
+
+    --accent-red:         #f44336;
+    --accent-red-hover:   #ef5350;
+    --accent-red-rgb:     244, 67, 54;
+}
+
+body.light-mode {
+    --accent-blue:        #1565c0;
+    --accent-blue-hover:  #0d47a1;
+    --accent-blue-rgb:    21, 101, 192;
+
+    --accent-red:         #dc2626;
+    --accent-red-hover:   #b91c1c;
+    --accent-red-rgb:     220, 38, 38;
+}
+
+/* ===== BASE ACTION BUTTON ===== */
+.btn-action {
+    display: inline-flex;
+    align-items: center;
+    gap: 6px;
+    font-size: 0.7rem;
+    font-weight: 500;
+    font-family: inherit;
+    padding: 5px 12px;
+    border-radius: 6px;
+    border: 1px solid transparent;
+    background: transparent;
+    cursor: pointer;
+    white-space: nowrap;
+    line-height: 1.4;
+    transition: background-color 0.15s ease,
+                border-color 0.15s ease,
+                color 0.15s ease,
+                transform 0.1s ease;
+}
+
+.btn-action:active {
+    transform: scale(0.97);
+}
+
+.btn-action:focus-visible {
+    outline: 2px solid var(--accent-orange);
+    outline-offset: 2px;
+}
+
+.btn-action:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+    transform: none;
+}
+
+/* ===== VARIANT: OUTLINE (default, dipakai di toolbar card) ===== */
+.btn-action--load {
+    border-color: var(--accent-blue);
+    background: rgba(var(--accent-blue-rgb), 0.1);
+    color: var(--accent-blue);
+}
+
+.btn-action--load:hover:not(:disabled) {
+    background: rgba(var(--accent-blue-rgb), 0.18);
+    border-color: var(--accent-blue-hover);
+    color: var(--accent-blue-hover);
+}
+
+.btn-action--create {
+    border-color: var(--accent-green);
+    background: rgba(0, 255, 136, 0.08);
+    color: var(--accent-green);
+}
+
+.btn-action--create:hover:not(:disabled) {
+    background: rgba(0, 255, 136, 0.16);
+    border-color: var(--accent-green-hover);
+    color: var(--accent-green-hover);
+}
+
+.btn-action--delete {
+    border-color: var(--accent-red);
+    background: rgba(var(--accent-red-rgb), 0.1);
+    color: var(--accent-red);
+}
+
+.btn-action--delete:hover:not(:disabled) {
+    background: rgba(var(--accent-red-rgb), 0.18);
+    border-color: var(--accent-red-hover);
+    color: var(--accent-red-hover);
+}
+
+/* ===== VARIANT: SOLID (dipakai untuk tombol konfirmasi di modal) ===== */
+.btn-action--solid {
+    font-weight: 600;
+}
+
+.btn-action--solid.btn-action--load {
+    background: var(--accent-blue);
+    border-color: var(--accent-blue);
+    color: #fff;
+}
+
+.btn-action--solid.btn-action--load:hover:not(:disabled) {
+    background: var(--accent-blue-hover);
+    border-color: var(--accent-blue-hover);
+    color: #fff;
+}
+
+.btn-action--solid.btn-action--create {
+    background: var(--accent-green);
+    border-color: var(--accent-green);
+    color: #000;
+}
+
+.btn-action--solid.btn-action--create:hover:not(:disabled) {
+    background: var(--accent-green-hover);
+    border-color: var(--accent-green-hover);
+    color: #000;
+}
+
+.btn-action--solid.btn-action--delete {
+    background: var(--accent-red);
+    border-color: var(--accent-red);
+    color: #fff;
+}
+
+.btn-action--solid.btn-action--delete:hover:not(:disabled) {
+    background: var(--accent-red-hover);
+    border-color: var(--accent-red-hover);
+    color: #fff;
+}
+
+/* ===== VARIANT: GHOST (dipakai untuk tombol "Batal" di modal) ===== */
+.btn-action--ghost {
+    border-color: var(--input-border);
+    background: transparent;
+    color: var(--text-secondary);
+}
+
+.btn-action--ghost:hover:not(:disabled) {
+    background: var(--surface-hover);
+    color: var(--text-primary);
+}
+
+/* ===== TOOLBAR WRAPPER (opsional, untuk grup filter + button) ===== */
+.btn-action-group {
+    display: flex;
+    gap: 5px;
+    align-items: center;
+    flex-wrap: wrap;
+}
+
+/* ===== REDUCED MOTION ===== */
+@media (prefers-reduced-motion: reduce) {
+    .btn-action {
+        transition: none;
+    }
+}

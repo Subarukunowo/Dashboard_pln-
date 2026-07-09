@@ -29,4 +29,12 @@ abstract class BaseApiController extends Controller
     {
         return response()->json(['success' => false, 'message' => $message], 404);
     }
+
+    protected function error(string $message = 'Terjadi kesalahan', int $status = 422): JsonResponse
+    {
+        return response()->json([
+            'success' => false,
+            'message' => $message,
+        ], $status);
+    }
 }

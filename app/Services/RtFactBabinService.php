@@ -44,40 +44,45 @@ class RtFactBabinService extends BaseService
     }
 
     // ── 2. CHART AKUMULASI: Progress YTD target vs realisasi ─────────────────
-    public function getChartAkumulasi(int $tahun, string $area = 'interkoneksi', string $metrik = 'kwh'): array
-    {
-        $data = $this->repository->getModel()->newQuery()
-            ->where('tahun', $tahun)
-            ->where('area', $area)
-            ->where('is_akumulasi', 1)
-            ->whereIn('tipe', ['target', 'realisasi'])
-            ->get();
+ // ── 2. CHART AKUMULASI: Progress YTD target vs realisasi (dihitung, bukan input manual) ──
+public function getChartAkumulasi(int $tahun, string $area = 'interkoneksi', string $metrik = 'kwh'): array
+{
+    // Ambil data bulanan sebagai basis perhitungan cumsum
+    $bulanan = $this->getChartBulanan($tahun, $area, $metrik);
 
-        $target    = [];
-        $realisasi = [];
-        $gap       = []; // selisih akumulasi realisasi vs target
-        $capaian   = []; // % pencapaian akumulasi
+    $target    = [];
+    $realisasi = [];
+    $gap       = [];
+    $capaian   = [];
 
-        for ($m = 1; $m <= 12; $m++) {
-            $rows   = $data->where('bulan', $m);
-            $tVal   = $this->getNilai($rows->firstWhere('tipe', 'target'), $metrik);
-            $rVal   = $this->getNilai($rows->firstWhere('tipe', 'realisasi'), $metrik);
+    $runTarget = 0;
+    $runReal   = 0;
+    $adaTarget = false;
+    $adaReal   = false;
 
-            $target[]    = $tVal;
-            $realisasi[] = $rVal;
-            $gap[]       = ($tVal !== null && $rVal !== null) ? round($rVal - $tVal, 2) : null;
-            $capaian[]   = ($tVal && $tVal > 0 && $rVal !== null)
-                ? round(($rVal / $tVal) * 100, 2)
-                : null;
-        }
+    for ($m = 0; $m < 12; $m++) {
+        $tVal = $bulanan['target'][$m];
+        $rVal = $bulanan['realisasi'][$m];
 
-        return [
-            'target'    => $target,
-            'realisasi' => $realisasi,
-            'gap'       => $gap,
-            'capaian'   => $capaian,
-        ];
+        if ($tVal !== null) { $runTarget += $tVal; $adaTarget = true; }
+        if ($rVal !== null) { $runReal   += $rVal; $adaReal   = true; }
+
+        $target[]    = $adaTarget ? round($runTarget, 2) : null;
+        $realisasi[] = $adaReal   ? round($runReal, 2)   : null;
+
+        $gap[]     = ($target[$m] !== null && $realisasi[$m] !== null)
+            ? round($realisasi[$m] - $target[$m], 2) : null;
+        $capaian[] = ($target[$m] && $target[$m] > 0 && $realisasi[$m] !== null)
+            ? round(($realisasi[$m] / $target[$m]) * 100, 2) : null;
     }
+
+    return [
+        'target'    => $target,
+        'realisasi' => $realisasi,
+        'gap'       => $gap,
+        'capaian'   => $capaian,
+    ];
+}
 
     // ── 3. CHART KEDUA AREA: Interkoneksi vs Sembulang dalam satu chart ──────
     public function getChartPerArea(int $tahun, string $metrik = 'kwh', string $tipe = 'realisasi'): array
@@ -210,45 +215,44 @@ class RtFactBabinService extends BaseService
 
     // ── 7. ALL CHART DATA: Satu endpoint untuk semua kebutuhan chart ──────────
     // Dipanggil sekali oleh frontend, mengembalikan semua data sekaligus
-    public function getAllChartData(int $tahun, string $metrik = 'kwh'): array
-    {
-        // Fallback hanya untuk data operasional (tahun berjalan)
-        // Historis TIDAK kena fallback — selalu tampilkan semua tahun yang ada
-        $hasData      = $this->repository->getModel()->newQuery()
-            ->where('tahun', $tahun)
-            ->where('tipe', 'realisasi')
-            ->where('is_akumulasi', 0)
-            ->exists();
-        $tahunEfektif = $hasData ? $tahun : $tahun - 1;
+   public function getAllChartData(int $tahun, string $metrik = 'kwh'): array
+{
+    $tahunSekarang = (int) now()->year;
 
-        return [
-            'bulanan' => [
-                'interkoneksi' => $this->getChartBulanan($tahunEfektif, 'interkoneksi', $metrik),
-                'sembulang'    => $this->getChartBulanan($tahunEfektif, 'sembulang',    $metrik),
-            ],
-            'akumulasi' => [
-                'interkoneksi' => $this->getChartAkumulasi($tahunEfektif, 'interkoneksi', $metrik),
-                'sembulang'    => $this->getChartAkumulasi($tahunEfektif, 'sembulang',    $metrik),
-            ],
-            'per_area'   => $this->getChartPerArea($tahunEfektif, $metrik),
-            'growth_yoy' => [
-                'interkoneksi' => $this->getGrowthYoY($tahunEfektif, 'interkoneksi', $metrik),
-                'sembulang'    => $this->getGrowthYoY($tahunEfektif, 'sembulang',    $metrik),
-            ],
-            // Historis: ambil SEMUA tahun dari DB, tidak terkena fallback
-            'historis_yoy' => [
-                'interkoneksi' => $this->getHistorisPerTahun('interkoneksi', $metrik),
-                'sembulang'    => $this->getHistorisPerTahun('sembulang',    $metrik),
-            ],
-            'historis' => [
-                'interkoneksi' => $this->getTrendHistoris('interkoneksi', $metrik),
-                'sembulang'    => $this->getTrendHistoris('sembulang',    $metrik),
-            ],
-            'tahun_efektif' => $tahunEfektif,
-            'is_fallback'   => !$hasData,
-        ];
-    }
+    $hasData      = $this->repository->getModel()->newQuery()
+        ->where('tahun', $tahun)
+        ->where('tipe', 'realisasi')
+        ->where('is_akumulasi', 0)
+        ->exists();
+    $tahunEfektif = $hasData ? $tahun : $tahun - 1;
 
+    return [
+        'bulanan' => [
+            'interkoneksi' => $this->getChartBulanan($tahunEfektif, 'interkoneksi', $metrik),
+            'sembulang'    => $this->getChartBulanan($tahunEfektif, 'sembulang',    $metrik),
+        ],
+        'akumulasi' => [
+            'interkoneksi' => $this->getChartAkumulasi($tahunEfektif, 'interkoneksi', $metrik),
+            'sembulang'    => $this->getChartAkumulasi($tahunEfektif, 'sembulang',    $metrik),
+        ],
+        'per_area'   => $this->getChartPerArea($tahunEfektif, $metrik),
+        'growth_yoy' => [
+            'interkoneksi' => $this->getGrowthYoY($tahunEfektif, 'interkoneksi', $metrik),
+            'sembulang'    => $this->getGrowthYoY($tahunEfektif, 'sembulang',    $metrik),
+        ],
+        'historis_yoy' => [
+            'interkoneksi' => $this->getHistorisPerTahun('interkoneksi', $metrik),
+            'sembulang'    => $this->getHistorisPerTahun('sembulang',    $metrik),
+        ],
+        'historis' => [
+            'interkoneksi' => $this->getTrendHistoris('interkoneksi', $metrik),
+            'sembulang'    => $this->getTrendHistoris('sembulang',    $metrik),
+        ],
+        'tahun_efektif'  => $tahunEfektif,
+        'tahun_sekarang' => $tahunSekarang,
+        'is_fallback'    => !$hasData,
+    ];
+}
     // ── 8. HISTORIS PER TAHUN: Data tahunan + growth vs tahun sebelumnya ─────
     public function getHistorisPerTahun(string $area = 'interkoneksi', string $metrik = 'kwh'): array
     {

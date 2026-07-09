@@ -2,21 +2,30 @@
 <div class="card col-12">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div class="card-title">{{ __('rpkwh.title') }}</div>
-        <select id="filterTarifRpkwh" style="font-size:0.7rem; padding:4px;"></select>
+        <div class="filters">
+            <label for="filterTarifRpkwh" class="sr-only">{{ __('rpkwh.filter.tarif') }}</label>
+            <select id="filterTarifRpkwh"></select>
+
+            <label for="filterViewRpkwh" class="sr-only">{{ __('rpkwh.filter.tampilan') }}</label>
+            <select id="filterViewRpkwh">
+                <option value="bulanan">{{ __('rpkwh.filter.bulanan') }}</option>
+                <option value="akumulasi">{{ __('rpkwh.filter.akumulasi') }}</option>
+            </select>
+        </div>
     </div>
 
     <div class="chart-wrapper" style="width:100%; height:300px; margin-bottom:20px;">
         <canvas id="chartRencanaRealisasi"></canvas>
     </div>
 
-    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
-        <table style="width:100%; border-collapse:collapse;">
-            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-                <tr style="font-size:0.72rem; text-transform:uppercase;">
-                    <th style="padding:10px; color:#888;">{{ __('rpkwh.table.bulan') }}</th>
-                    <th style="padding:10px; color:#ff9800;">{{ __('rpkwh.table.rencana') }}</th>
-                    <th style="padding:10px; color:var(--accent-green);">{{ __('rpkwh.table.realisasi') }}</th>
-                    <th style="padding:10px; color:#aaa;">{{ __('rpkwh.table.selisih') }}</th>
+    <div class="custom-scroll" style="width:100%; background:var(--bg-primary); border-radius:8px; border:1px solid var(--border-color); overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">{{ __('rpkwh.table.bulan') }}</th>
+                    <th scope="col" style="color:var(--accent-orange);">{{ __('rpkwh.table.rencana') }}</th>
+                    <th scope="col" style="color:var(--accent-green);">{{ __('rpkwh.table.realisasi') }}</th>
+                    <th scope="col">{{ __('rpkwh.table.selisih') }}</th>
                 </tr>
             </thead>
             <tbody id="rpkwhSideTable"></tbody>
@@ -28,12 +37,12 @@
         <canvas id="chartDeltaRpkwh"></canvas>
     </div>
 
-    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px;">
-        <table style="width:100%; border-collapse:collapse;">
-            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-                <tr style="font-size:0.72rem; text-transform:uppercase;">
-                    <th style="padding:10px; color:#888;">{{ __('rpkwh.table.bulan') }}</th>
-                    <th style="padding:10px; color:#aaa;">{{ __('rpkwh.table.selisih_rpkwh') }}</th>
+    <div class="custom-scroll" style="width:100%; background:var(--bg-primary); border-radius:8px; border:1px solid var(--border-color); overflow-x:auto; overflow-y:auto; max-height:340px;">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">{{ __('rpkwh.table.bulan') }}</th>
+                    <th scope="col">{{ __('rpkwh.table.selisih_rpkwh') }}</th>
                 </tr>
             </thead>
             <tbody id="tabelRpkwhDelta"></tbody>
@@ -45,21 +54,17 @@
 <div class="card col-12">
     <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
         <div class="card-title" id="judulPieRpkwh">{{ __('rpkwh.pie_title') }}</div>
-        <div style="display:flex; gap:5px;">
-            <select id="filterTahunRpkwh" style="font-size:0.7rem; padding:4px;">
-                <option value="{{ date('Y') - 1 }}">{{ date('Y') - 1 }}</option>
-                <option value="{{ date('Y') }}" selected>{{ date('Y') }}</option>
+        <div class="filters">
+            <label for="filterTahunRpkwh" class="sr-only">{{ __('rpkwh.filter.tahun') }}</label>
+            <select id="filterTahunRpkwh">
+                <option value="{{ now()->year }}">{{ now()->year }}</option>
             </select>
-            <select id="filterViewRpkwh" style="font-size:0.7rem; padding:4px;">
-                <option value="bulanan">{{ __('rpkwh.filter.bulanan') }}</option>
-                <option value="akumulasi">{{ __('rpkwh.filter.akumulasi') }}</option>
-            </select>
-            <select id="filterBulanRpkwh" style="font-size:0.7rem; padding:4px;">
+
+            <label for="filterBulanRpkwh" class="sr-only">{{ __('rpkwh.filter.bulan') }}</label>
+            <select id="filterBulanRpkwh">
                 <option value="all">{{ __('rpkwh.filter.semua') }}</option>
                 @foreach(range(0, 11) as $i)
-                    <option value="{{ $i }}">
-                        {{ \Carbon\Carbon::create()->month($i + 1)->translatedFormat('F') }}
-                    </option>
+                    <option value="{{ $i }}">{{ \Carbon\Carbon::create()->month($i + 1)->translatedFormat('F') }}</option>
                 @endforeach
             </select>
         </div>
@@ -69,13 +74,13 @@
         <canvas id="chartPieRpkwh"></canvas>
     </div>
 
-    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
-        <table style="width:100%; border-collapse:collapse;">
-            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-                <tr style="font-size:0.72rem; text-transform:uppercase;">
-                    <th style="padding:10px; color:#888;">{{ __('rpkwh.table.golongan') }}</th>
-                    <th style="padding:10px; color:var(--accent-green);">{{ __('rpkwh.table.nilai') }}</th>
-                    <th style="padding:10px; color:#aaa;">%</th>
+    <div class="custom-scroll" style="width:100%; background:var(--bg-primary); border-radius:8px; border:1px solid var(--border-color); overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">{{ __('rpkwh.table.golongan') }}</th>
+                    <th scope="col" style="color:var(--accent-green);">{{ __('rpkwh.table.nilai') }}</th>
+                    <th scope="col">%</th>
                 </tr>
             </thead>
             <tbody id="rpkwhPieTable"></tbody>
@@ -87,17 +92,17 @@
         <canvas id="chartGrowthRpkwh"></canvas>
     </div>
 
-    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px;">
-        <table style="width:100%; border-collapse:collapse; white-space:nowrap;">
-            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-                <tr style="font-size:0.72rem; text-transform:uppercase;">
-                    <th style="padding:10px; color:#888;">{{ __('rpkwh.table.bulan') }}</th>
-                    <th style="padding:10px; color:#ff9800;">{{ __('rpkwh.table.sosial') }}</th>
-                    <th style="padding:10px; color:#00ff88;">{{ __('rpkwh.table.rtangga') }}</th>
-                    <th style="padding:10px; color:#2196f3;">{{ __('rpkwh.table.bisnis') }}</th>
-                    <th style="padding:10px; color:#e91e63;">{{ __('rpkwh.table.industri') }}</th>
-                    <th style="padding:10px; color:#9c27b0;">{{ __('rpkwh.table.publik') }}</th>
-                    <th style="padding:10px; color:#00bcd4;">{{ __('rpkwh.table.multiguna') }}</th>
+    <div class="custom-scroll" style="width:100%; background:var(--bg-primary); border-radius:8px; border:1px solid var(--border-color); overflow-x:auto; overflow-y:auto; max-height:340px;">
+        <table style="white-space:nowrap;">
+            <thead>
+                <tr>
+                    <th scope="col">{{ __('rpkwh.table.bulan') }}</th>
+                    <th scope="col" style="color:var(--accent-orange);">{{ __('rpkwh.table.sosial') }}</th>
+                    <th scope="col" style="color:var(--accent-green);">{{ __('rpkwh.table.rtangga') }}</th>
+                    <th scope="col" style="color:var(--accent-blue);">{{ __('rpkwh.table.bisnis') }}</th>
+                    <th scope="col" style="color:#e91e63;">{{ __('rpkwh.table.industri') }}</th>
+                    <th scope="col" style="color:#9c27b0;">{{ __('rpkwh.table.publik') }}</th>
+                    <th scope="col" style="color:#00bcd4;">{{ __('rpkwh.table.multiguna') }}</th>
                 </tr>
             </thead>
             <tbody id="tabelGrowthRpkwh"></tbody>
@@ -108,19 +113,17 @@
 {{-- CARD 3: BPP vs HJR --}}
 <div class="card col-12">
     <div class="card-title">{{ __('rpkwh.bpp_hjr_title') }}</div>
-
     <div class="chart-wrapper" style="width:100%; height:300px; margin-bottom:20px;">
         <canvas id="chartBppHjr"></canvas>
     </div>
-
-    <div class="custom-scroll" style="overflow-x:auto; overflow-y:auto; max-height:340px; border:1px solid #333; border-radius:8px;">
-        <table style="width:100%; border-collapse:collapse; white-space:nowrap;">
-            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-                <tr style="font-size:0.72rem; text-transform:uppercase;">
-                    <th style="padding:10px; color:#888;">{{ __('rpkwh.table.bulan') }}</th>
-                    <th style="padding:10px; color:#2196f3;">{{ __('rpkwh.table.hjr') }}</th>
-                    <th style="padding:10px; color:#ff9800;">{{ __('rpkwh.table.bpp') }}</th>
-                    <th style="padding:10px; color:#aaa;">{{ __('rpkwh.table.selisih') }}</th>
+    <div class="custom-scroll" style="overflow-x:auto; overflow-y:auto; max-height:340px; border:1px solid var(--border-color); border-radius:8px;">
+        <table style="white-space:nowrap;">
+            <thead>
+                <tr>
+                    <th scope="col">{{ __('rpkwh.table.bulan') }}</th>
+                    <th scope="col" style="color:var(--accent-blue);">{{ __('rpkwh.table.hjr') }}</th>
+                    <th scope="col" style="color:var(--accent-orange);">{{ __('rpkwh.table.bpp') }}</th>
+                    <th scope="col">{{ __('rpkwh.table.selisih') }}</th>
                 </tr>
             </thead>
             <tbody id="tabelBppHjr"></tbody>
@@ -130,27 +133,22 @@
 
 {{-- CARD 4: Analisa RPKWH --}}
 <div class="card col-12">
-    <div class="card-title">
-        {{ __('rpkwh.analisa_title') }}
-        <span style="font-size:0.75rem; color:#555; font-weight:normal; margin-left:8px;">
-            {{ date('Y') - 1 }} vs {{ date('Y') }}
-        </span>
-    </div>
+    <div class="card-title">{{ __('rpkwh.analisa_title') }}</div>
 
     <div class="chart-wrapper" style="width:100%; height:320px; margin-bottom:20px;">
-        <canvas id="chartAnalisa2024vs2025"></canvas>
+        <canvas id="chartAnalisaTargetRealisasi"></canvas>
     </div>
 
-    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
-        <table style="width:100%; border-collapse:collapse;">
-            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-                <tr style="font-size:0.72rem; text-transform:uppercase;">
-                    <th style="padding:10px; color:#888;">{{ __('rpkwh.table.bulan') }}</th>
-                    <th style="padding:10px; color:#555;">T'{{ date('Y') - 1 }}</th>
-                    <th style="padding:10px; color:#2196f3;">R'{{ date('Y') - 1 }}</th>
-                    <th style="padding:10px; color:#ff9800;">T'{{ date('Y') }}</th>
-                    <th style="padding:10px; color:var(--accent-green);">R'{{ date('Y') }}</th>
-                    <th style="padding:10px; color:#aaa;">{{ __('rpkwh.table.selisih') }}</th>
+    <div class="custom-scroll" style="width:100%; background:var(--bg-primary); border-radius:8px; border:1px solid var(--border-color); overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">{{ __('rpkwh.table.bulan') }}</th>
+                    <th scope="col" style="color:var(--text-dim);">{{ __('rpkwh.table.t_lalu') }}</th>
+                    <th scope="col" style="color:var(--accent-blue);">{{ __('rpkwh.table.r_lalu') }}</th>
+                    <th scope="col" style="color:var(--accent-orange);">{{ __('rpkwh.table.t_ini') }}</th>
+                    <th scope="col" style="color:var(--accent-green);">{{ __('rpkwh.table.r_ini') }}</th>
+                    <th scope="col">{{ __('rpkwh.table.selisih') }}</th>
                 </tr>
             </thead>
             <tbody id="rpkwhAnalisaSideTable"></tbody>
@@ -161,13 +159,12 @@
     <div class="chart-wrapper" style="width:100%; height:280px; margin-bottom:20px;">
         <canvas id="chartAnalisaDelta"></canvas>
     </div>
-
-    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
-        <table style="width:100%; border-collapse:collapse;">
-            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-                <tr style="font-size:0.72rem; text-transform:uppercase;">
-                    <th style="padding:10px; color:#888;">{{ __('rpkwh.table.bulan') }}</th>
-                    <th style="padding:10px; color:#aaa;">{{ __('rpkwh.table.selisih_rpkwh') }}</th>
+    <div class="custom-scroll" style="width:100%; background:var(--bg-primary); border-radius:8px; border:1px solid var(--border-color); overflow-x:auto; overflow-y:auto; max-height:340px; margin-bottom:20px;">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">{{ __('rpkwh.table.bulan') }}</th>
+                    <th scope="col">{{ __('rpkwh.table.selisih_rpkwh') }}</th>
                 </tr>
             </thead>
             <tbody id="tabelRpkwhAnalisaDelta"></tbody>
@@ -178,15 +175,14 @@
     <div class="chart-wrapper" style="width:100%; height:280px; margin-bottom:20px;">
         <canvas id="chartPersenRpkwh"></canvas>
     </div>
-
-    <div class="custom-scroll" style="width:100%; background:rgba(0,0,0,0.2); border-radius:8px; border:1px solid #333; overflow-x:auto; overflow-y:auto; max-height:340px;">
-        <table style="width:100%; border-collapse:collapse;">
-            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-                <tr style="font-size:0.72rem; text-transform:uppercase;">
-                    <th style="padding:10px; color:#888;">{{ __('rpkwh.table.bulan') }}</th>
-                    <th style="padding:10px; color:#ff9800;">{{ __('rpkwh.table.target') }}</th>
-                    <th style="padding:10px; color:var(--accent-green);">{{ __('rpkwh.table.realisasi') }}</th>
-                    <th style="padding:10px; color:#aaa;">{{ __('rpkwh.table.selisih') }}</th>
+    <div class="custom-scroll" style="width:100%; background:var(--bg-primary); border-radius:8px; border:1px solid var(--border-color); overflow-x:auto; overflow-y:auto; max-height:340px;">
+        <table>
+            <thead>
+                <tr>
+                    <th scope="col">{{ __('rpkwh.table.bulan') }}</th>
+                    <th scope="col" style="color:var(--accent-orange);">{{ __('rpkwh.table.target') }}</th>
+                    <th scope="col" style="color:var(--accent-green);">{{ __('rpkwh.table.realisasi') }}</th>
+                    <th scope="col">{{ __('rpkwh.table.selisih') }}</th>
                 </tr>
             </thead>
             <tbody id="tabelPersen"></tbody>
@@ -197,19 +193,19 @@
 {{-- CARD 5: Tabel Analisa Detail RPKWH --}}
 <div class="card col-12">
     <div class="card-title">{{ __('rpkwh.tabel_analisa_title') }}</div>
-    <div class="custom-scroll" style="overflow-x:auto; border:1px solid #333; border-radius:8px;">
-        <table style="width:100%; border-collapse:collapse; white-space:nowrap;">
-            <thead style="position:sticky; top:0; background:#252525; z-index:1;">
-                <tr style="font-size:0.72rem; text-transform:uppercase;">
-                    <th style="padding:10px; color:#888;">{{ __('rpkwh.table.bulan') }}</th>
-                    <th style="padding:10px; color:#555;">T'{{ date('Y') - 1 }}</th>
-                    <th style="padding:10px; color:#2196f3;">R'{{ date('Y') - 1 }}</th>
-                    <th style="padding:10px; color:#ff9800;">T'{{ date('Y') }}</th>
-                    <th style="padding:10px; color:var(--accent-green);">R'{{ date('Y') }}</th>
-                    <th style="padding:10px; color:#aaa;">{{ __('rpkwh.table.selisih') }}</th>
-                    <th style="padding:10px; color:#aaa;">{{ __('rpkwh.table.selisih_pct') }}</th>
-                    <th style="padding:10px; color:#aaa;">{{ __('rpkwh.table.pct_capai_target') }}</th>
-                    <th style="padding:10px; color:#aaa;">{{ __('rpkwh.table.pct_capai_real') }}</th>
+    <div class="custom-scroll" style="overflow-x:auto; border:1px solid var(--border-color); border-radius:8px;">
+        <table style="white-space:nowrap;">
+            <thead>
+                <tr>
+                    <th scope="col">{{ __('rpkwh.table.bulan') }}</th>
+                    <th scope="col" style="color:var(--text-dim);">{{ __('rpkwh.table.target_lalu') }}</th>
+                    <th scope="col" style="color:var(--accent-blue);">{{ __('rpkwh.table.real_lalu') }}</th>
+                    <th scope="col" style="color:var(--accent-orange);">{{ __('rpkwh.table.target_ini') }}</th>
+                    <th scope="col" style="color:var(--accent-green);">{{ __('rpkwh.table.realisasi_ini') }}</th>
+                    <th scope="col">{{ __('rpkwh.table.selisih') }}</th>
+                    <th scope="col">{{ __('rpkwh.table.selisih_pct') }}</th>
+                    <th scope="col">{{ __('rpkwh.table.pct_capai_target') }}</th>
+                    <th scope="col">{{ __('rpkwh.table.pct_capai_real') }}</th>
                 </tr>
             </thead>
             <tbody id="tabelAnalisa"></tbody>

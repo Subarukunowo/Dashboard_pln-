@@ -41,6 +41,7 @@ export default defineConfig({
                 'resources/css/components/chatbot.css',
                 'resources/css/components/app.css',
                 'resources/css/components/custom-select.css',
+                'resources/css/components/dashboard-buttons.css',
             ],
             refresh: [
                 'resources/views/**/*.blade.php',

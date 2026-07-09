@@ -21,7 +21,9 @@
         </div>
         <div class="avatar-upload-zone" id="avatarUploadZone">
             <i class="fa-solid fa-cloud-arrow-up"></i>
-            <p>Klik atau drag &amp; drop foto di sini</p>
+            <label for="avatarFileInput" style="cursor:pointer;">
+                <p>Klik atau drag &amp; drop foto di sini</p>
+            </label>
             <p style="margin-top:.3rem;font-size:.68rem;color:var(--text-3);">PNG, JPG, WEBP — maks. 2MB</p>
             <input type="file" id="avatarFileInput" accept="image/png,image/jpeg,image/webp">
         </div>
@@ -56,7 +58,8 @@
                     <div class="profile-card">
 
                         <div class="profile-hero-section">
-                            <div class="profile-avatar-wrap" id="avatarWrap" title="Ganti foto profil">
+                            <button type="button" class="profile-avatar-wrap" id="avatarWrap"
+                                    title="Ganti foto profil" aria-label="Ganti foto profil">
                                 <img class="profile-avatar" id="profileAvatarMain"
                                      src="{{ auth()->user()->avatar ?? asset('img/default-avatar.png') }}"
                                      alt="Avatar">
@@ -64,7 +67,7 @@
                                 <div class="profile-score-badge">
                                     <i class="fa-solid fa-check" style="font-size:.4rem;"></i>
                                 </div>
-                            </div>
+                            </button>
 
                             <div class="profile-name">{{ auth()->user()->name }}</div>
                             <div class="profile-role-line">
@@ -98,7 +101,7 @@
                             </div>
 
                             <div class="info-row" @if(!auth()->user()->isGoogleUser()) id="emailEditRow" style="cursor:pointer;" @endif>
-                                <div class="info-row-label">Email</div>
+                                <label for="emailInput" class="info-row-label">Email</label>
                                 <div class="info-row-value @if(!auth()->user()->isGoogleUser()) editable @endif">
                                     <span id="emailDisplay">{{ auth()->user()->email }}</span>
                                     @if(!auth()->user()->isGoogleUser())

@@ -2,11 +2,14 @@
 
 namespace App\Services;
 
+use App\Models\RtDimSubGolongan;
 use App\Repositories\RtFactPenjualanRepository;
+use Illuminate\Database\Eloquent\Model;
+use Illuminate\Support\Facades\DB;
 
 class RtFactPenjualanService extends BaseService
 {
-    public function __construct( RtFactPenjualanRepository $repository)
+    public function __construct(RtFactPenjualanRepository $repository)
     {
         parent::__construct($repository);
     }
@@ -71,6 +74,90 @@ class RtFactPenjualanService extends BaseService
             'perTarif'        => $perTarif,
             'tarifList'       => $allKodes->values()->all(),
         ];
+    }
+
+    /**
+     * Backend adalah source of truth untuk golongan_kode.
+     * Nilai golongan_kode yang dikirim frontend akan DIABAIKAN dan
+     * dihitung ulang dari sub_golongan_kode via rt_dim_sub_golongan.
+     * Pola identik modul pelanggan; data existing sudah pakai format
+     * JUMLAH-S/R/B/I/P/M sehingga langsung cocok dengan dim table.
+     */
+    public function resolveGolonganKode(?string $subGolonganKode): ?string
+    {
+        if (!$subGolonganKode) {
+            return null;
+        }
+
+        static $map = null;
+        if ($map === null) {
+            $map = RtDimSubGolongan::pluck('golongan_kode', 'kode')->all();
+        }
+
+        return $map[$subGolonganKode] ?? null;
+    }
+
+    public function create(array $data): Model
+    {
+        if (!empty($data['sub_golongan_kode'])) {
+            $resolved = $this->resolveGolonganKode($data['sub_golongan_kode']);
+            if ($resolved !== null) {
+                $data['golongan_kode'] = $resolved;
+            }
+        }
+
+        return parent::create($data);
+    }
+
+    public function update(int|string $id, array $data): Model
+    {
+        if (!empty($data['sub_golongan_kode'])) {
+            $resolved = $this->resolveGolonganKode($data['sub_golongan_kode']);
+            if ($resolved !== null) {
+                $data['golongan_kode'] = $resolved;
+            }
+        }
+
+        return parent::update($id, $data);
+    }
+
+    /**
+     * Generate 12 baris/bulan (nilai=0) untuk satu tahun+tipe, berdasarkan
+     * SEMUA baris rt_dim_sub_golongan — mencakup tarif asli DAN JUMLAH-S/R/B/I/P/M
+     * DAN baris JUMLAH/TOTAL grand-total. Pola identik modul pelanggan.
+     */
+    public function buatTahun(int $tahun, string $tipe): array
+    {
+        return DB::transaction(function () use ($tahun, $tipe) {
+            $now  = now();
+            $rows = [];
+
+            $dims = RtDimSubGolongan::select('kode', 'golongan_kode')->get();
+
+            foreach ($dims as $dim) {
+                $isAkumulasi = str_starts_with($dim->kode, 'JUMLAH') ? 1 : 0;
+
+                for ($bulan = 1; $bulan <= 12; $bulan++) {
+                    $rows[] = [
+                        'tahun'             => $tahun,
+                        'bulan'             => $bulan,
+                        'tipe'              => $tipe,
+                        'golongan_kode'     => $dim->golongan_kode,
+                        'sub_golongan_kode' => $dim->kode,
+                        'nilai_kwh'         => 0,
+                        'is_triwulan'       => 0,
+                        'is_akumulasi'      => $isAkumulasi,
+                        'sumber'            => 'manual',
+                        'created_at'        => $now,
+                        'updated_at'        => $now,
+                    ];
+                }
+            }
+
+            DB::table('rt_fact_penjualan')->insertOrIgnore($rows);
+
+            return ['tahun' => $tahun, 'tipe' => $tipe, 'rows_created' => count($rows)];
+        });
     }
 
     private function toMonthly($rows, string $field): array

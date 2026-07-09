@@ -7,17 +7,6 @@ const API_BPP   = '/api/v1/fact/bpp'
 const API_HJR   = '/api/v1/fact/hjr'
 const BULAN_NAMA = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
 
-/**
- * Mapping kategori display → tipe_bpp untuk API
- * Sesuaikan dengan nilai kolom tipe_bpp di tabel fact_bpp
- */
-const KATEGORI_TIPE = {
-    'BPP PEMBANGKIT':          'pembangkit',
-    'BPP S.D TRANSMISI':       'transmisi',
-    'BPP S.D DISTRIBUSI TM':   'distribusi_tm',
-    'BPP S.D DISTRIBUSI TR':   'distribusi_tr',
-}
-
 export default class BppModule {
     constructor() {
         this.service      = new BppService()
@@ -35,7 +24,6 @@ export default class BppModule {
             Promise.resolve(this.service.getHjrAvg(tahun)),
             Promise.resolve(this.service.getHjrCalculated(tahun)),
         ])
-        // Deteksi fallback: cek tahun_efektif dari response jika ada
         const anyKey = this.data ? Object.keys(this.data)[0] : null
         const sample = anyKey ? this.data[anyKey] : null
         this._isFallback = sample?.tahun_efektif
@@ -188,8 +176,8 @@ export default class BppModule {
     // ── Edit Tables ──────────────────────────────────────────────────────────
 
     _renderEditTable(state) {
-        this._renderEditBpp()   // tidak perlu state — selalu tampilkan semua kategori
-        this._renderEditHjr()   // selalu tampilkan TR & TM
+        this._renderEditBpp()
+        this._renderEditHjr()
     }
 
     /** Tabel edit BPP — semua 4 kategori dengan tab switcher */
@@ -219,7 +207,6 @@ export default class BppModule {
                     ${k.label}
                 </button>`).join('')
 
-            // FIX: bind arrow function agar `this` tidak hilang
             tabBar.querySelectorAll('[data-bpptab]').forEach(btn => {
                 btn.addEventListener('click', () => {
                     this._activeBppTab = btn.dataset.bpptab
@@ -231,7 +218,6 @@ export default class BppModule {
         const activeKat = KATEGORI.find(k => k.tipe === activeTab) ?? KATEGORI[0]
         const d    = this.data[activeKat.key]
 
-        // FIX: debug jika data tidak ditemukan
         if (!d) {
             console.warn('[BppModule] Data tidak ditemukan untuk key:', activeKat.key, '| Keys tersedia:', Object.keys(this.data))
             container.innerHTML = `<p style="color:#f44336;padding:12px;">Data untuk "${activeKat.label}" tidak ditemukan.</p>`
@@ -321,7 +307,6 @@ export default class BppModule {
         if (!this._activeHjrTab) this._activeHjrTab = 'TR'
         const activeTab = this._activeHjrTab
 
-        // Tab bar ke elemen LUAR
         if (tabBar) {
             tabBar.innerHTML = ['TR', 'TM'].map(t => `
                 <button data-hjrtab="${t}"
@@ -426,6 +411,8 @@ export default class BppModule {
         }
 
         // --- Hapus Data ---
+        // NOTE: field name disamakan dengan yang dipakai upsert (jenis_bpp / versi),
+        // sebelumnya pakai tipe_bpp / kategori yang tidak dikenali backend.
         const btnHapus = document.getElementById('btnHapusBpp')
         if (btnHapus && !btnHapus._bound) {
             btnHapus._bound = true
@@ -435,14 +422,14 @@ export default class BppModule {
             })
             document.getElementById('btnKonfirmasiHapusBpp')?.addEventListener('click', async () => {
                 const tahun    = document.getElementById('hapusTahunBpp')?.value
-                const tipeBpp  = document.getElementById('hapusTipeBpp')?.value
-                const tipeData = document.getElementById('hapusTipeDataBpp')?.value
+                const jenisBpp = document.getElementById('hapusTipeBpp')?.value
+                const versi    = document.getElementById('hapusTipeDataBpp')?.value
                 if (!confirm(`Hapus data BPP tahun ${tahun}? Tindakan ini tidak dapat dibatalkan.`)) return
                 if (modalHapus) modalHapus.style.display = 'none'
                 try {
                     const params = { tahun }
-                    if (tipeBpp  !== 'semua') params.tipe_bpp  = tipeBpp
-                    if (tipeData !== 'semua') params.kategori  = tipeData
+                    if (jenisBpp !== 'semua') params.jenis_bpp = jenisBpp
+                    if (versi    !== 'semua') params.versi     = versi
                     await deleteByFilter(API_BPP, params)
                     await this.load(this._tahun)
                     onChange()
@@ -453,6 +440,8 @@ export default class BppModule {
         }
 
         // --- Buat Data (create tahun kosong) ---
+        // NOTE: field name disamakan dengan yang dipakai upsert (jenis_bpp / versi / nilai_rpkwh),
+        // sebelumnya pakai tipe_bpp / kategori / nilai yang tidak dikenali backend.
         const btnBuat = document.getElementById('btnBuatBpp')
         if (btnBuat && !btnBuat._bound) {
             btnBuat._bound = true
@@ -461,21 +450,21 @@ export default class BppModule {
                 if (modalBuat) modalBuat.style.display = 'none'
             })
             document.getElementById('btnKonfirmasiBuatBpp')?.addEventListener('click', async () => {
-                const tahun   = Number.parseInt(document.getElementById('buatTahunBpp')?.value)
-                const tipeBpp = document.getElementById('buatTipeBpp')?.value
-                const csrf    = CSRF()
+                const tahun    = Number.parseInt(document.getElementById('buatTahunBpp')?.value)
+                const jenisBpp = document.getElementById('buatTipeBpp')?.value
+                const csrf     = CSRF()
                 if (modalBuat) modalBuat.style.display = 'none'
 
-                // Buat 12 record kosong (bulan 1-12) untuk kategori konsolidasi & internal
                 const heads = { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }
                 let ok = true
                 for (let bulan = 1; bulan <= 12; bulan++) {
-                    for (const kat of ['konsolidasi', 'internal']) {
+                    for (const versi of ['konsolidasi', 'internal']) {
                         try {
-                            await fetch(API_BPP, {
+                            const res = await fetch(API_BPP, {
                                 method: 'POST', headers: heads,
-                                body: JSON.stringify({ tahun, bulan, tipe_bpp: tipeBpp, kategori: kat, nilai: 0, is_triwulan: 0, is_akumulasi: 0, sumber: 'manual' }),
+                                body: JSON.stringify({ tahun, bulan, jenis_bpp: jenisBpp, versi, nilai_rpkwh: 0, is_triwulan: 0, is_akumulasi: 0, sumber: 'manual' }),
                             })
+                            if (!res.ok) ok = false
                         } catch { ok = false }
                     }
                 }

@@ -16,7 +16,7 @@ export default class TunggakanModule {
             .map(o => o.textContent.trim())
     }
 
-    render(data, state) {
+    render(data, state, onChange) {
         if (!data) return
         this._rawData = data
         this._tahun   = data.tahun_efektif ?? TAHUN_INI
@@ -41,7 +41,7 @@ export default class TunggakanModule {
 
         this._renderPendapatanTable(filtered, slicedLabels)
         this._renderRatioTable(filtered, slicedLabels)
-        this._renderDetailTable(source, labels)
+        this._renderDetailTable(source, labels, onChange)
     }
 
     initFilters(state, onChange) {
@@ -114,7 +114,7 @@ export default class TunggakanModule {
         }).join('')
     }
 
-    _renderDetailTable(source, labels) {
+    _renderDetailTable(source, labels, onChange) {
         const tbody      = document.getElementById('tabelTunggakan')
         if (!tbody) return
         const isReadOnly = this._tahun < TAHUN_INI
@@ -127,8 +127,8 @@ export default class TunggakanModule {
             'style="width:90px;padding:3px 5px;border-radius:4px;border:1px solid;font-size:0.74rem;text-align:right;' + disStyle + '">'
 
         tbody.innerHTML = source.map((r, i) => {
-           
-            return '<tr data-id="' + (r.id || '') + '">' +
+
+            return '<tr data-id="' + (r.idRealisasi || '') + '">' +
                 '<td style="padding:6px 8px;color:#888;white-space:nowrap;">' + (labels[i] ?? r.bulan) + '</td>' +
                 '<td style="padding:3px 5px;">' + inp(r.palBerjalan,       'pal_berjalan')       + '</td>' +
                 '<td style="padding:3px 5px;">' + inp(r.palTunggakan,      'pal_tunggakan')      + '</td>' +
@@ -136,8 +136,8 @@ export default class TunggakanModule {
                 '<td style="padding:3px 5px;">' + inp(r.tsTunggakan,       'ts_tunggakan')       + '</td>' +
                 '<td style="padding:3px 5px;">' + inp(r.jumlahTunggakan,   'jumlah_tunggakan')   + '</td>' +
                 '<td style="padding:3px 5px;">' + inp(r.pendapatan,        'pendapatan')         + '</td>' +
-                '<td style="padding:3px 5px;">' + inp((r.ratioTunggakan * 100).toFixed(4), 'ratio_tunggakan_pct') + '</td>' +
-                '<td style="padding:6px 8px;color:#ff9800;">' + (r.ratioTarget * 100).toFixed(4) + '%</td>' +
+                '<td style="padding:6px 8px;color:#888;">' + (r.ratioTunggakan * 100).toFixed(4) + '% <span style="font-size:0.65rem;color:#555;">(auto)</span></td>' +
+                '<td style="padding:6px 8px;color:var(--accent-orange);">' + (r.ratioTarget * 100).toFixed(4) + '%</td>' +
                 '<td style="padding:3px 5px;text-align:center;">' +
                     (isReadOnly
                         ? '<span style="font-size:0.7rem;color:#444;">🔒</span>'
@@ -155,11 +155,23 @@ export default class TunggakanModule {
                 const row    = btn.closest('tr')
                 const id     = row.dataset.id
                 const inputs = row.querySelectorAll('input[data-field]')
-                const values = {}
+                const raw    = {}
                 inputs.forEach(inp => {
-                    const raw = inp.value.replace(/[^\d.,-]/g, '').replace(',', '.')
-                    values[inp.dataset.field] = raw === '' ? null : Number.parseFloat(raw)
+                    const v = inp.value.replace(/[^\d.,-]/g, '').replace(',', '.')
+                    raw[inp.dataset.field] = v === '' ? 0 : Number.parseFloat(v)
                 })
+
+                // Breakdown dikirim apa adanya (pal_berjalan, pal_tunggakan, ts_berjalan, ts_tunggakan).
+                // Total (pal, tagihan_susulan) dan ratio_pct dihitung otomatis di backend
+                // (RtFactTunggakanService::hitungTotalPalTs & hitungRatio).
+                const values = {
+                    pal_berjalan:     raw.pal_berjalan ?? 0,
+                    pal_tunggakan:    raw.pal_tunggakan ?? 0,
+                    ts_berjalan:      raw.ts_berjalan ?? 0,
+                    ts_tunggakan:     raw.ts_tunggakan ?? 0,
+                    jumlah_tunggakan: raw.jumlah_tunggakan ?? 0,
+                    pendapatan:       raw.pendapatan ?? 0,
+                }
 
                 btn.textContent = '⏳'
                 btn.disabled    = true
@@ -177,12 +189,13 @@ export default class TunggakanModule {
                         // Record belum ada, pakai upsert
                         const bulan = Number.parseInt(btn.dataset.row) + 1
                         await upsert(API,
-                            { tahun: this._tahun, bulan },
-                            { tahun: this._tahun, bulan, sumber: 'manual', ...values }
+                            { tahun: this._tahun, bulan, tipe: 'realisasi' },
+                            { tahun: this._tahun, bulan, tipe: 'realisasi', sumber: 'manual', ...values }
                         )
                     }
                     btn.textContent      = '✓ OK'
                     btn.style.background = '#00ff88'
+                    onChange()
                 } catch {
                     btn.textContent      = '✗ Error'
                     btn.style.background = '#f44336'

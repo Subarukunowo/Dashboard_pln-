@@ -49,30 +49,54 @@ class RtFactRpkwhController extends BaseApiController
 
         return $this->noContent();
     }
+
     public function chart(Request $request): JsonResponse
-{
-    $tahun     = $request->integer('tahun', now()->year);
-    $tahunLalu = $request->integer('tahun_lalu', $tahun - 1);
+    {
+        $tahun     = $request->integer('tahun', now()->year);
+        $tahunLalu = $request->integer('tahun_lalu', $tahun - 1);
 
-    return $this->success($this->service->getChartData($tahun, $tahunLalu));
-}
-
-public function destroyByFilter(Request $request): JsonResponse
-{
-    $request->validate([
-        'tahun' => 'required|integer|min:2000|max:2100',
-        'tipe'  => 'nullable|in:realisasi,target,semua',
-    ]);
-
-    $tahun = $request->integer('tahun');
-    $tipe  = $request->input('tipe');
-
-    $query = $this->service->getModel()->where('tahun', $tahun);
-    if ($tipe && $tipe !== 'semua') {
-        $query->where('tipe', $tipe);
+        return $this->success($this->service->getChartData($tahun, $tahunLalu));
     }
-    $deleted = $query->delete();
 
-    return $this->success(['deleted' => $deleted], 'Data berhasil dihapus');
-}
+    public function destroyByFilter(Request $request): JsonResponse
+    {
+        $request->validate([
+            'tahun' => 'required|integer|min:2000|max:2100',
+            'tipe'  => 'nullable|in:realisasi,target,semua',
+        ]);
+
+        $tahun = $request->integer('tahun');
+        $tipe  = $request->input('tipe');
+
+        $query = $this->service->getModel()->where('tahun', $tahun);
+        if ($tipe && $tipe !== 'semua') {
+            $query->where('tipe', $tipe);
+        }
+        $deleted = $query->delete();
+
+        return $this->success(['deleted' => $deleted], 'Data berhasil dihapus');
+    }
+
+    /**
+     * Buat data awal (nilai 0) untuk sebuah tahun, mencakup semua sub-golongan
+     * dari master rt_dim_sub_golongan. Dipakai tombol "Buat Data".
+     */
+    public function buatTahun(Request $request): JsonResponse
+    {
+        $request->validate([
+            'tahun' => 'required|integer|min:2000|max:2100',
+            'tipe'  => 'required|in:realisasi,target',
+        ]);
+
+        $tahun = $request->integer('tahun');
+        $tipe  = $request->input('tipe');
+
+        try {
+            $jumlah = $this->service->buatTahun($tahun, $tipe);
+        } catch (\RuntimeException $e) {
+            return $this->error($e->getMessage(), 422);
+        }
+
+        return $this->success(['jumlah' => $jumlah], "Data RPKWH tahun {$tahun} berhasil dibuat");
+    }
 }

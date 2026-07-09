@@ -3,10 +3,14 @@ import { renderEditTable, upsert, deleteByFilter, TAHUN_INI } from '../utils/Cru
 const API = '/api/v1/fact/babin'
 
 export default class BabinModule {
-    constructor(chart) {
-        this.chart    = chart
-        this._rawData = null
-        this._tahun   = TAHUN_INI
+    constructor(chart, fetchByYear) {
+        this.chart          = chart
+        this.fetchByYear    = fetchByYear   // (tahun) => Promise<data>
+        this._rawData       = null
+        this._tahun         = TAHUN_INI
+        this._tahunSekarang = TAHUN_INI
+        this._editTahun     = TAHUN_INI
+        this._editData      = null
     }
 
     _getLabels() {
@@ -17,11 +21,12 @@ export default class BabinModule {
 
     render(data, state) {
         if (!data) return
-        this._rawData = data
-        this._tahun   = data.tahun_efektif ?? state.tahun ?? TAHUN_INI
+        this._rawData       = data
+        this._tahun         = data.tahun_efektif ?? state.tahun ?? TAHUN_INI
+        this._tahunSekarang = data.tahun_sekarang ?? TAHUN_INI
 
         const warning = document.getElementById('babinWarning')
-        if (warning) warning.style.display = (this._tahun < TAHUN_INI) ? 'inline-block' : 'none'
+        if (warning) warning.style.display = (this._tahun < this._tahunSekarang) ? 'inline-block' : 'none'
 
         const area     = state.section === 'babin' ? 'interkoneksi' : 'sembulang'
         const isAkum   = state.view === 'akumulasi'
@@ -53,8 +58,6 @@ export default class BabinModule {
             { label: 'Delta (Realisasi - Target)', data: delta, backgroundColor: deltaColor },
         ], v => v == null ? '—' : (v / 1_000_000).toFixed(1) + ' jt kWh')
 
-        // Pie capaian YTD — gunakan nilai kWh aktual, bukan persentase
-        // Ambil dari akumulasi bulan terakhir yang ada datanya
         const akumData     = data.akumulasi[area]
         const validAkumIdx = akumData.realisasi.map((v, i) => v == null ? -1 : i).filter(i => i >= 0)
         const lastAkumIdx  = validAkumIdx.length > 0 ? validAkumIdx[validAkumIdx.length - 1] : sliceIdx - 1
@@ -81,14 +84,41 @@ export default class BabinModule {
 
         this._renderTable(labels, target, realisasi, thnLalu, delta, capaian)
         this._renderGrowthTable(histData)
-        this._renderEditTable(data, area)
+
+        // Edit table pakai tahun edit sendiri (independen dari filter chart)
+        this._renderEditTable(this._editData ?? data, area)
     }
 
     initFilters(state, onChange) {
-        document.getElementById('filterSectionBabin')?.addEventListener('change', e => { state.section = e.target.value; onChange() })
-        document.getElementById('filterTahunBabin')?.addEventListener('change',   e => { state.tahun   = Number.parseInt(e.target.value); onChange() })
-        document.getElementById('filterViewBabin')?.addEventListener('change',    e => { state.view    = e.target.value; onChange() })
-        document.getElementById('filterBulanBabin')?.addEventListener('change',   e => { state.bulan   = e.target.value; onChange() })
+        document.getElementById('filterSectionBabin')?.addEventListener('change', e => {
+            state.section = e.target.value
+            onChange()
+        })
+        document.getElementById('filterTahunBabin')?.addEventListener('change', e => {
+            state.tahun = Number.parseInt(e.target.value)
+            onChange()
+        })
+        document.getElementById('filterViewBabin')?.addEventListener('change', e => {
+            state.view = e.target.value
+            onChange()
+        })
+        document.getElementById('filterBulanBabin')?.addEventListener('change', e => {
+            state.bulan = e.target.value
+            onChange()
+        })
+
+        document.getElementById('filterTahunEditBabin')?.addEventListener('change', async e => {
+            const tahun = Number.parseInt(e.target.value)
+            this._editTahun = tahun
+            if (this.fetchByYear) {
+                this._editData = await this.fetchByYear(tahun)
+            } else {
+                this._editData = (tahun === this._tahun) ? this._rawData : null
+            }
+            const area = state.section === 'babin' ? 'interkoneksi' : 'sembulang'
+            this._renderEditTable(this._editData ?? this._rawData, area)
+        })
+
         this._initCrud(state, onChange)
     }
 
@@ -98,23 +128,23 @@ export default class BabinModule {
         const fmt  = v => v == null ? '—' : (v / 1_000_000).toFixed(2)
         const fmtP = v => v == null ? '—' : v.toFixed(1) + '%'
 
-tbody.innerHTML = labels.map((bln, i) => {
-    let color = '#888'
-    if (delta[i] !== null) color = delta[i] >= 0 ? 'var(--accent-green)' : '#f44336'
-    let deltaCell = '—'
-    if (delta[i] !== null) {
-        const sign = delta[i] >= 0 ? '+' : ''
-        deltaCell = sign + fmt(delta[i])
-    }
-    return '<tr>' +
-        '<td style="padding:7px 8px;">' + bln + '</td>' +
-        '<td style="padding:7px 8px; color:#2196f3;">' + fmt(thnLalu[i]) + '</td>' +
-        '<td style="padding:7px 8px; color:#ff9800;">' + fmt(target[i]) + '</td>' +
-        '<td style="padding:7px 8px; color:var(--accent-green);">' + fmt(realisasi[i]) + '</td>' +
-        '<td style="padding:7px 8px; color:' + color + ';">' + deltaCell + '</td>' +
-        '<td style="padding:7px 8px; color:' + color + ';">' + fmtP(capaian[i]) + '</td>' +
-        '</tr>'
-}).join('')
+        tbody.innerHTML = labels.map((bln, i) => {
+            let color = '#888'
+            if (delta[i] !== null) color = delta[i] >= 0 ? 'var(--accent-green)' : '#f44336'
+            let deltaCell = '—'
+            if (delta[i] !== null) {
+                const sign = delta[i] >= 0 ? '+' : ''
+                deltaCell = sign + fmt(delta[i])
+            }
+            return '<tr>' +
+                '<td style="padding:7px 8px;">' + bln + '</td>' +
+                '<td style="padding:7px 8px; color:#2196f3;">' + fmt(thnLalu[i]) + '</td>' +
+                '<td style="padding:7px 8px; color:#ff9800;">' + fmt(target[i]) + '</td>' +
+                '<td style="padding:7px 8px; color:var(--accent-green);">' + fmt(realisasi[i]) + '</td>' +
+                '<td style="padding:7px 8px; color:' + color + ';">' + deltaCell + '</td>' +
+                '<td style="padding:7px 8px; color:' + color + ';">' + fmtP(capaian[i]) + '</td>' +
+                '</tr>'
+        }).join('')
     }
 
     _renderGrowthTable(histData) {
@@ -147,20 +177,20 @@ tbody.innerHTML = labels.map((bln, i) => {
             return '<tr><td style="padding:7px 10px; color:#888;">' + bln + '</td>' + cells + '</tr>'
         }).join('')
 
-       const totalCells = histData.map(d => {
-    let c = '#555'
-    if (d.growth_tahunan !== null) c = d.growth_tahunan >= 0 ? '#00c853' : '#f44336'
-    let growthText
-    if (d.growth_tahunan === null) {
-        growthText = '—'
-    } else {
-        const sign = d.growth_tahunan >= 0 ? '+' : ''
-        growthText = sign + d.growth_tahunan.toFixed(1) + '%'
-    }
-    return '<td style="padding:8px; text-align:right; border-top:1px solid #333;">' +
-        '<div style="color:#fff; font-weight:600; font-size:0.8rem;">' + fmt(d.total) + '</div>' +
-        '<div style="color:' + c + '; font-size:0.7rem;">' + growthText + '</div></td>'
-}).join('')
+        const totalCells = histData.map(d => {
+            let c = '#555'
+            if (d.growth_tahunan !== null) c = d.growth_tahunan >= 0 ? '#00c853' : '#f44336'
+            let growthText
+            if (d.growth_tahunan === null) {
+                growthText = '—'
+            } else {
+                const sign = d.growth_tahunan >= 0 ? '+' : ''
+                growthText = sign + d.growth_tahunan.toFixed(1) + '%'
+            }
+            return '<td style="padding:8px; text-align:right; border-top:1px solid #333;">' +
+                '<div style="color:#fff; font-weight:600; font-size:0.8rem;">' + fmt(d.total) + '</div>' +
+                '<div style="color:' + c + '; font-size:0.7rem;">' + growthText + '</div></td>'
+        }).join('')
 
         tbody.innerHTML = rows +
             '<tr style="background:rgba(255,255,255,0.04);">' +
@@ -169,16 +199,20 @@ tbody.innerHTML = labels.map((bln, i) => {
     }
 
     _renderEditTable(data, area) {
-        const isReadOnly = this._tahun < TAHUN_INI
-        const bulanan    = data.bulanan?.[area]
+        const editTahun  = this._editTahun ?? this._tahun
+        const isReadOnly = editTahun < this._tahunSekarang
+        const bulanan    = data?.bulanan?.[area]
+
+        const warn = document.getElementById('babinEditWarning')
+        if (warn) warn.style.display = isReadOnly ? 'inline-block' : 'none'
 
         const rows = this._getLabels().map((bln, i) => ({
             label: bln,
             fields: [
                 { key: 'nilai_kwh_target',    value: bulanan?.target?.[i]    ?? '', color: '#ff9800' },
                 { key: 'nilai_kwh_realisasi', value: bulanan?.realisasi?.[i] ?? '', color: '#00ff88' },
-                { key: 'nilai_rp_target',     value: '',                             color: '#ff9800' },
-                { key: 'nilai_rp_realisasi',  value: '',                             color: '#00ff88' },
+                { key: 'nilai_rp_target',     value: '', color: '#ff9800' },
+                { key: 'nilai_rp_realisasi',  value: '', color: '#00ff88' },
             ],
         }))
 
@@ -188,13 +222,13 @@ tbody.innerHTML = labels.map((bln, i) => {
             isReadOnly,
             async (ri, values) => {
                 const bulan = ri + 1
-                const base  = { tahun: this._tahun, bulan, area, is_akumulasi: 0, sumber: 'manual' }
+                const base  = { tahun: editTahun, bulan, area, is_akumulasi: 0, sumber: 'manual' }
                 if (values.nilai_kwh_target !== null || values.nilai_rp_target !== null) {
-                    await upsert(API, { tahun: this._tahun, bulan, area, tipe: 'target', is_akumulasi: 0 },
+                    await upsert(API, { tahun: editTahun, bulan, area, tipe: 'target', is_akumulasi: 0 },
                         { ...base, tipe: 'target', nilai_kwh: values.nilai_kwh_target, nilai_rp: values.nilai_rp_target ?? 0 })
                 }
                 if (values.nilai_kwh_realisasi !== null || values.nilai_rp_realisasi !== null) {
-                    await upsert(API, { tahun: this._tahun, bulan, area, tipe: 'realisasi', is_akumulasi: 0 },
+                    await upsert(API, { tahun: editTahun, bulan, area, tipe: 'realisasi', is_akumulasi: 0 },
                         { ...base, tipe: 'realisasi', nilai_kwh: values.nilai_kwh_realisasi, nilai_rp: values.nilai_rp_realisasi ?? 0 })
                 }
             },

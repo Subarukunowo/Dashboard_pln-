@@ -1,19 +1,30 @@
-const COLORS     = ['#ff9800', '#00ff88', '#2196f3', '#e91e63', '#9c27b0', '#00bcd4']
-const BULAN_NAMES = ['Jan','Feb','Mar','Apr','Mei','Jun','Jul','Agu','Sep','Okt','Nov','Des']
+import { apiGet, apiPost, apiPut, apiDelete } from '@/Dashboard/utils/apiClient'
+
+const COLORS      = ['#ff9800', '#00ff88', '#2196f3', '#e91e63', '#9c27b0', '#00bcd4']
+const BULAN_NAMES = ['Januari','Februari','Maret','April','Mei','Juni','Juli','Agustus','September','Oktober','November','Desember']
 const GRUP_ORDER  = ['S', 'R', 'B', 'I', 'P', 'M']
 const GRUP_LABEL  = { S: 'Sosial', R: 'Rumah Tangga', B: 'Bisnis', I: 'Industri', P: 'Publik', M: 'Multiguna' }
 
-const getGrup = (t) => {
-    if (t === 'JUMLAH' || t.startsWith('JUMLAH-')) return '__JUMLAH__'
-    const m = t.match(/^([A-Z])/)
-    return m?.[1] ?? 'LAIN'
-}
-
 export default class JamNyalaModule {
     constructor(chart) {
-        this.chart      = chart
-        this.rawData    = null
-        this.tahunAktif = null
+        this.chart        = chart
+        this.rawData      = null
+        this.tahunAktif   = null
+        this.golonganList = []
+        this.golonganEdit = null
+        this.tahunEdit    = new Date().getFullYear()
+        this.detailEdit   = null
+        this._ready       = null
+    }
+
+    async init(state, onChange) {
+        if (this._ready) return this._ready
+        this._ready = (async () => {
+            await this._loadGolonganList()
+            await this._loadTahunTersedia()
+            this._initEditFilters(state, onChange)
+        })()
+        return this._ready
     }
 
     _getLabels() {
@@ -33,16 +44,15 @@ export default class JamNyalaModule {
         const sliceIdx = (state.bulan && state.bulan !== 'all') ? Number.parseInt(state.bulan) + 1 : 12
         const labels   = this._getLabels().slice(0, sliceIdx)
 
-        this._populateTarif(data, state.tarif)
-
+        const tarifTersedia = Array.isArray(data.tarif) ? data.tarif : []
         const selected = state.tarif === 'ALL'
-            ? data.tarif.filter(t => t.toLowerCase().includes('jumlah'))
+            ? tarifTersedia.filter(t => typeof t === 'string' && t.toLowerCase().includes('jumlah'))
             : [state.tarif]
 
         this.chart.make('chartJamNyalaLine', 'line', labels,
             selected.map((t, i) => ({
                 label:       t,
-                data:        (data.data[t] || new Array(12).fill(null)).slice(0, sliceIdx),
+                data:        (data.data?.[t] || new Array(12).fill(null)).slice(0, sliceIdx),
                 borderColor: COLORS[i % COLORS.length],
                 tension:     0.4,
                 fill:        false,
@@ -52,151 +62,26 @@ export default class JamNyalaModule {
 
         this._renderLineTable(labels, selected.map((t, i) => ({
             label: t,
-            data:  (data.data[t] || new Array(12).fill(null)).slice(0, sliceIdx),
+            data:  (data.data?.[t] || new Array(12).fill(null)).slice(0, sliceIdx),
         })))
 
-        const tarifBar = state.tarif === 'ALL' ? (selected[0] || data.tarif[0]) : state.tarif
-        const d = (data.data[tarifBar] || new Array(12).fill(null)).slice(0, sliceIdx)
+        const tarifBar = state.tarif === 'ALL' ? (selected[0] || tarifTersedia[0]) : state.tarif
+        const d = (data.data?.[tarifBar] || new Array(12).fill(null)).slice(0, sliceIdx)
         this.chart.make('chartJamNyalaBar', 'bar', labels, [
-            { label: tarifBar, data: d, backgroundColor: '#00ff88' },
-        ], v => v == null ? v.toFixed(0) + ' jam' : '—')
-
-        this._renderEditTable(data)
+            { label: tarifBar ?? '—', data: d, backgroundColor: '#00ff88' },
+        ], v => v == null ? '—' : v.toFixed(0) + ' jam')
     }
 
     initFilters(state, onChange) {
-        document.getElementById('filterTarifJamNyala')?.addEventListener('change', e => { state.tarif = e.target.value; onChange() })
-        document.getElementById('filterBulanJamNyala')?.addEventListener('change', e => { state.bulan = e.target.value; onChange() })
+        document.getElementById('filterTarifJamNyala')?.addEventListener('change', e => {
+            state.tarif = e.target.value
+            this.render(this.rawData, state)
+        })
+        document.getElementById('filterBulanJamNyala')?.addEventListener('change', e => {
+            state.bulan = e.target.value
+            this.render(this.rawData, state)
+        })
         this._initCrud(state, onChange)
-    }
-
-    _populateTarif(data, currentTarif) {
-        const sel = document.getElementById('filterTarifJamNyala')
-        if (!sel || sel.options.length > 0 || !data.tarif) return
-
-        const optAll = document.createElement('option')
-        optAll.value = 'ALL'; optAll.textContent = 'Semua Golongan'
-        sel.appendChild(optAll)
-
-        const grouped = {}
-        const jumlahItems = {}
-        data.tarif.forEach(t => {
-            const key = getGrup(t)
-            if (key === '__JUMLAH__') {
-                const sufiks = t.replace('JUMLAH-', '')
-                if (sufiks === t) {
-                    // plain "JUMLAH" — skip, sudah ada ALL
-                } else {
-                    jumlahItems[sufiks] = t
-                }
-            } else {
-                if (!grouped[key]) grouped[key] = []
-                grouped[key].push(t)
-            }
-        })
-
-        GRUP_ORDER.forEach(key => {
-            if (!grouped[key]?.length && !jumlahItems[key]) return
-            const grp = document.createElement('optgroup')
-            grp.label = GRUP_LABEL[key] ?? key
-            ;(grouped[key] ?? []).forEach(t => {
-                const opt = document.createElement('option')
-                opt.value = t; opt.textContent = t
-                grp.appendChild(opt)
-            })
-            if (jumlahItems[key]) {
-                const opt = document.createElement('option')
-                opt.value = jumlahItems[key]; opt.textContent = jumlahItems[key]
-                grp.appendChild(opt)
-            }
-            sel.appendChild(grp)
-        })
-
-        sel.value = currentTarif
-    }
-
-    _initCrud(state, onChange) {
-        const modalMuat  = document.getElementById('modalMuatJamNyala')
-        document.getElementById('btnMuatJamNyala')?.addEventListener('click', () => { if (modalMuat) modalMuat.style.display = 'flex' })
-        document.getElementById('btnBatalMuat')?.addEventListener('click',    () => { if (modalMuat) modalMuat.style.display = 'none' })
-        document.getElementById('btnKonfirmasiMuat')?.addEventListener('click', async () => {
-            const tahun = document.getElementById('muatTahunJamNyala')?.value
-            const tipe  = document.getElementById('muatTipeJamNyala')?.value
-            if (modalMuat) modalMuat.style.display = 'none'
-            await this._fetchAndRender(Number.parseInt(tahun), tipe, state, onChange)
-        })
-
-        const modalHapus = document.getElementById('modalHapusJamNyala')
-        document.getElementById('btnHapusJamNyala')?.addEventListener('click', () => { if (modalHapus) modalHapus.style.display = 'flex' })
-        document.getElementById('btnBatalHapus')?.addEventListener('click',    () => { if (modalHapus) modalHapus.style.display = 'none' })
-        document.getElementById('btnKonfirmasiHapus')?.addEventListener('click', async () => {
-            const tahun = document.getElementById('hapusTahunJamNyala')?.value
-            const tipe  = document.getElementById('hapusTipeJamNyala')?.value
-            if (modalHapus) modalHapus.style.display = 'none'
-            await this._hapusData(Number.parseInt(tahun), tipe)
-        })
-
-        const modalBuat = document.getElementById('modalBuatJamNyala')
-        const btnBuat   = document.getElementById('btnBuatJamNyala')
-        if (btnBuat && !btnBuat._boundBuat) {
-            btnBuat._boundBuat = true
-            btnBuat.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'flex' })
-            document.getElementById('btnBatalBuatJamNyala')?.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'none' })
-            document.getElementById('btnKonfirmasiBuatJamNyala')?.addEventListener('click', async () => {
-                const tahun = Number.parseInt(document.getElementById('buatTahunJamNyala')?.value)
-                const tipe  = document.getElementById('buatTipeJamNyala')?.value
-                if (modalBuat) modalBuat.style.display = 'none'
-                const csrf  = document.querySelector('meta[name="csrf-token"]')?.content
-                const heads = { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf }
-                let ok = true
-                for (let bulan = 1; bulan <= 12; bulan++) {
-                    try {
-                        const res = await fetch('/api/v1/fact/jam-nyala', {
-                            method: 'POST', headers: heads,
-                            body: JSON.stringify({ tahun, bulan, tipe, golongan_kode: 'JUMLAH', nilai_jam: 0, is_triwulan: 0, is_akumulasi: 0, sumber: 'manual' }),
-                        })
-                        if (!res.ok) ok = false
-                    } catch { ok = false }
-                }
-                alert(ok ? `Data Jam Nyala tahun ${tahun} berhasil dibuat.` : 'Sebagian data gagal dibuat.')
-                await this._fetchAndRender(tahun, tipe, state, onChange)
-            })
-        }
-    }
-
-    async _fetchAndRender(tahun, tipe, state, onChange) {
-        try {
-            const res    = await fetch(`/api/chart/jam-nyala?tahun=${tahun}&tipe=${tipe}`)
-            const result = await res.json()
-            if (result.data) {
-                result.data.tahun_efektif = tahun
-                this.rawData = result.data
-                this.render(result.data, state)
-            }
-        } catch (err) {
-            console.error('Gagal muat data:', err)
-        }
-    }
-
-    async _hapusData(tahun, tipe) {
-        const params = new URLSearchParams({ tahun })
-        if (tipe !== 'semua') params.append('tipe', tipe)
-        try {
-            const csrf = document.querySelector('meta[name="csrf-token"]')?.content
-            const res  = await fetch(`/api/v1/fact/jam-nyala?${params}`, {
-                method: 'DELETE',
-                headers: { 'X-CSRF-TOKEN': csrf, Accept: 'application/json' },
-            })
-            if (res.ok) {
-                alert(`Data tahun ${tahun} berhasil dihapus`)
-                const tbody = document.getElementById('jamNyalaSideTable')
-                if (tbody) tbody.innerHTML = ''
-            } else {
-                alert('Gagal menghapus data')
-            }
-        } catch (err) {
-            console.error('Hapus gagal:', err)
-        }
     }
 
     _renderLineTable(labels, datasets) {
@@ -226,97 +111,308 @@ export default class JamNyalaModule {
         }).join('')
     }
 
-    _renderEditTable(data) {
+    _initCrud(state, onChange) {
+        const modalMuat = document.getElementById('modalMuatJamNyala')
+        const btnMuat   = document.getElementById('btnMuatJamNyala')
+        if (btnMuat && !btnMuat._bound) {
+            btnMuat._bound = true
+            btnMuat.addEventListener('click', () => { if (modalMuat) modalMuat.style.display = 'flex' })
+            document.getElementById('btnBatalMuat')?.addEventListener('click', () => { if (modalMuat) modalMuat.style.display = 'none' })
+            document.getElementById('btnKonfirmasiMuat')?.addEventListener('click', async () => {
+                const tahun = document.getElementById('muatTahunJamNyala')?.value
+                const tipe  = document.getElementById('muatTipeJamNyala')?.value
+                if (modalMuat) modalMuat.style.display = 'none'
+                await this._fetchAndRender(Number.parseInt(tahun), tipe, state, onChange)
+            })
+        }
+
+        const modalHapus = document.getElementById('modalHapusJamNyala')
+        const btnHapus    = document.getElementById('btnHapusJamNyala')
+        if (btnHapus && !btnHapus._bound) {
+            btnHapus._bound = true
+            btnHapus.addEventListener('click', () => { if (modalHapus) modalHapus.style.display = 'flex' })
+            document.getElementById('btnBatalHapus')?.addEventListener('click', () => { if (modalHapus) modalHapus.style.display = 'none' })
+            document.getElementById('btnKonfirmasiHapus')?.addEventListener('click', async () => {
+                const tahun = Number.parseInt(document.getElementById('hapusTahunJamNyala')?.value)
+                const tipe  = document.getElementById('hapusTipeJamNyala')?.value
+                if (modalHapus) modalHapus.style.display = 'none'
+                await this._hapusData(tahun, tipe)
+                await this._loadTahunTersedia()
+                if (tahun === this.tahunEdit) await this._loadDetailEdit()
+            })
+        }
+
+        const modalBuat = document.getElementById('modalBuatJamNyala')
+        const btnBuat   = document.getElementById('btnBuatJamNyala')
+        if (btnBuat && !btnBuat._bound) {
+            btnBuat._bound = true
+            btnBuat.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'flex' })
+            document.getElementById('btnBatalBuatJamNyala')?.addEventListener('click', () => { if (modalBuat) modalBuat.style.display = 'none' })
+            document.getElementById('btnKonfirmasiBuatJamNyala')?.addEventListener('click', async () => {
+                const tahun = Number.parseInt(document.getElementById('buatTahunJamNyala')?.value)
+                const tipe  = document.getElementById('buatTipeJamNyala')?.value
+                if (modalBuat) modalBuat.style.display = 'none'
+
+                let result = null
+                let ok = true
+                try {
+                    const res = await apiPost('/api/v1/fact/jam-nyala/buat-tahun', { tahun, tipe })
+                    result = await res.json()
+                    if (!res.ok) ok = false
+                } catch {
+                    ok = false
+                }
+
+                if (ok && result?.data) {
+                    const { created, skipped, failed, total_kode } = result.data
+                    let msg = `Tahun ${tahun} — Golongan: ${total_kode}, Baris baru: ${created}, Sudah ada: ${skipped}`
+                    if (failed > 0) msg += `\n⚠ GAGAL: ${failed} baris — cek log server untuk detail.`
+                    alert(msg)
+                } else {
+                    alert('Gagal membuat data.')
+                }
+
+                await this._loadTahunTersedia()
+                await this._fetchAndRender(tahun, tipe, state, onChange)
+                if (tahun === this.tahunEdit) await this._loadDetailEdit()
+            })
+        }
+    }
+
+    async _fetchAndRender(tahun, tipe, state, onChange) {
+        try {
+            const res    = await apiGet(`/api/chart/jam-nyala?tahun=${tahun}&tipe=${tipe}`)
+            const result = await res.json()
+            if (result.data) {
+                result.data.tahun_efektif = tahun
+                this.rawData = result.data
+                this.render(result.data, state)
+            }
+        } catch (err) {
+            console.error('Gagal muat data:', err)
+        }
+    }
+
+    async _hapusData(tahun, tipe) {
+        const params = new URLSearchParams({ tahun })
+        if (tipe !== 'semua') params.append('tipe', tipe)
+        try {
+            const res = await apiDelete(`/api/v1/fact/jam-nyala?${params}`)
+            if (res.ok) {
+                alert(`Data tahun ${tahun} berhasil dihapus`)
+            } else {
+                alert('Gagal menghapus data')
+            }
+        } catch (err) {
+            console.error('Hapus gagal:', err)
+        }
+    }
+
+    async _loadGolonganList() {
+        try {
+            const res = await apiGet('/api/v1/dim/sub-golongan?per_page=200')
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            const json = await res.json()
+
+            const raw = json.data?.data ?? json.data ?? []
+            this.golonganList = Array.isArray(raw) ? raw.filter(g => g && typeof g.kode === 'string') : []
+        } catch (err) {
+            console.error('Gagal ambil daftar golongan:', err)
+            this.golonganList = []
+        }
+
+        this._populateTarifDropdown()
+        this._populateEditDropdown()
+    }
+
+    _groupGolongan() {
+        const grouped     = {}
+        const jumlahItems = {}
+
+        this.golonganList.forEach(g => {
+            if (g.kode === 'JUMLAH') return
+            if (g.kode.startsWith('JUMLAH-')) {
+                if (g.golongan_kode) jumlahItems[g.golongan_kode] = g
+                return
+            }
+            if (!g.golongan_kode) return
+            if (!grouped[g.golongan_kode]) grouped[g.golongan_kode] = []
+            grouped[g.golongan_kode].push(g)
+        })
+
+        Object.values(grouped).forEach(list => list.sort((a, b) => (a.urutan ?? 0) - (b.urutan ?? 0)))
+        return { grouped, jumlahItems }
+    }
+
+    _buildGolonganOptions() {
+        const { grouped, jumlahItems } = this._groupGolongan()
+        let html = ''
+
+        GRUP_ORDER.forEach(key => {
+            const items = grouped[key] ?? []
+            const jumlah = jumlahItems[key]
+            if (!items.length && !jumlah) return
+
+            html += `<optgroup label="${GRUP_LABEL[key] ?? key}">`
+            items.forEach(g => { html += `<option value="${g.kode}">${g.nama ?? g.kode}</option>` })
+            if (jumlah) html += `<option value="${jumlah.kode}">${jumlah.nama ?? jumlah.kode}</option>`
+            html += `</optgroup>`
+        })
+
+        return html
+    }
+
+    _populateTarifDropdown() {
+        const sel = document.getElementById('filterTarifJamNyala')
+        if (!sel) return
+
+        const prevValue = sel.value
+        const options   = this._buildGolonganOptions()
+
+        sel.innerHTML = `<option value="ALL">Semua Golongan</option>` + options
+
+        const hasPrev = prevValue && [...sel.options].some(o => o.value === prevValue)
+        sel.value = hasPrev ? prevValue : 'ALL'
+    }
+
+    _populateEditDropdown() {
+        const sel = document.getElementById('filterGolonganEdit')
+        if (!sel) return
+
+        const prevValue = sel.value
+        const options    = this._buildGolonganOptions()
+
+        sel.innerHTML = options
+        if (!sel.options.length) {
+            this.golonganEdit = null
+            return
+        }
+
+        const hasPrev = prevValue && [...sel.options].some(o => o.value === prevValue)
+        sel.value = hasPrev ? prevValue : sel.options[0].value
+        this.golonganEdit = sel.value
+    }
+
+    async _loadTahunTersedia() {
+        try {
+            const res    = await apiGet('/api/v1/fact/jam-nyala/tahun-tersedia')
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            const json   = await res.json()
+            const tahuns = Array.isArray(json.data) ? json.data : []
+
+            const currentYear = new Date().getFullYear()
+            const opts = tahuns.length
+                ? tahuns.map(t => `<option value="${t}">${t}</option>`).join('')
+                : `<option value="${currentYear}">${currentYear}</option>`
+
+            const muat  = document.getElementById('muatTahunJamNyala')
+            const hapus = document.getElementById('hapusTahunJamNyala')
+            if (muat)  muat.innerHTML  = opts
+            if (hapus) hapus.innerHTML = opts
+        } catch (err) {
+            console.error('Gagal ambil daftar tahun tersedia:', err)
+        }
+    }
+
+    _initEditFilters(state, onChange) {
+        this._editState    = state
+        this._editOnChange = onChange
+
+        document.getElementById('filterGolonganEdit')?.addEventListener('change', e => {
+            this.golonganEdit = e.target.value
+            this._loadDetailEdit()
+        })
+        this._loadDetailEdit()
+    }
+
+    async _loadDetailEdit() {
+        if (!this.golonganEdit) return
+        try {
+            const res  = await apiGet(`/api/v1/fact/jam-nyala/detail?tahun=${this.tahunEdit}&golongan_kode=${encodeURIComponent(this.golonganEdit)}`)
+            if (!res.ok) throw new Error(`HTTP ${res.status}`)
+            const json = await res.json()
+            this.detailEdit = json.data
+            this._renderGolonganEditTable(json.data)
+        } catch (err) {
+            console.error('Gagal ambil detail golongan:', err)
+        }
+    }
+
+    _renderGolonganEditTable(detail) {
         const tbody = document.getElementById('jamNyalaSideTable')
-        if (!tbody || !data.tarif) return
-        const isReadOnly = this.tahunAktif ? this.tahunAktif < new Date().getFullYear() : false
+        if (!tbody || !detail) return
 
-        tbody.innerHTML = data.tarif.map((tarif, ti) => {
-            const isJumlah  = tarif.toLowerCase().includes('jumlah')
-            const rowColor  = isJumlah ? 'rgba(255,255,255,0.04)' : 'transparent'
-            const fontStyle = isJumlah ? 'font-weight:600; color:#fff;' : 'color:#aaa;'
-
-            const cells = Array.from({ length: 12 }, (_, i) => {
-                const val = data.data[tarif]?.[i]
-                return `<td style="padding:4px 6px; text-align:center;">
-                    <input type="number" data-tarif="${ti}" data-bulan="${i + 1}"
-                        value="${val !== null && val !== undefined ? val : ''}" placeholder="—"
-                        ${isReadOnly ? 'disabled' : ''}
-                        style="width:52px; text-align:center; padding:3px 4px; border-radius:4px;
-                               border:1px solid ${isReadOnly ? '#2a2a2a' : '#333'};
-                               background:#1a1a1a; color:${val !== null && !isReadOnly ? '#ccc' : '#444'};
-                               font-size:0.75rem;" />
-                </td>`
-            }).join('')
-
-            return `<tr style="background:${rowColor}; border-bottom:1px solid #2a2a2a;" data-tarif-index="${ti}">
-                <td style="padding:8px 10px; font-size:0.75rem; ${fontStyle} min-width:180px;">${tarif}</td>
-                ${cells}
+        tbody.innerHTML = BULAN_NAMES.map((nama, i) => {
+            const tVal = detail.target?.[i]
+            const rVal = detail.realisasi?.[i]
+            return `<tr style="border-bottom:1px solid #2a2a2a;" data-bulan="${i + 1}">
+                <td style="padding:8px 10px; font-size:0.8rem; color:#ccc;">${nama}</td>
                 <td style="padding:4px 6px; text-align:center;">
-                    ${isReadOnly
-                        ? '<span style="font-size:0.7rem;color:#444;">🔒</span>'
-                        : `<button data-tarif-index="${ti}"
-                                style="padding:3px 8px; border-radius:4px; border:none; background:#ff9800;
-                                       color:#000; font-size:0.7rem; cursor:pointer; font-weight:600;">
-                                Simpan
-                           </button>`
-                    }
+                    <input type="number" data-tipe="target" data-bulan="${i + 1}"
+                        value="${tVal !== null && tVal !== undefined ? tVal : ''}" placeholder="—"
+                        style="width:110px; text-align:center; padding:5px 6px; border-radius:4px;
+                               border:1px solid #333; background:#1a1a1a; color:#ff9800; font-size:0.8rem;" />
+                </td>
+                <td style="padding:4px 6px; text-align:center;">
+                    <input type="number" data-tipe="realisasi" data-bulan="${i + 1}"
+                        value="${rVal !== null && rVal !== undefined ? rVal : ''}" placeholder="—"
+                        style="width:110px; text-align:center; padding:5px 6px; border-radius:4px;
+                               border:1px solid #333; background:#1a1a1a; color:#00ff88; font-size:0.8rem;" />
+                </td>
+                <td style="padding:4px 6px; text-align:center;">
+                    <button data-bulan="${i + 1}"
+                        style="padding:5px 14px; border-radius:4px; border:none; background:#ff9800;
+                               color:#000; font-size:0.75rem; cursor:pointer; font-weight:600;">
+                        Simpan
+                    </button>
                 </td>
             </tr>`
         }).join('')
 
-        if (isReadOnly) return
-
-        tbody.removeEventListener('click', tbody._saveHandler)
-        tbody._saveHandler = async (e) => {
-            const btn = e.target.closest('button[data-tarif-index]')
+        tbody.removeEventListener('click', tbody._saveRowHandler)
+        tbody._saveRowHandler = async (e) => {
+            const btn = e.target.closest('button[data-bulan]')
             if (!btn) return
-            const ti    = Number.parseInt(btn.dataset.tarifIndex)
-            const tarif = data.tarif[ti]
-            if (!tarif) return
+            const bulan = Number.parseInt(btn.dataset.bulan)
+            const row   = tbody.querySelector(`tr[data-bulan="${bulan}"]`)
+            const ids   = this.detailEdit?.ids?.[bulan - 1] ?? { target: null, realisasi: null }
 
             btn.textContent = '⏳'; btn.disabled = true
 
-            const tahun     = this.rawData?.tahun_efektif ?? new Date().getFullYear()
-            const csrf      = document.querySelector('meta[name="csrf-token"]')?.content
-            const inputs    = tbody.querySelectorAll(`input[data-tarif="${ti}"]`)
-            let saved = 0
-
-            for (const input of inputs) {
-                const bulan = Number.parseInt(input.dataset.bulan)
+            let ok = true
+            for (const tipe of ['target', 'realisasi']) {
+                const input = row.querySelector(`input[data-tipe="${tipe}"]`)
                 const nilai = input.value === '' ? null : Number.parseFloat(input.value)
-                try {
-                    const checkRes  = await fetch(
-                        `/api/v1/fact/jam-nyala?tahun=${tahun}&bulan=${bulan}&golongan_kode=${encodeURIComponent(tarif)}&tipe=realisasi&is_triwulan=0&is_akumulasi=0`,
-                        { headers: { Accept: 'application/json' } }
-                    )
-                    const checkData = await checkRes.json()
-                    const existing  = checkData.data?.data?.[0]
+                const id    = ids[tipe]
 
-                    if (existing) {
-                        await fetch(`/api/v1/fact/jam-nyala/${existing.id}`, {
-                            method: 'PUT',
-                            headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
-                            body: JSON.stringify({ nilai_jam: nilai }),
-                        })
+                try {
+                    if (id) {
+                        const res = await apiPut(`/api/v1/fact/jam-nyala/${id}`, { nilai_jam: nilai })
+                        if (!res.ok) ok = false
                     } else if (nilai !== null) {
-                        await fetch('/api/v1/fact/jam-nyala', {
-                            method: 'POST',
-                            headers: { 'Content-Type': 'application/json', Accept: 'application/json', 'X-CSRF-TOKEN': csrf },
-                            body: JSON.stringify({ tahun, bulan, tipe: 'realisasi', golongan_kode: tarif, nilai_jam: nilai, is_triwulan: 0, is_akumulasi: 0, sumber: 'manual' }),
+                        const res = await apiPost('/api/v1/fact/jam-nyala', {
+                            tahun: this.tahunEdit, bulan, tipe,
+                            golongan_kode: this.golonganEdit, nilai_jam: nilai,
+                            is_triwulan: 0, is_akumulasi: 0, sumber: 'manual',
                         })
+                        if (!res.ok) ok = false
                     }
-                    saved++
-                } catch (err) {
-                    console.error(`Gagal simpan ${tarif} bulan ${bulan}:`, err)
+                } catch {
+                    ok = false
                 }
             }
 
             btn.disabled    = false
-            btn.textContent = saved > 0 ? '✓ OK' : '✗ Error'
-            btn.style.background = saved > 0 ? '#00ff88' : '#f44336'
+            btn.textContent = ok ? '✓ OK' : '✗ Error'
+            btn.style.background = ok ? '#00ff88' : '#f44336'
             setTimeout(() => { btn.textContent = 'Simpan'; btn.style.background = '#ff9800' }, 2000)
+
+            await this._loadDetailEdit()
+
+            if (ok && this._editState && this._editOnChange) {
+                await this._fetchAndRender(this.tahunEdit, 'realisasi', this._editState, this._editOnChange)
+            }
         }
-        tbody.addEventListener('click', tbody._saveHandler)
+        tbody.addEventListener('click', tbody._saveRowHandler)
     }
 }
