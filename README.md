@@ -1,59 +1,60 @@
-<p align="center"><a href="https://laravel.com" target="_blank"><img src="https://raw.githubusercontent.com/laravel/art/master/logo-lockup/5%20SVG/2%20CMYK/1%20Full%20Color/laravel-logolockup-cmyk-red.svg" width="400" alt="Laravel Logo"></a></p>
+# Dashboard Analytics PLN
 
-<p align="center">
-<a href="https://github.com/laravel/framework/actions"><img src="https://github.com/laravel/framework/workflows/tests/badge.svg" alt="Build Status"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/dt/laravel/framework" alt="Total Downloads"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/v/laravel/framework" alt="Latest Stable Version"></a>
-<a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
-</p>
+Sistem dashboard internal untuk memonitor dan menganalisis metrik operasional PLN. Sistem ini menampilkan data historis, grafik kinerja, dan statistik utama seperti BPP, HJR, Susut (Losses), Penjualan, Pendapatan, dan Tunggakan. 
 
-## About Laravel
+## Alur Sistem & Arsitektur Keamanan
 
-Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:
+Akses ke data analitik diproteksi melalui proses autentikasi berlapis dan token rotasi cepat untuk komunikasi API internal.
 
-- [Simple, fast routing engine](https://laravel.com/docs/routing).
-- [Powerful dependency injection container](https://laravel.com/docs/container).
-- Multiple back-ends for [session](https://laravel.com/docs/session) and [cache](https://laravel.com/docs/cache) storage.
-- Expressive, intuitive [database ORM](https://laravel.com/docs/eloquent).
-- Database agnostic [schema migrations](https://laravel.com/docs/migrations).
-- [Robust background job processing](https://laravel.com/docs/queues).
-- [Real-time event broadcasting](https://laravel.com/docs/broadcasting).
+```mermaid
+sequenceDiagram
+    participant U as User
+    participant OAuth as Google OAuth
+    participant 2FA as Two-Factor Auth
+    participant JS as Frontend (JS)
+    participant API as Internal API
+    participant DB as Database
 
-Laravel is accessible, powerful, and provides tools required for large, robust applications.
+    U->>OAuth: Request Login
+    OAuth-->>U: Auth Callback
+    U->>2FA: Verifikasi Kode (Authenticator App)
+    2FA-->>U: Session Valid & Akses Dashboard Terbuka
+    
+    loop Setiap 50 Detik
+        JS->>API: GET /api/internal/token-refresh (Via Session)
+        API-->>JS: Return HMAC Token Baru (TTL 60s)
+    end
+    
+    U->>JS: Interaksi Menu Statistik (BPP, HJR, dll)
+    JS->>API: Request Data (Header: X-Api-Token & Timestamp)
+    API->>DB: Query Tabel Fact & Dimensi
+    DB-->>API: Data Agregat
+    API-->>JS: Response JSON
+    JS-->>U: Render Grafik & Tabel
+```
 
-## Learning Laravel
+## Kompleksitas Autentikasi dan Data API
 
-Laravel has the most extensive and thorough [documentation](https://laravel.com/docs) and video tutorial library of all modern web application frameworks, making it a breeze to get started with the framework. You can also check out [Laravel Learn](https://laravel.com/learn), where you will be guided through building a modern Laravel application.
+Sistem memisahkan akses halaman web dan rute pengambilan data (headless approach pada API):
+1. **Google OAuth & 2FA**: Semua pengguna masuk melalui SSO Google, dilanjutkan dengan tahap 2FA. Admin memiliki kendali untuk melihat log, melakukan *approve/reject* perangkat yang login, serta mereset pengaturan 2FA pengguna.
+2. **Rotasi Token HMAC**: Endpoint data (`routes/api.php`) diakses tanpa state session konvensional. Sebagai gantinya, Client JS secara berkala mengambil token HMAC (`/api/internal/token-refresh`) yang hanya berlaku 60 detik. Token disematkan di header `X-Api-Token` bersama waktu pembuatan pada `X-Api-Timestamp` untuk setiap request.
+3. **Rate Limiting Ketat**:
+   - Alur login OAuth dibatasi 10 request per menit.
+   - Pengecekan 2FA dibatasi 5 request per menit untuk mencegah brute-force.
+   - Endpoint pemuatan grafik API dibatasi 60 request per menit (per user/IP).
 
-If you don't feel like reading, [Laracasts](https://laracasts.com) can help. Laracasts contains thousands of video tutorials on a range of topics including Laravel, modern PHP, unit testing, and JavaScript. Boost your skills by digging into our comprehensive video library.
+## Fitur Utama
 
-## Laravel Sponsors
+- **Modul Kinerja Terpusat**: Panel analitik untuk metrik BPP, HJR, Babin, Jam Nyala, Losses (Susut), P2TL, Pelanggan, kVA, Pendapatan, Penjualan, Rp/kWh, dan Tunggakan.
+- **Manajemen Data Historis (Fact Entry)**: Fasilitas impor data terstruktur melalui Excel, input form manual, dan kalkulasi otomatis.
+- **Kontrol Hak Akses**:
+  - *Guest*: Login panel.
+  - *User*: Akses baca dashboard, halaman statistik, dan profil.
+  - *Admin*: Panel manajemen pengguna, device log, manajemen otorisasi 2FA.
 
-We would like to extend our thanks to the following sponsors for funding Laravel development. If you are interested in becoming a sponsor, please visit the [Laravel Partners program](https://partners.laravel.com).
+## Stack Teknologi
 
-### Premium Partners
-
-- **[Vehikl](https://vehikl.com)**
-- **[Tighten Co.](https://tighten.co)**
-- **[Kirschbaum Development Group](https://kirschbaumdevelopment.com)**
-- **[64 Robots](https://64robots.com)**
-- **[Curotec](https://www.curotec.com/services/technologies/laravel)**
-- **[DevSquad](https://devsquad.com/hire-laravel-developers)**
-- **[Redberry](https://redberry.international/laravel-development)**
-- **[Active Logic](https://activelogic.com)**
-
-## Contributing
-
-Thank you for considering contributing to the Laravel framework! The contribution guide can be found in the [Laravel documentation](https://laravel.com/docs/contributions).
-
-## Code of Conduct
-
-In order to ensure that the Laravel community is welcoming to all, please review and abide by the [Code of Conduct](https://laravel.com/docs/contributions#code-of-conduct).
-
-## Security Vulnerabilities
-
-If you discover a security vulnerability within Laravel, please send an e-mail to Taylor Otwell via [taylor@laravel.com](mailto:taylor@laravel.com). All security vulnerabilities will be promptly addressed.
-
-## License
-
-The Laravel framework is open-sourced software licensed under the [MIT license](https://opensource.org/licenses/MIT).
+- **Backend**: Laravel
+- **Auth**: Laravel Socialite (Google OAuth), Google2FA
+- **Database**: MySQL dengan penerapan skema Data Warehouse sederhana (Tabel Fact & Dimensi)
+- **Frontend**: Blade templates, Vite, dan Javascript native client yang menangani refresh token secara otomatis.
